@@ -8,7 +8,7 @@ import com.example.collisions.AndroidContext
 import java.io.FileNotFoundException
 
 // 基于SAF
-actual class LocalFileSystem {
+actual class LocalFileSystem : TextFileDetector {
     private val contentResolver: ContentResolver
         get() = AndroidContext.context.contentResolver
 
@@ -31,7 +31,7 @@ actual class LocalFileSystem {
             ?: throw FileNotFoundException("无法解析文件信息: $path")
     }
 
-    actual fun isTextFile(path: String): Boolean {
+    actual override fun isTextFile(path: String): Boolean {
         val uri = Uri.parse(path)
         val ext = getExtension(uri)
         val name = getName(uri)

@@ -115,7 +115,7 @@ private fun NarrowLayout(viewModel: MainViewModel) {
                 TopAppBar(
                     title = {
                         Text(
-                            viewModel.selectedArtifact?.name ?: viewModel.currentPath.split("/").lastOrNull() ?: "Collisions",
+                            viewModel.selectedArtifact?.name ?: viewModel.currentFolderName.ifBlank { "Collisions" },
                             maxLines = 1, overflow = TextOverflow.Ellipsis,
                         )
                     },
@@ -144,7 +144,7 @@ private fun NarrowLayout(viewModel: MainViewModel) {
 private fun WorkspaceHeader(viewModel: MainViewModel) {
     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text(viewModel.currentPath.split("/").lastOrNull() ?: "工作区", style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            Text(viewModel.currentFolderName.ifBlank { "工作区" }, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             if (viewModel.isComputingSize) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
             }

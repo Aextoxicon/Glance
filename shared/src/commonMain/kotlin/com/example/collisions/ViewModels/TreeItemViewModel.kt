@@ -8,7 +8,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import com.example.collisions.Models.IArtifact
 import com.example.collisions.Models.LocalPayload
-import com.example.collisions.Repositories.LocalArtifactRepo
+import com.example.collisions.Repositories.IArtifactRepo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 class TreeItemViewModel(
     val artifact: IArtifact,
-    private val repo: LocalArtifactRepo? = null,
+    private val repo: IArtifactRepo? = null,
     private val childrenCache: MutableMap<String, List<IArtifact>>? = null,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

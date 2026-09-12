@@ -11,12 +11,15 @@ import com.example.collisions.Views.MainView
 fun App(
     pickFolderAction: (suspend () -> String?)? = null,
 ) {
-    val viewModel = remember(pickFolderAction) {
+    val viewModel = remember {
         val fs = LocalFileSystem()
         val repo = LocalArtifactRepo(fs)
         val vm = MainViewModel(fs, repo)
         vm.pickFolderAction = pickFolderAction
         vm
+    }
+    SideEffect {
+        viewModel.pickFolderAction = pickFolderAction
     }
 
     MaterialTheme {

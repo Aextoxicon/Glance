@@ -4,7 +4,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 
-actual class LocalFileSystem {
+actual class LocalFileSystem : TextFileDetector {
     actual fun listFiles(path: String): List<LocalFileInfo> {
         val dir = File(path)
         if (!dir.exists() || !dir.isDirectory) return emptyList()
@@ -53,7 +53,7 @@ actual class LocalFileSystem {
         )
     }
 
-    actual fun isTextFile(path: String): Boolean {
+    actual override fun isTextFile(path: String): Boolean {
         val ext = File(path).extension.lowercase()
         val name = File(path).name.lowercase()
 

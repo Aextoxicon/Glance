@@ -7,21 +7,27 @@ import com.example.collisions.Models.IArtifact
 import com.example.collisions.Models.LocalPayload
 import com.example.collisions.Processing.CodeParseResult
 import com.example.collisions.Processing.FileProcessor
-import com.example.collisions.Repositories.LocalArtifactRepo
-import com.example.collisions.Repositories.LocalFileSystem
+import com.example.collisions.Repositories.IArtifactRepo
+import com.example.collisions.Repositories.TextFileDetector
 import com.example.collisions.Utils.FormatSize
+import com.example.collisions.Utils.PathUtil
 import kotlinx.coroutines.*
 
 class MainViewModel(
-    private val fs: LocalFileSystem,
-    private val repo: LocalArtifactRepo,
+    private val fs: TextFileDetector,
+    private val repo: IArtifactRepo,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     companion object {
         private const val WIDE_MODE_THRESHOLD = 640
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val childrenCache = mutableMapOf<String, List<IArtifact>>()
+
+    private var loadJob: Job? = null
+    private var selectJob: Job? = null
+    private var sizeJob: Job? = null
 
     // 文件浏览状态
     var currentPath by mutableStateOf("")
@@ -63,6 +69,8 @@ class MainViewModel(
     val totalSizeReadable: String get() = FormatSize.readable(totalSize)
     val selectedSizeDisplay: String get() = selectedArtifact?.let { FormatSize.readable(it.size) } ?: ""
     val isCodePreviewVisible: Boolean get() = hasSelection && messageText == null
+    val currentFolderName: String
+        get() = if (currentPath.isEmpty()) "" else PathUtil.fileName(currentPath)
 
     // 平台相关的文件选择器注入
     var pickFolderAction: (suspend () -> String?)? = null
@@ -77,6 +85,11 @@ class MainViewModel(
     }
 
     fun closeWorkspace() {
+        // 取消所有在途任务，避免旧状态被异步结果改写
+        loadJob?.cancel()
+        selectJob?.cancel()
+        sizeJob?.cancel()
+        isComputingSize = false
         currentPath = ""
         hasWorkspace = false
         childrenCache.clear()
@@ -130,7 +143,10 @@ class MainViewModel(
     }
 
     fun loadCore(path: String) {
-        scope.launch {
+        // 切换目录时取消上一轮的目录加载与大小计算
+        loadJob?.cancel()
+        sizeJob?.cancel()
+        loadJob = scope.launch {
             currentPath = path
             hasWorkspace = true
             childrenCache.clear()
@@ -140,51 +156,60 @@ class MainViewModel(
             try {
                 val listResult = repo.listAsync(path)
                 val items = listResult.getOrNull() ?: emptyList()
+                if (!isActive) return@launch
                 treeItems = items.map { TreeItemViewModel(it, repo, childrenCache) }
             } catch (ex: Exception) {
-                messageText = "加载失败: ${ex.message}"
+                if (isActive) messageText = "加载失败: ${ex.message}"
             }
 
             // 异步计算总大小
             isComputingSize = true
-            launch {
-                val size = computeTotalSize(path)
-                totalSize = size
-                isComputingSize = false
+            val sizePath = path
+            sizeJob = scope.launch {
+                val size = computeTotalSize(sizePath)
+                // 只有路径未变时才写回，避免残留在途任务污染新会话
+                if (isActive && currentPath == sizePath) {
+                    totalSize = size
+                    isComputingSize = false
+                }
             }
         }
     }
 
+    private data class LoadedFile(val parseResult: CodeParseResult?, val content: String)
+
     private fun selectFile(artifact: IArtifact) {
-        scope.launch {
-            // 先清除所有旧状态，避免白屏
+        selectJob?.cancel() // 快速连续点击时，丢弃前一次尚未完成的读取
+        selectJob = scope.launch {
             messageText = null
             selectedContent = null
             selectedParseResult = null
             selectedArtifact = artifact
             hasSelection = true
 
-            // 处理文件
-            processFile(artifact)
+            val loaded = loadFile(artifact) ?: return@launch
+            // 期间若用户已切换选择或关闭工作区，丢弃本次结果
+            if (!isActive) return@launch
+            selectedParseResult = loaded.parseResult
+            selectedContent = loaded.content
         }
     }
 
-    private suspend fun processFile(artifact: IArtifact) {
+    private suspend fun loadFile(artifact: IArtifact): LoadedFile? {
         // 检查是否是目录
         if (artifact.payload is LocalPayload && (artifact.payload as LocalPayload).isDir) {
-            return
+            return null
         }
 
         val path = artifact.id
         if (path.isEmpty()) {
             messageText = "无法读取文件: ${artifact.name}"
-            return
+            return null
         }
 
-        // 检查是否是文本文件
         if (!fs.isTextFile(path)) {
             messageText = "[二进制文件] ${artifact.name} 无法预览"
-            return
+            return null
         }
 
         // 读取文件内容
@@ -192,7 +217,7 @@ class MainViewModel(
         val content = contentResult.getOrNull()
         if (content == null) {
             messageText = "无法读取文件: ${artifact.name}"
-            return
+            return null
         }
 
         val normalizedContent = content.replace("\t", "    ")
@@ -207,12 +232,11 @@ class MainViewModel(
             null
         }
 
-        selectedParseResult = parseResult
-        selectedContent = normalizedContent
+        return LoadedFile(parseResult, normalizedContent)
     }
 
     private suspend fun computeTotalSize(path: String): Long {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             try {
                 val items = repo.listAsync(path)
                 val artifacts = items.getOrNull() ?: return@withContext 0L
@@ -229,8 +253,7 @@ class MainViewModel(
                 }
                 deferredResults.sumOf { it.await() }
             } catch (e: CancellationException) {
-                println("computeTotalSize canceled for path: $path")
-                0L
+                throw e
             } catch (e: Exception) {
                 println("computeTotalSize error for path: $path, message: ${e.message}")
                 0L
