@@ -1,5 +1,5 @@
 language=go
-contentLen=693
+contentLen=689
 highlightLineCount=37
 totalTokens=87
 line_0=[0-7:keyword,8-12:namespace]
@@ -20,7 +20,7 @@ line_18=[8-13:identifier,17-22:identifier]
 line_22=[0-4:keyword,6-7:variable,8-9:operator,9-15:type,17-23:function.method,26-32:type]
 line_23=[4-10:keyword,11-14:namespace,15-22:function.method,23-48:string,50-51:namespace,52-56:property,58-59:namespace,60-67:property,69-70:namespace,71-76:property]
 line_26=[0-4:keyword,5-9:function]
-line_27=[4-10:variable,11-13:operator,14-23:function,24-36:string,38-45:string,47-51:constant.builtin]
+line_27=[4-10:variable,11-13:operator,14-23:function,24-32:string,34-41:string,43-47:constant.builtin]
 line_28=[4-7:namespace,8-15:function.method,16-22:identifier]
 line_30=[4-8:variable,9-11:operator,12-14:namespace,15-19:property,20-21:number]
 line_31=[4-6:keyword,7-10:function.builtin,11-15:identifier,17-18:operator,19-20:number]
@@ -31,4 +31,4 @@ package_clause:(0-12)
 type_declaration:(67-148)
 function_declaration:NewConfig(152-324)
 method_declaration:String(328-444)
-function_declaration:main(448-691)
+function_declaration:main(448-687)

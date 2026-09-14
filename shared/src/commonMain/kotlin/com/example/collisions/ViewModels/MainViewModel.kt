@@ -16,7 +16,8 @@ import kotlinx.coroutines.*
 class MainViewModel(
     private val fs: TextFileDetector,
     private val repo: IArtifactRepo,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Main,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     companion object {
         private const val WIDE_MODE_THRESHOLD = 640
@@ -154,10 +155,11 @@ class MainViewModel(
             treeItems = emptyList()
 
             try {
-                val listResult = repo.listAsync(path)
+                // 文件系统读取放到 io 线程，状态写入保持在 dispatcher（主线程）
+                val listResult = withContext(ioDispatcher) { repo.listAsync(path) }
                 val items = listResult.getOrNull() ?: emptyList()
                 if (!isActive) return@launch
-                treeItems = items.map { TreeItemViewModel(it, repo, childrenCache) }
+                treeItems = items.map { TreeItemViewModel(it, repo, childrenCache, dispatcher, ioDispatcher) }
             } catch (ex: Exception) {
                 if (isActive) messageText = "加载失败: ${ex.message}"
             }
@@ -212,8 +214,8 @@ class MainViewModel(
             return null
         }
 
-        // 读取文件内容
-        val contentResult = repo.tryReadTextAsync(path)
+        // 读取文件内容（阻塞 I/O 放 io 线程）
+        val contentResult = withContext(ioDispatcher) { repo.tryReadTextAsync(path) }
         val content = contentResult.getOrNull()
         if (content == null) {
             messageText = "无法读取文件: ${artifact.name}"
@@ -236,7 +238,7 @@ class MainViewModel(
     }
 
     private suspend fun computeTotalSize(path: String): Long {
-        return withContext(dispatcher) {
+        return withContext(ioDispatcher) {
             try {
                 val items = repo.listAsync(path)
                 val artifacts = items.getOrNull() ?: return@withContext 0L

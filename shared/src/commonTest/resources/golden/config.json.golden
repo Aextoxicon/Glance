@@ -1,13 +1,13 @@
 language=json
-contentLen=585
+contentLen=577
 highlightLineCount=25
 totalTokens=34
-line_1=[4-10:property,12-24:string]
+line_1=[4-10:property,12-20:string]
 line_2=[4-13:property,15-22:string]
 line_3=[4-17:property,19-46:string]
 line_4=[4-12:property]
 line_5=[8-14:property,16-25:string]
-line_6=[8-15:property,17-41:string]
+line_6=[8-15:property,17-37:string]
 line_8=[4-13:property]
 line_9=[8-15:property,17-31:string]
 line_10=[8-14:property,16-29:string]

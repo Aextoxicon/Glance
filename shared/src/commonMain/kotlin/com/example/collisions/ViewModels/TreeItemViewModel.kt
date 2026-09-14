@@ -9,17 +9,22 @@ import androidx.compose.runtime.toMutableStateList
 import com.example.glance.Models.IArtifact
 import com.example.glance.Models.LocalPayload
 import com.example.glance.Repositories.IArtifactRepo
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class TreeItemViewModel(
     val artifact: IArtifact,
     private val repo: IArtifactRepo? = null,
     private val childrenCache: MutableMap<String, List<IArtifact>>? = null,
+    // 状态线程：所有 Compose 状态写入统一在这里
+    private val uiDispatcher: CoroutineDispatcher? = null,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + (uiDispatcher ?: Dispatchers.Default))
 
     val isDir: Boolean = artifact.payload is LocalPayload && (artifact.payload as LocalPayload).isDir
 
@@ -86,8 +91,9 @@ class TreeItemViewModel(
         isLoading = true
         try {
             val payload = artifact.payload as LocalPayload
+            // 放 io 线程，children 的写入留在 ui 线程
             val items = cache.getOrPut(payload.absolutePath) {
-                val listResult = r.listAsync(payload.absolutePath)
+                val listResult = withContext(ioDispatcher) { r.listAsync(payload.absolutePath) }
                 listResult.getOrNull() ?: emptyList()
             }
             // 文件夹在前，然后按文件名排序
@@ -95,7 +101,7 @@ class TreeItemViewModel(
             // 替换为真实子节点
             children.clear()
             for (child in sorted) {
-                children.add(TreeItemViewModel(child, r, cache))
+                children.add(TreeItemViewModel(child, r, cache, uiDispatcher, ioDispatcher))
             }
             // 空目录：保留占位符，保证箭头始终显示
             if (children.isEmpty()) {

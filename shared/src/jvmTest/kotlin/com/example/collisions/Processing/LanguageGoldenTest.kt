@@ -59,6 +59,7 @@ class LanguageGoldenTest {
                 fs = AlwaysTextDetector(),
                 repo = repo,
                 dispatcher = StandardTestDispatcher(scheduler),
+                ioDispatcher = StandardTestDispatcher(scheduler),
             )
             vm.pickFolderAction = { WORKSPACE_PATH }
 

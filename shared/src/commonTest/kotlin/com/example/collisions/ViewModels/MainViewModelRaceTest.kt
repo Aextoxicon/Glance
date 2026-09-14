@@ -83,7 +83,12 @@ class MainViewModelRaceTest {
     @Test
     fun `rapid click waits for the latest selection only`() = runTest {
         val repo = FakeRepo()
-        val vm = MainViewModel(AlwaysTextDetector(), repo, StandardTestDispatcher(testScheduler))
+        val vm = MainViewModel(
+            AlwaysTextDetector(),
+            repo,
+            StandardTestDispatcher(testScheduler),
+            StandardTestDispatcher(testScheduler),
+        )
         val slowGate = CompletableDeferred<Result<String>>()
         repo.readGates["/root/slow.txt"] = slowGate
 
@@ -113,7 +118,12 @@ class MainViewModelRaceTest {
     @Test
     fun `size job does not write back after workspace is closed`() = runTest {
         val repo = FakeRepo()
-        val vm = MainViewModel(AlwaysTextDetector(), repo, StandardTestDispatcher(testScheduler))
+        val vm = MainViewModel(
+            AlwaysTextDetector(),
+            repo,
+            StandardTestDispatcher(testScheduler),
+            StandardTestDispatcher(testScheduler),
+        )
 
         val sub = dirArtifact("/root", "sub")
         repo.listGates["/root"] = queueGates(Result.success(listOf(sub)), Result.success(listOf(sub)))
@@ -138,7 +148,12 @@ class MainViewModelRaceTest {
     @Test
     fun `switch folder keeps size from the latest folder only`() = runTest {
         val repo = FakeRepo()
-        val vm = MainViewModel(AlwaysTextDetector(), repo, StandardTestDispatcher(testScheduler))
+        val vm = MainViewModel(
+            AlwaysTextDetector(),
+            repo,
+            StandardTestDispatcher(testScheduler),
+            StandardTestDispatcher(testScheduler),
+        )
 
         val subA = dirArtifact("/a", "sub")
         repo.listGates["/a"] = queueGates(Result.success(listOf(subA)), Result.success(listOf(subA)))
