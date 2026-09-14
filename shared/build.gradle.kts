@@ -145,6 +145,13 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.compose.ui.test)
+            implementation(libs.compose.ui.test.junit4)
+        }
+        jvmTest {
+            dependencies {
+                implementation(compose.desktop.currentOs)
+            }
         }
     }
 }
@@ -178,4 +185,10 @@ tasks.matching { it.name.contains("JniLibFolders") }.configureEach {
 
 tasks.named("build") {
     dependsOn(buildNativeLibs)
+}
+
+val testApp by tasks.registering {
+    group = "verification"
+    description = "Run UI golden tests (JVM now; add testDebugUnitTest when Android is ready)"
+    dependsOn("jvmTest")
 }

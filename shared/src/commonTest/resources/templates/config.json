@@ -1,0 +1,24 @@
+{
+    "name": "Collisions",
+    "version": "1.0.0",
+    "description": "A code viewer application",
+    "author": {
+        "name": "Example",
+        "email": "example@collisions.dev"
+    },
+    "scripts": {
+        "build": "gradle build",
+        "test": "gradle test",
+        "lint": "gradle lint"
+    },
+    "dependencies": {
+        "compose": "^1.11.1",
+        "coroutines": "^1.11.0"
+    },
+    "devDependencies": {
+        "ui-test": "^1.11.1"
+    },
+    "keywords": ["compose", "code-viewer", "desktop"],
+    "license": "MIT",
+    "private": true
+}

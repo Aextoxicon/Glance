@@ -1,0 +1,34 @@
+language=js
+contentLen=772
+highlightLineCount=38
+totalTokens=118
+line_0=[0-6:keyword,9-17:function,20-24:keyword,25-38:string,26-37:string,38-39:operator]
+line_1=[0-6:keyword,7-11:function,12-16:keyword,17-23:string,18-22:string,23-24:operator]
+line_3=[0-5:keyword,6-12:variable,13-14:operator]
+line_4=[4-11:property,11-12:operator,13-20:string,14-19:string]
+line_5=[4-9:property,9-10:operator,11-16:constant.builtin]
+line_6=[4-9:property,9-10:operator]
+line_7=[8-12:property,12-13:operator,14-18:number]
+line_8=[8-10:property,10-11:operator,12-16:number]
+line_10=[1-2:operator]
+line_12=[0-5:keyword,6-12:type]
+line_13=[4-15:function.method,16-21:identifier]
+line_14=[8-12:variable.builtin,12-13:operator,13-18:property,19-20:operator,21-26:identifier,26-27:operator]
+line_15=[8-12:variable.builtin,12-13:operator,13-17:property,18-19:operator,22-23:operator]
+line_18=[4-7:function.method,8-15:identifier]
+line_19=[8-13:keyword,14-19:variable,20-21:operator,22-64:string,23-24:string,24-26:punctuation,26-29:keyword,30-34:identifier,36-37:operator,37-48:function.method,50-51:punctuation,51-53:string,53-55:punctuation,55-62:identifier,62-63:punctuation,64-65:operator]
+line_20=[8-12:variable.builtin,12-13:operator,13-17:property,17-18:operator,18-22:function.method,23-28:identifier,29-30:operator]
+line_21=[8-10:keyword,12-16:variable.builtin,16-17:operator,17-22:property,23-26:operator,27-36:string,28-35:string]
+line_22=[12-19:identifier,19-20:operator,20-23:function.method,24-29:identifier,30-31:operator]
+line_26=[4-10:keyword,11-17:function.method,18-23:identifier,24-25:operator,26-32:string,27-31:string]
+line_27=[8-14:keyword,15-18:keyword,19-25:identifier,26-31:identifier,32-33:operator]
+line_31=[0-5:keyword,6-14:keyword,15-25:function,26-34:identifier]
+line_32=[4-9:keyword,10-17:variable,18-19:operator,20-25:keyword,26-34:function,35-43:identifier,45-52:string,46-51:string,53-54:operator]
+line_33=[4-10:keyword,11-15:identifier,15-16:operator,16-21:function.method,22-29:identifier,30-31:operator]
+line_36=[0-6:keyword,9-15:identifier,17-23:identifier,25-35:identifier,37-38:operator]
+outline=
+class_declaration:Logger(197-595)
+  method_definition:constructor(217-298)
+  method_definition:log(306-511)
+  method_definition:create(519-592)
+function_declaration:loadConfig(599-728)
