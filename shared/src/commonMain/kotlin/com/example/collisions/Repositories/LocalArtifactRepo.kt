@@ -1,10 +1,10 @@
-package com.example.collisions.Repositories
+package com.example.glance.Repositories
 
-import com.example.collisions.Models.ArtifactKindExt
-import com.example.collisions.Models.IArtifact
-import com.example.collisions.Models.LocalArtifact
-import com.example.collisions.Models.LocalPayload
-import com.example.collisions.Utils.Result
+import com.example.glance.Models.ArtifactKindExt
+import com.example.glance.Models.IArtifact
+import com.example.glance.Models.LocalArtifact
+import com.example.glance.Models.LocalPayload
+import com.example.glance.Utils.Result
 
 class LocalArtifactRepo(
     private val fs: LocalFileSystem,

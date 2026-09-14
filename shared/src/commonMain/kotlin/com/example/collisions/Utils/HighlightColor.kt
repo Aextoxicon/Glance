@@ -1,13 +1,13 @@
-package com.example.collisions.Utils
+package com.example.glance.Utils
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
-import com.example.collisions.Processing.CodeParseResult
-import com.example.collisions.Processing.HighlightToken
-import com.example.collisions.Processing.OutlineNode
+import com.example.glance.Processing.CodeParseResult
+import com.example.glance.Processing.HighlightToken
+import com.example.glance.Processing.OutlineNode
 
 object HighlightColor {
     val keyword = Color(0xFFD73A49)

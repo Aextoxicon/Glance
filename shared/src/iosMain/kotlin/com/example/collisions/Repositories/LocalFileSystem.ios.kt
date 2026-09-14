@@ -1,4 +1,4 @@
-package com.example.collisions.Repositories
+package com.example.glance.Repositories
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf

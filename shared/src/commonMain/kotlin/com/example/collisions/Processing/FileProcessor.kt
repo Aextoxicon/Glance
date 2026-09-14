@@ -1,4 +1,4 @@
-package com.example.collisions.Processing
+package com.example.glance.Processing
 
 object FileProcessor {
     private val textExtensions = setOf("txt", "md", "markdown")

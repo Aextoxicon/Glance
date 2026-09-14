@@ -1,4 +1,4 @@
-package com.example.collisions.Processing
+package com.example.glance.Processing
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSString

@@ -1,4 +1,4 @@
-package com.example.collisions.Utils
+package com.example.glance.Utils
 
 sealed class Result<out T> {
     data class Success<T>(val value: T) : Result<T>()

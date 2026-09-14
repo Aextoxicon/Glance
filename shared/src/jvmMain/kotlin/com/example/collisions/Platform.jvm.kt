@@ -1,4 +1,4 @@
-package com.example.collisions
+package com.example.glance
 
 class JVMPlatform : Platform {
     override val name: String = "Java ${System.getProperty("java.version")}"

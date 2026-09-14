@@ -1,4 +1,4 @@
-package com.example.collisions.Models
+package com.example.glance.Models
 
 // Artifact 种类。
 enum class ArtifactKind {

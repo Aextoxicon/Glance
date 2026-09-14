@@ -1,10 +1,10 @@
 {
-    "name": "Collisions",
+    "name": "Glance",
     "version": "1.0.0",
     "description": "A code viewer application",
     "author": {
         "name": "Example",
-        "email": "example@collisions.dev"
+        "email": "example@glance.dev"
     },
     "scripts": {
         "build": "gradle build",

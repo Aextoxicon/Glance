@@ -1,4 +1,4 @@
-package com.example.collisions
+package com.example.glance
 
 interface Platform {
     val name: String

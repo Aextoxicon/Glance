@@ -1,4 +1,4 @@
-package com.example.collisions.Processing
+package com.example.glance.Processing
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -8,9 +8,9 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
-import com.example.collisions.Repositories.TextFileDetector
-import com.example.collisions.ViewModels.MainViewModel
-import com.example.collisions.Views.MainView
+import com.example.glance.Repositories.TextFileDetector
+import com.example.glance.ViewModels.MainViewModel
+import com.example.glance.Views.MainView
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.fail

@@ -1,4 +1,4 @@
-package com.example.collisions.Utils
+package com.example.glance.Utils
 
 object PathUtil {
     fun fileName(path: String): String {

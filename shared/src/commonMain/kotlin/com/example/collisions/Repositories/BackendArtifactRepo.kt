@@ -1,7 +1,7 @@
-package com.example.collisions.Repositories
+package com.example.glance.Repositories
 
-import com.example.collisions.Models.IArtifact
-import com.example.collisions.Utils.Result
+import com.example.glance.Models.IArtifact
+import com.example.glance.Utils.Result
 
 class BackendArtifactRepo(
     private val apiClient: BackendApiClient,

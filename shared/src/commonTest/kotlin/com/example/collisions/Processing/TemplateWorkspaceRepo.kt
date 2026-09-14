@@ -1,11 +1,11 @@
-package com.example.collisions.Processing
+package com.example.glance.Processing
 
-import com.example.collisions.Models.ArtifactKind
-import com.example.collisions.Models.IArtifact
-import com.example.collisions.Models.LocalArtifact
-import com.example.collisions.Models.LocalPayload
-import com.example.collisions.Repositories.IArtifactRepo
-import com.example.collisions.Utils.Result
+import com.example.glance.Models.ArtifactKind
+import com.example.glance.Models.IArtifact
+import com.example.glance.Models.LocalArtifact
+import com.example.glance.Models.LocalPayload
+import com.example.glance.Repositories.IArtifactRepo
+import com.example.glance.Utils.Result
 
 /**
  * Mock 工作区，实现 [IArtifactRepo] 以驱动 [MainViewModel] 的文件浏览和解析流程。

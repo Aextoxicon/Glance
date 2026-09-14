@@ -1,4 +1,4 @@
-package com.example.collisions.Repositories
+package com.example.glance.Repositories
 
 data class LocalFileInfo(
     val path: String,

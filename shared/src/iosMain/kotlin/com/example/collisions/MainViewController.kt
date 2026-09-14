@@ -1,4 +1,4 @@
-package com.example.collisions
+package com.example.glance
 
 import androidx.compose.ui.window.ComposeUIViewController
 

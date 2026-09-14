@@ -20,11 +20,11 @@ dependencies {
 }
 
 android {
-    namespace = "com.example.collisions"
+    namespace = "com.example.glance"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.example.collisions"
+        applicationId = "com.example.glance"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

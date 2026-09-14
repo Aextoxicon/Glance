@@ -1,4 +1,4 @@
-package com.example.collisions.Processing
+package com.example.glance.Processing
 
 import uniffi.uniffi_code_parser.parseCode as uniffiParseCode
 import uniffi.uniffi_code_parser.CodeParseResult as UniffiCodeParseResult
@@ -48,8 +48,8 @@ private fun fallbackResult(language: String, source: String): CodeParseResult.Co
         outline = emptyList(),
     )
 
-private fun uniffi.uniffi_code_parser.OutlineNode.toKt(): com.example.collisions.Processing.OutlineNode =
-    com.example.collisions.Processing.OutlineNode(
+private fun uniffi.uniffi_code_parser.OutlineNode.toKt(): com.example.glance.Processing.OutlineNode =
+    com.example.glance.Processing.OutlineNode(
         kind = kind,
         name = name,
         detail = detail,

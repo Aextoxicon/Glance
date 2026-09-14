@@ -1,4 +1,4 @@
-package com.example.collisions.ViewModels
+package com.example.glance.ViewModels
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -6,9 +6,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
-import com.example.collisions.Models.IArtifact
-import com.example.collisions.Models.LocalPayload
-import com.example.collisions.Repositories.IArtifactRepo
+import com.example.glance.Models.IArtifact
+import com.example.glance.Models.LocalPayload
+import com.example.glance.Repositories.IArtifactRepo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -52,7 +52,7 @@ class TreeItemViewModel(
     val sizeDisplay: String
         get() {
             if (isDir) return "${artifact.size} 项"
-            return com.example.collisions.Utils.FormatSize.readable(artifact.size)
+            return com.example.glance.Utils.FormatSize.readable(artifact.size)
         }
 
     fun toggleExpanded() {
@@ -136,9 +136,9 @@ private class PlaceholderArtifact : IArtifact {
     override val size: Long = 0
     override val lastMod: Long = 0
     override val extension: String = ""
-    override val kind: com.example.collisions.Models.ArtifactKind = com.example.collisions.Models.ArtifactKind.Text
-    override val source: com.example.collisions.Models.ArtifactSource = com.example.collisions.Models.ArtifactSource.Local
-    override val status: com.example.collisions.Models.ArtifactStatus = com.example.collisions.Models.ArtifactStatus.Available
-    override val metadata: com.example.collisions.Models.ArtifactMetadata? = null
-    override val payload: com.example.collisions.Models.IArtifactPayload = LocalPayload("", "", false)
+    override val kind: com.example.glance.Models.ArtifactKind = com.example.glance.Models.ArtifactKind.Text
+    override val source: com.example.glance.Models.ArtifactSource = com.example.glance.Models.ArtifactSource.Local
+    override val status: com.example.glance.Models.ArtifactStatus = com.example.glance.Models.ArtifactStatus.Available
+    override val metadata: com.example.glance.Models.ArtifactMetadata? = null
+    override val payload: com.example.glance.Models.IArtifactPayload = LocalPayload("", "", false)
 }

@@ -1,4 +1,4 @@
-rootProject.name = "Collisions"
+rootProject.name = "Glance"
 
 pluginManagement {
     repositories {

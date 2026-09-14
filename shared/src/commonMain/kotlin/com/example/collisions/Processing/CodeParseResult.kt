@@ -1,4 +1,4 @@
-package com.example.collisions.Processing
+package com.example.glance.Processing
 
 sealed class CodeParseResult {
     data class Code(

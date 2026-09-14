@@ -1,4 +1,4 @@
-package com.example.collisions.Views
+package com.example.glance.Views
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -31,10 +31,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.collisions.ViewModels.MainViewModel
-import com.example.collisions.ViewModels.TreeItemViewModel
-import com.example.collisions.Utils.HighlightColor
-import com.example.collisions.Processing.CodeParseResult
+import com.example.glance.ViewModels.MainViewModel
+import com.example.glance.ViewModels.TreeItemViewModel
+import com.example.glance.Utils.HighlightColor
+import com.example.glance.Processing.CodeParseResult
 
 @Composable
 fun MainView(viewModel: MainViewModel) {
@@ -115,7 +115,7 @@ private fun NarrowLayout(viewModel: MainViewModel) {
                 TopAppBar(
                     title = {
                         Text(
-                            viewModel.selectedArtifact?.name ?: viewModel.currentFolderName.ifBlank { "Collisions" },
+                            viewModel.selectedArtifact?.name ?: viewModel.currentFolderName.ifBlank { "Glance" },
                             maxLines = 1, overflow = TextOverflow.Ellipsis,
                         )
                     },

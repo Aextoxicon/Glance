@@ -1,4 +1,4 @@
-package com.example.collisions.Processing
+package com.example.glance.Processing
 
 import kotlin.test.Test
 import kotlin.test.assertTrue

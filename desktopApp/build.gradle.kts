@@ -24,11 +24,11 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.example.collisions.MainKt"
+        mainClass = "com.example.glance.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
-            packageName = "com.example.collisions"
+            packageName = "com.example.glance"
             packageVersion = "1.0.0"
             appResourcesRootDir.set(nativeLibDir)
         }

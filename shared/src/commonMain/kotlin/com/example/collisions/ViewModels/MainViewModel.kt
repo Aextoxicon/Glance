@@ -1,16 +1,16 @@
-package com.example.collisions.ViewModels
+package com.example.glance.ViewModels
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.example.collisions.Models.IArtifact
-import com.example.collisions.Models.LocalPayload
-import com.example.collisions.Processing.CodeParseResult
-import com.example.collisions.Processing.FileProcessor
-import com.example.collisions.Repositories.IArtifactRepo
-import com.example.collisions.Repositories.TextFileDetector
-import com.example.collisions.Utils.FormatSize
-import com.example.collisions.Utils.PathUtil
+import com.example.glance.Models.IArtifact
+import com.example.glance.Models.LocalPayload
+import com.example.glance.Processing.CodeParseResult
+import com.example.glance.Processing.FileProcessor
+import com.example.glance.Repositories.IArtifactRepo
+import com.example.glance.Repositories.TextFileDetector
+import com.example.glance.Utils.FormatSize
+import com.example.glance.Utils.PathUtil
 import kotlinx.coroutines.*
 
 class MainViewModel(

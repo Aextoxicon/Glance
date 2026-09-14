@@ -89,7 +89,7 @@ kotlin {
     jvm()
 
     android {
-        namespace = "com.example.collisions.shared"
+        namespace = "com.example.glance.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 

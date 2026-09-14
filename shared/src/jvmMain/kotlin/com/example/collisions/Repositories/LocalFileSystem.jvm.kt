@@ -1,4 +1,4 @@
-package com.example.collisions.Repositories
+package com.example.glance.Repositories
 
 import java.io.File
 import java.io.FileInputStream

@@ -1,4 +1,4 @@
-package com.example.collisions.Utils
+package com.example.glance.Utils
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -8,12 +8,12 @@ class PathUtilTest {
     @Test
     fun `windows path returns last segment`() {
         // Kotlin 里写反斜杠转义写作
-        assertEquals("Collisions", PathUtil.fileName("C:\\Users\\Lwh20\\Documents\\GitHub\\Collisions"))
+        assertEquals("Glance", PathUtil.fileName("C:\\Users\\Lwh20\\Documents\\GitHub\\Glance"))
     }
 
     @Test
     fun `unix path returns last segment`() {
-        assertEquals("Collisions", PathUtil.fileName("/Users/alice/dev/Collisions"))
+        assertEquals("Glance", PathUtil.fileName("/Users/alice/dev/Glance"))
     }
 
     @Test

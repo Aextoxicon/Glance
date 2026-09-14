@@ -1,12 +1,12 @@
-package com.example.collisions.ViewModels
+package com.example.glance.ViewModels
 
-import com.example.collisions.Models.ArtifactKind
-import com.example.collisions.Models.IArtifact
-import com.example.collisions.Models.LocalArtifact
-import com.example.collisions.Models.LocalPayload
-import com.example.collisions.Repositories.IArtifactRepo
-import com.example.collisions.Repositories.TextFileDetector
-import com.example.collisions.Utils.Result
+import com.example.glance.Models.ArtifactKind
+import com.example.glance.Models.IArtifact
+import com.example.glance.Models.LocalArtifact
+import com.example.glance.Models.LocalPayload
+import com.example.glance.Repositories.IArtifactRepo
+import com.example.glance.Repositories.TextFileDetector
+import com.example.glance.Utils.Result
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent

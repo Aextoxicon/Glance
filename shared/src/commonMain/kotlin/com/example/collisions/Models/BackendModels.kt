@@ -1,4 +1,4 @@
-package com.example.collisions.Models
+package com.example.glance.Models
 
 //Auth
 data class LoginReq(

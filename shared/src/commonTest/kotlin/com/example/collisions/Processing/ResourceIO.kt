@@ -1,4 +1,4 @@
-package com.example.collisions.Processing
+package com.example.glance.Processing
 
 /** 跨平台资源加载（commonTest 声明，各平台 test source set 实现 actual） */
 expect fun loadResource(path: String): String?

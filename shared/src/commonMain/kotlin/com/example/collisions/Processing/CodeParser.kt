@@ -1,3 +1,3 @@
-package com.example.collisions.Processing
+package com.example.glance.Processing
 
 expect fun parseCode(source: String, extension: String): CodeParseResult

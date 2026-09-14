@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		A88B34A312239D5BE6327D79 /* Collisions.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Collisions.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A88B34A312239D5BE6327D79 /* Glance.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Glance.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -59,7 +59,7 @@
 		CAB3A4775B4EE0C15D26A80C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A88B34A312239D5BE6327D79 /* Collisions.app */,
+				A88B34A312239D5BE6327D79 /* Glance.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -87,7 +87,7 @@
 			packageProductDependencies = (
 			);
 			productName = iosApp;
-			productReference = A88B34A312239D5BE6327D79 /* Collisions.app */;
+			productReference = A88B34A312239D5BE6327D79 /* Glance.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */

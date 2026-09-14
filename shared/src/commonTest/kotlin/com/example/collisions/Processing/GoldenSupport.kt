@@ -1,4 +1,4 @@
-package com.example.collisions.Processing
+package com.example.glance.Processing
 
 /**
  * 将 [CodeParseResult] 序列化为纯文本快照，用于 golden 对比。

@@ -1,4 +1,4 @@
-package com.example.collisions.Repositories
+package com.example.glance.Repositories
 
 class BackendApiClient {
     // TODO: 实现后端 API 通信逻辑

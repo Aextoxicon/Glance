@@ -1,4 +1,4 @@
-package com.example.collisions.Utils
+package com.example.glance.Utils
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

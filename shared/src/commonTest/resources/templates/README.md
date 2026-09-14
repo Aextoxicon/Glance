@@ -1,4 +1,4 @@
-# Collisions
+# Glance
 
 A code editor built with Kotlin Multiplatform.
 

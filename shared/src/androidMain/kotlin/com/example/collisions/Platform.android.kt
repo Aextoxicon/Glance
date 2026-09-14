@@ -1,4 +1,4 @@
-package com.example.collisions
+package com.example.glance
 
 import android.os.Build
 
