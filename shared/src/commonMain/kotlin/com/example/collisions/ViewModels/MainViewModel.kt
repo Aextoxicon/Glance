@@ -209,32 +209,36 @@ class MainViewModel(
             return null
         }
 
-        if (!fs.isTextFile(path)) {
-            messageText = "[二进制文件] ${artifact.name} 无法预览"
+        // 重活统一放io
+        // io 块内不写 Compose 状态，错误信息经返回值带回主线程再写 messageText
+        val loaded = withContext(ioDispatcher) {
+            val outcome: Pair<LoadedFile?, String?> = if (!fs.isTextFile(path)) {
+                null to "[二进制文件] ${artifact.name} 无法预览"
+            } else {
+                val contentResult = repo.tryReadTextAsync(path)
+                val content = contentResult.getOrNull()
+                if (content == null) {
+                    null to "无法读取文件: ${artifact.name}"
+                } else {
+                    val normalizedContent = content.replace("\t", "    ")
+                    val parseResult = try {
+                        FileProcessor.process(normalizedContent, artifact.extension, artifact.name)
+                    } catch (ex: Exception) {
+                        println("Code parsing failed for ${artifact.name}: ${ex.message}")
+                        null
+                    }
+                    LoadedFile(parseResult, normalizedContent) to null
+                }
+            }
+            outcome
+        }
+
+        val (file, error) = loaded
+        if (error != null) {
+            messageText = error
             return null
         }
-
-        // 读取文件内容（阻塞 I/O 放 io 线程）
-        val contentResult = withContext(ioDispatcher) { repo.tryReadTextAsync(path) }
-        val content = contentResult.getOrNull()
-        if (content == null) {
-            messageText = "无法读取文件: ${artifact.name}"
-            return null
-        }
-
-        val normalizedContent = content.replace("\t", "    ")
-        val ext = artifact.extension
-        val filename = artifact.name
-
-        // 解析代码
-        val parseResult = try {
-            FileProcessor.process(normalizedContent, ext, filename)
-        } catch (ex: Exception) {
-            println("Code parsing failed for ${artifact.name}: ${ex.message}")
-            null
-        }
-
-        return LoadedFile(parseResult, normalizedContent)
+        return file
     }
 
     private suspend fun computeTotalSize(path: String): Long {
