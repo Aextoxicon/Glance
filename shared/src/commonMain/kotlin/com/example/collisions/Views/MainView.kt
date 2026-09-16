@@ -1,7 +1,6 @@
 package com.example.glance.Views
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,14 +26,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.glance.ViewModels.MainViewModel
 import com.example.glance.ViewModels.TreeItemViewModel
-import com.example.glance.Utils.HighlightColor
-import com.example.glance.Processing.CodeParseResult
 
 @Composable
 fun MainView(viewModel: MainViewModel) {
@@ -277,7 +275,10 @@ private fun CodePreviewPanel(viewModel: MainViewModel, modifier: Modifier = Modi
         Box(modifier = Modifier.fillMaxSize()) {
             when {
                 viewModel.messageText != null -> MessageView(viewModel.messageText ?: "")
-                viewModel.selectedContent != null -> CodeContentView(content = viewModel.selectedContent ?: "", parseResult = viewModel.selectedParseResult)
+                viewModel.selectedContent != null -> CodeContentView(
+                    lines = viewModel.selectedAnnotatedLines
+                        ?: (viewModel.selectedContent ?: "").split("\n").map { AnnotatedString(it) }
+                )
                 else -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             }
         }
@@ -302,21 +303,34 @@ private fun CodePreviewToolbar(viewModel: MainViewModel) {
 }
 
 @Composable
-private fun CodeContentView(content: String, parseResult: CodeParseResult?) {
-    val scrollState = rememberScrollState()
-    val annotatedString = remember(parseResult, content) {
-        if (parseResult != null) HighlightColor.toAnnotatedString(parseResult) else androidx.compose.ui.text.AnnotatedString(content)
-    }
+private fun CodeContentView(lines: List<AnnotatedString>) {
+    val horizontalScrollState = rememberScrollState()
+    val lazyListState = rememberLazyListState()
 
+    // LazyColumn只构建可见行，每行独立TextLayout
+    // 固定行高20.dp LazyLayout直接算偏移
+    // 长行撑开LazyColumn宽度，外层统一横向滚动，行列对齐
     Box(
         modifier = Modifier.fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
-            .horizontalScroll(scrollState)
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .horizontalScroll(horizontalScrollState),
     ) {
-        SelectionContainer {
-            Text(text = annotatedString, fontFamily = FontFamily.Monospace, fontSize = 13.sp, lineHeight = 20.sp)
+        LazyColumn(
+            state = lazyListState,
+            modifier = Modifier.fillMaxHeight(),
+            contentPadding = PaddingValues(16.dp),
+        ) {
+            items(count = lines.size, key = { it }) { index ->
+                Text(
+                    text = lines[index],
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 13.sp,
+                    lineHeight = 20.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(20.dp),
+                )
+            }
         }
     }
 }

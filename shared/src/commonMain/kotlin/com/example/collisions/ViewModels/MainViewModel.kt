@@ -3,6 +3,7 @@ package com.example.glance.ViewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.AnnotatedString
 import com.example.glance.Models.IArtifact
 import com.example.glance.Models.LocalPayload
 import com.example.glance.Processing.CodeParseResult
@@ -10,8 +11,11 @@ import com.example.glance.Processing.FileProcessor
 import com.example.glance.Repositories.IArtifactRepo
 import com.example.glance.Repositories.TextFileDetector
 import com.example.glance.Utils.FormatSize
+import com.example.glance.Utils.HighlightColor
 import com.example.glance.Utils.PathUtil
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class MainViewModel(
     private val fs: TextFileDetector,
@@ -21,10 +25,15 @@ class MainViewModel(
 ) {
     companion object {
         private const val WIDE_MODE_THRESHOLD = 640
+        private const val PARSE_CACHE_MAX = 32
     }
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val childrenCache = mutableMapOf<String, List<IArtifact>>()
+
+    // 解析结果+高亮文本缓存，key = id|lastMod|size
+    private val parseCache = mutableMapOf<String, CachedPreview>()
+    private val parseCacheMutex = Mutex()
 
     private var loadJob: Job? = null
     private var selectJob: Job? = null
@@ -50,6 +59,9 @@ class MainViewModel(
         private set
 
     var selectedParseResult by mutableStateOf<CodeParseResult?>(null)
+        private set
+
+    var selectedAnnotatedLines by mutableStateOf<List<AnnotatedString>?>(null)
         private set
 
     var treeItems by mutableStateOf<List<TreeItemViewModel>>(emptyList())
@@ -99,6 +111,7 @@ class MainViewModel(
         selectedArtifact = null
         selectedContent = null
         selectedParseResult = null
+        selectedAnnotatedLines = null
         hasSelection = false
         messageText = null
     }
@@ -129,6 +142,7 @@ class MainViewModel(
         hasSelection = false
         selectedContent = null
         selectedParseResult = null
+        selectedAnnotatedLines = null
         messageText = null
     }
 
@@ -151,6 +165,8 @@ class MainViewModel(
             currentPath = path
             hasWorkspace = true
             childrenCache.clear()
+            // 切换工作区时丢旧目录的解析缓存
+            parseCacheMutex.withLock { parseCache.clear() }
             totalSize = 0
             treeItems = emptyList()
 
@@ -178,14 +194,28 @@ class MainViewModel(
         }
     }
 
-    private data class LoadedFile(val parseResult: CodeParseResult?, val content: String)
+    private data class CachedPreview(
+        val parseResult: CodeParseResult?,
+        val annotatedLines: List<AnnotatedString>,
+        val content: String,
+    )
+
+    private data class LoadedFile(
+        val parseResult: CodeParseResult?,
+        val annotatedLines: List<AnnotatedString>,
+        val content: String,
+    )
+
+    private fun cacheKey(artifact: IArtifact): String =
+        "${artifact.id}|${artifact.lastMod}|${artifact.size}"
 
     private fun selectFile(artifact: IArtifact) {
-        selectJob?.cancel() // 快速连续点击时，丢弃前一次尚未完成的读取
+        selectJob?.cancel() // 快速连续点击时，丢前一次尚未完成的读取
         selectJob = scope.launch {
             messageText = null
             selectedContent = null
             selectedParseResult = null
+            selectedAnnotatedLines = null
             selectedArtifact = artifact
             hasSelection = true
 
@@ -193,6 +223,7 @@ class MainViewModel(
             // 期间若用户已切换选择或关闭工作区，丢弃本次结果
             if (!isActive) return@launch
             selectedParseResult = loaded.parseResult
+            selectedAnnotatedLines = loaded.annotatedLines
             selectedContent = loaded.content
         }
     }
@@ -215,19 +246,33 @@ class MainViewModel(
             val outcome: Pair<LoadedFile?, String?> = if (!fs.isTextFile(path)) {
                 null to "[二进制文件] ${artifact.name} 无法预览"
             } else {
-                val contentResult = repo.tryReadTextAsync(path)
-                val content = contentResult.getOrNull()
-                if (content == null) {
-                    null to "无法读取文件: ${artifact.name}"
+                val cached = parseCacheMutex.withLock { parseCache[cacheKey(artifact)] }
+                if (cached != null) {
+                    LoadedFile(cached.parseResult, cached.annotatedLines, cached.content) to null
                 } else {
-                    val normalizedContent = content.replace("\t", "    ")
-                    val parseResult = try {
-                        FileProcessor.process(normalizedContent, artifact.extension, artifact.name)
-                    } catch (ex: Exception) {
-                        println("Code parsing failed for ${artifact.name}: ${ex.message}")
-                        null
+                    val contentResult = repo.tryReadTextAsync(path)
+                    val content = contentResult.getOrNull()
+                    if (content == null) {
+                        null to "无法读取文件: ${artifact.name}"
+                    } else {
+                        val normalizedContent = content.replace("\t", "    ")
+                        val parseResult = try {
+                            FileProcessor.process(normalizedContent, artifact.extension, artifact.name)
+                        } catch (ex: Exception) {
+                            println("Code parsing failed for ${artifact.name}: ${ex.message}")
+                            null
+                        }
+                        val annotatedLines = if (parseResult is CodeParseResult.Code) {
+                            HighlightColor.toAnnotatedLines(parseResult)
+                        } else {
+                            normalizedContent.split("\n").map { AnnotatedString(it) }
+                        }
+                        parseCacheMutex.withLock {
+                            if (parseCache.size >= PARSE_CACHE_MAX) parseCache.clear()
+                            parseCache[cacheKey(artifact)] = CachedPreview(parseResult, annotatedLines, normalizedContent)
+                        }
+                        LoadedFile(parseResult, annotatedLines, normalizedContent) to null
                     }
-                    LoadedFile(parseResult, normalizedContent) to null
                 }
             }
             outcome

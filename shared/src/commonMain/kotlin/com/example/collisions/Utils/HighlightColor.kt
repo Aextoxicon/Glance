@@ -102,6 +102,66 @@ object HighlightColor {
         }
     }
 
+    // LazyColumn逐行使用，每行独立TextLayout，仅布局可见行
+    fun toAnnotatedLines(
+        parseResult: CodeParseResult,
+        colorDefault: Color = plainText,
+    ): List<AnnotatedString> {
+        return when (parseResult) {
+            is CodeParseResult.PlainText -> {
+                parseResult.content.split("\n").map {
+                    AnnotatedString(it, spanStyle = SpanStyle(color = colorDefault))
+                }
+            }
+            is CodeParseResult.Code -> {
+                val lines = parseResult.content.split("\n")
+                lines.mapIndexed { lineIndex, line ->
+                    val tokens = if (lineIndex < parseResult.highlightsByLine.size) {
+                        parseResult.highlightsByLine[lineIndex]
+                    } else {
+                        emptyList()
+                    }
+                    buildLineAnnotatedString(line, tokens, colorDefault)
+                }
+            }
+        }
+    }
+
+    private fun buildLineAnnotatedString(
+        line: String,
+        tokens: List<HighlightToken>,
+        colorDefault: Color,
+    ): AnnotatedString {
+        if (tokens.isEmpty()) {
+            return AnnotatedString(line, spanStyle = SpanStyle(color = colorDefault))
+        }
+        return buildAnnotatedString {
+            var pos = 0
+            for (token in tokens) {
+                val start = token.startByte.toInt()
+                val end = token.endByte.toInt()
+                if (start > pos) {
+                    withStyle(SpanStyle(color = colorDefault)) {
+                        append(line.substring(pos, start.coerceAtMost(line.length)))
+                    }
+                }
+                if (start < end && start < line.length) {
+                    val color = colorFor(token.kind)
+                    val tokenEnd = end.coerceAtMost(line.length)
+                    withStyle(SpanStyle(color = color)) {
+                        append(line.substring(start, tokenEnd))
+                    }
+                }
+                pos = end.coerceAtMost(line.length)
+            }
+            if (pos < line.length) {
+                withStyle(SpanStyle(color = colorDefault)) {
+                    append(line.substring(pos))
+                }
+            }
+        }
+    }
+
     private fun buildAnnotatedString(
         content: String,
         highlightsByLine: List<List<HighlightToken>>,

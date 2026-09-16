@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 private class AlwaysTextDetector : TextFileDetector {
@@ -179,5 +180,69 @@ class MainViewModelRaceTest {
         runCurrent()
         assertEquals("/b", vm.currentPath)
         assertEquals(100L, vm.totalSize)
+    }
+
+    @Test
+    fun `repeated select of the same file reuses the cached parse result`() = runTest {
+        val repo = FakeRepo()
+        val vm = MainViewModel(
+            AlwaysTextDetector(),
+            repo,
+            StandardTestDispatcher(testScheduler),
+            StandardTestDispatcher(testScheduler),
+        )
+
+        val file = TreeItemViewModel(fileArtifact("/root", "same.txt"))
+        vm.selectItem(file)
+        runCurrent()
+
+        val firstParse = vm.selectedParseResult
+        val firstAnnotated = vm.selectedAnnotatedLines
+        assertNotNull(firstParse)
+        assertNotNull(firstAnnotated)
+        assertEquals("content of /root/same.txt", vm.selectedContent)
+
+        vm.selectItem(file)
+        runCurrent()
+
+        assertEquals("content of /root/same.txt", vm.selectedContent)
+        assertTrue(vm.selectedParseResult === firstParse, "same file should reuse the cached parse result")
+        assertTrue(vm.selectedAnnotatedLines === firstAnnotated, "same file should reuse the cached annotated lines")
+
+        // 不同文件不得复用
+        vm.selectItem(TreeItemViewModel(fileArtifact("/root", "other.txt")))
+        runCurrent()
+        assertTrue(vm.selectedParseResult !== firstParse, "a different file must not reuse the cache entry")
+    }
+
+    @Test
+    fun `switching workspace clears the parse cache`() = runTest {
+        val repo = FakeRepo()
+        val vm = MainViewModel(
+            AlwaysTextDetector(),
+            repo,
+            StandardTestDispatcher(testScheduler),
+            StandardTestDispatcher(testScheduler),
+        )
+
+        val file = TreeItemViewModel(fileArtifact("/a", "same.txt"))
+        repo.listGates["/a"] = queueGates(Result.success(listOf(file.artifact)))
+
+        vm.loadCore("/a")
+        runCurrent()
+        vm.selectItem(file)
+        runCurrent()
+        val firstParse = vm.selectedParseResult
+        assertNotNull(firstParse)
+
+        // 关闭并重开工作区后，旧缓存应被丢弃，同文件需重新解析
+        vm.closeWorkspace()
+        vm.loadCore("/a")
+        runCurrent()
+        vm.selectItem(file)
+        runCurrent()
+
+        assertTrue(vm.selectedParseResult !== firstParse, "cache should be cleared when switching workspace")
+        assertEquals("content of /a/same.txt", vm.selectedContent)
     }
 }
