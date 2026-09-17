@@ -39,7 +39,6 @@ actual class LocalFileSystem : TextFileDetector {
         if (ext in textExt) return true
         if (name in textFileNames) return true
 
-        // 空字节检测：读取前 16KB，含 \0 则视为二进制
         return try {
             contentResolver.openInputStream(uri)?.use { input ->
                 val buffer = ByteArray(16384)

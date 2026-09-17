@@ -15,7 +15,7 @@ actual class LocalFileSystem : TextFileDetector {
                     name = item.name,
                     parentPath = dir.absolutePath,
                     isDir = item.isDirectory,
-                    size = if (item.isDirectory) countDirChildren(item.absolutePath) else item.length(),
+                    size = if (item.isDirectory) 0L else item.length(),
                     lastMod = item.lastModified() / 1000L,
                     extension = if (item.isDirectory) "" else item.extension.lowercase(),
                 )
@@ -35,7 +35,7 @@ actual class LocalFileSystem : TextFileDetector {
                     name = dir.name,
                     parentPath = dir.parent ?: "",
                     isDir = true,
-                    size = countDirChildren(path),
+                    size = 0L,
                     lastMod = dir.lastModified() / 1000L,
                     extension = "",
                 )
@@ -60,7 +60,6 @@ actual class LocalFileSystem : TextFileDetector {
         if (ext in textExt) return true
         if (name in textFileNames) return true
 
-        // 空字节检测：读取前 16KB，含 \0 则视为二进制
         return try {
             FileInputStream(path).use { fis ->
                 val buffer = ByteArray(16384)
@@ -102,14 +101,6 @@ actual class LocalFileSystem : TextFileDetector {
 
     actual fun toUri(path: String): String {
         return File(path).toURI().toString()
-    }
-
-    private fun countDirChildren(dirPath: String): Long {
-        return try {
-            File(dirPath).list()?.size?.toLong() ?: 0L
-        } catch (_: Exception) {
-            0L
-        }
     }
 
     companion object {

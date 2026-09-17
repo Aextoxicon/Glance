@@ -64,7 +64,6 @@ actual class LocalFileSystem {
         if (ext in textExt) return true
         if (name in textFileNames) return true
 
-        // 空字节检测：读取前 16KB，含 \0 则视为二进制
         return try {
             val data = NSData.dataWithContentsOfFile(path) ?: return false
             if (data.length == 0UL) return true

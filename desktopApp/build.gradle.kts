@@ -45,6 +45,9 @@ tasks.matching {
 
 tasks.withType<JavaExec>().configureEach {
     dependsOn(copyDesktopNativeLib)
-    systemProperty("java.library.path", nativeLibDir.get().asFile.absolutePath)
-    environment("DYLD_LIBRARY_PATH", nativeLibDir.get().asFile.absolutePath)
+    val nativeLibPath = nativeLibDir.get().asFile.absolutePath
+    systemProperty("jna.library.path", nativeLibPath)
+    systemProperty("java.library.path", nativeLibPath)
+    environment("DYLD_LIBRARY_PATH", nativeLibPath)
+    environment("PATH", nativeLibPath + File.pathSeparator + (System.getenv("PATH") ?: ""))
 }

@@ -12,6 +12,7 @@ import com.example.glance.Repositories.IArtifactRepo
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,8 +24,14 @@ class TreeItemViewModel(
     // 状态线程：所有 Compose 状态写入统一在这里
     private val uiDispatcher: CoroutineDispatcher? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    owner: Job? = null,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + (uiDispatcher ?: Dispatchers.Default))
+    // owner 非空时作为 SupervisorJob 的 parent：父 Job 取消时级联中止所有子目录加载，
+    // 避免 closeWorkspace 清空 childrenCache 后仍有任务回写造成泄漏。
+    // SupervisorJob 保证兄弟任务之间互不影响。
+    private val scope = CoroutineScope(
+        SupervisorJob(owner) + (uiDispatcher ?: Dispatchers.Default)
+    )
 
     val isDir: Boolean = artifact.payload is LocalPayload && (artifact.payload as LocalPayload).isDir
 
@@ -56,7 +63,11 @@ class TreeItemViewModel(
 
     val sizeDisplay: String
         get() {
-            if (isDir) return "${artifact.size} 项"
+            if (isDir) {
+                // 目录项数在展开时由 children 决定；未展开不显示，避免 listFiles 时预扫子目录
+                if (children.isEmpty() || children[0].isPlaceholder) return ""
+                return "${children.count { !it.isPlaceholder }} 项"
+            }
             return com.example.glance.Utils.FormatSize.readable(artifact.size)
         }
 
@@ -96,12 +107,10 @@ class TreeItemViewModel(
                 val listResult = withContext(ioDispatcher) { r.listAsync(payload.absolutePath) }
                 listResult.getOrNull() ?: emptyList()
             }
-            // 文件夹在前，然后按文件名排序
             val sorted = items.sortedWith(compareBy({ !((it.payload as? LocalPayload)?.isDir ?: false) }, { it.name.lowercase() }))
-            // 替换为真实子节点
             children.clear()
             for (child in sorted) {
-                children.add(TreeItemViewModel(child, r, cache, uiDispatcher, ioDispatcher))
+                children.add(TreeItemViewModel(child, r, cache, uiDispatcher, ioDispatcher, owner = scope.coroutineContext.get(Job)))
             }
             // 空目录：保留占位符，保证箭头始终显示
             if (children.isEmpty()) {
@@ -122,7 +131,6 @@ class TreeItemViewModel(
     fun expandAllRecursive() {
         if (!isDir) return
         isExpanded = true
-        // 如果还是占位符则加载，否则子节点已就绪
         if (children.isNotEmpty() && children[0].isPlaceholder) {
             scope.launch {
                 loadChildren()

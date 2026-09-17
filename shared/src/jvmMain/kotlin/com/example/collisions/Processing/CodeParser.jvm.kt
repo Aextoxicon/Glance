@@ -22,7 +22,6 @@ actual fun parseCode(source: String, extension: String): CodeParseResult {
             outline = result.outline.map { it.toKt() },
         )
     } catch (e: UnsatisfiedLinkError) {
-        // 原生库不可用时，返回空解析结果
         CodeParseResult.Code(
             language = language,
             content = source,

@@ -38,6 +38,9 @@ class MainViewModel(
     private var loadJob: Job? = null
     private var selectJob: Job? = null
     private var sizeJob: Job? = null
+    // 每轮工作区的树加载句柄：closeWorkspace 取消它可级联中止所有已展开的子目录加载，
+    // 防止任务回写已清空的 childrenCache
+    private var treeOwnerJob: Job? = null
 
     // 文件浏览状态
     var currentPath by mutableStateOf("")
@@ -102,6 +105,7 @@ class MainViewModel(
         loadJob?.cancel()
         selectJob?.cancel()
         sizeJob?.cancel()
+        treeOwnerJob?.cancel()
         isComputingSize = false
         currentPath = ""
         hasWorkspace = false
@@ -161,6 +165,8 @@ class MainViewModel(
         // 切换目录时取消上一轮的目录加载与大小计算
         loadJob?.cancel()
         sizeJob?.cancel()
+        treeOwnerJob?.cancel()
+        treeOwnerJob = SupervisorJob()
         loadJob = scope.launch {
             currentPath = path
             hasWorkspace = true
@@ -175,12 +181,11 @@ class MainViewModel(
                 val listResult = withContext(ioDispatcher) { repo.listAsync(path) }
                 val items = listResult.getOrNull() ?: emptyList()
                 if (!isActive) return@launch
-                treeItems = items.map { TreeItemViewModel(it, repo, childrenCache, dispatcher, ioDispatcher) }
+                treeItems = items.map { TreeItemViewModel(it, repo, childrenCache, dispatcher, ioDispatcher, owner = treeOwnerJob) }
             } catch (ex: Exception) {
                 if (isActive) messageText = "加载失败: ${ex.message}"
             }
 
-            // 异步计算总大小
             isComputingSize = true
             val sizePath = path
             sizeJob = scope.launch {
@@ -229,7 +234,6 @@ class MainViewModel(
     }
 
     private suspend fun loadFile(artifact: IArtifact): LoadedFile? {
-        // 检查是否是目录
         if (artifact.payload is LocalPayload && (artifact.payload as LocalPayload).isDir) {
             return null
         }
@@ -240,7 +244,6 @@ class MainViewModel(
             return null
         }
 
-        // 重活统一放io
         // io 块内不写 Compose 状态，错误信息经返回值带回主线程再写 messageText
         val loaded = withContext(ioDispatcher) {
             val outcome: Pair<LoadedFile?, String?> = if (!fs.isTextFile(path)) {

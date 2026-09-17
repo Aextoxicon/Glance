@@ -3,7 +3,6 @@ package com.example.glance.Processing
 object FileProcessor {
     private val textExtensions = setOf("txt", "md", "markdown")
 
-    // 虚拟扩展名映射
     private val filenameToExt = mapOf(
         "dockerfile" to "dockerfile",
         "containerfile" to "dockerfile",
@@ -17,7 +16,6 @@ object FileProcessor {
             return CodeParseResult.PlainText(language = cleanExt, content = content)
         }
 
-        // 如果扩展名为空，尝试从文件名推断
         val resolvedExt = if (cleanExt.isEmpty() && filename != null) {
             filenameToExt[filename.lowercase().trimStart('.')] ?: cleanExt
         } else {

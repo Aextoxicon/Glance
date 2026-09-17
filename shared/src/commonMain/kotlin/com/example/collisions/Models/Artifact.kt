@@ -1,6 +1,5 @@
 package com.example.glance.Models
 
-// Artifact 种类。
 enum class ArtifactKind {
     Image,
     Video,
@@ -41,7 +40,6 @@ object ArtifactKindExt {
     }
 }
 
-// Artifact 来源。
 enum class ArtifactSource {
     Local,
     BackendChat,
