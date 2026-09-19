@@ -1,11 +1,21 @@
 package com.example.glance.ViewModels
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.glance.Models.IArtifact
 import com.example.glance.Models.LocalPayload
 import com.example.glance.Repositories.IArtifactRepo
@@ -20,14 +30,13 @@ import kotlinx.coroutines.withContext
 class TreeItemViewModel(
     val artifact: IArtifact,
     private val repo: IArtifactRepo? = null,
-    private val childrenCache: MutableMap<String, List<IArtifact>>? = null,
     // 状态线程：所有Compose状态写入统一在这里
     private val uiDispatcher: CoroutineDispatcher? = null,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     owner: Job? = null,
 ) {
     // owner非空时作为SupervisorJob的parent：父Job取消时级联中止所有子目录加载，
-    // 避免closeWorkspace清空childrenCache后仍有任务回写造成泄漏。
+    // 避免closeWorkspace清空树后仍有任务回写造成泄漏。
     // SupervisorJob保证兄弟任务之间互不影响。
     private val scope = CoroutineScope(
         SupervisorJob(owner) + (uiDispatcher ?: Dispatchers.Default)
@@ -47,6 +56,9 @@ class TreeItemViewModel(
     var isPlaceholder: Boolean = false
         private set
 
+    var isSelected by mutableStateOf(false)
+    val icon: ImageVector = fileIconFor(artifact.extension)
+
     init {
         if (isDir) {
             children.add(TreeItemViewModel()) // 占位符
@@ -56,17 +68,19 @@ class TreeItemViewModel(
     private constructor() : this(
         artifact = PlaceholderArtifact(),
         repo = null,
-        childrenCache = null,
     ) {
         isPlaceholder = true
     }
 
+    // 目录项数：loadChildren完成后一次性写入，避免sizeDisplay读children把每行订阅到children的每次变更
+    var childCount by mutableStateOf(0)
+        private set
+
     val sizeDisplay: String
         get() {
             if (isDir) {
-                // 目录项数在展开时由children决定；未展开不显示，避免listFiles时预扫子目录
-                if (children.isEmpty() || children[0].isPlaceholder) return ""
-                return "${children.count { !it.isPlaceholder }} 项"
+                if (childCount == 0) return ""
+                return "$childCount 项"
             }
             return com.example.glance.Utils.FormatSize.readable(artifact.size)
         }
@@ -98,20 +112,20 @@ class TreeItemViewModel(
     suspend fun loadChildren() {
         if (!isDir) return
         val r = repo ?: return
-        val cache = childrenCache ?: return
         isLoading = true
         try {
             val payload = artifact.payload as LocalPayload
-            // 放io线程，children的写入留在ui线程
-            val items = cache.getOrPut(payload.absolutePath) {
-                val listResult = withContext(ioDispatcher) { r.listAsync(payload.absolutePath) }
+            // 放io线程，children的写入留在ui线程；不再缓存目录列表（与TreeItemViewModel持有的artifact重复，且单工作区内永不失效会堆涨）
+            val items = withContext(ioDispatcher) {
+                val listResult = r.listAsync(payload.absolutePath)
                 listResult.getOrNull() ?: emptyList()
             }
             val sorted = filterIgnoredDirs(items)
                 .sortedWith(compareBy({ !((it.payload as? LocalPayload)?.isDir ?: false) }, { it.name.lowercase() }))
+            childCount = sorted.count()
             children.clear()
             for (child in sorted) {
-                children.add(TreeItemViewModel(child, r, cache, uiDispatcher, ioDispatcher, owner = scope.coroutineContext.get(Job)))
+                children.add(TreeItemViewModel(child, r, uiDispatcher, ioDispatcher, owner = scope.coroutineContext.get(Job)))
             }
             // 空目录：保留占位符，保证箭头始终显示
             if (children.isEmpty()) {
@@ -181,6 +195,21 @@ internal fun filterIgnoredDirs(items: List<IArtifact>): List<IArtifact> {
     return items.filterNot { item ->
         val payload = item.payload as? LocalPayload
         payload != null && payload.isDir && item.name in IGNORED_DIR_NAMES
+    }
+}
+
+// 文件类型图标：extension不变，结果在TreeItemViewModel构造时算一次缓存
+internal fun fileIconFor(extension: String): ImageVector {
+    return when (extension.lowercase().trimStart('.')) {
+        "kt", "kts", "java", "py", "js", "ts", "jsx", "tsx", "rs", "go", "swift", "c", "cpp", "h", "hpp", "cs" -> Icons.Filled.Code
+        "md", "markdown", "txt" -> Icons.Filled.Description
+        "json", "xml", "yaml", "yml", "toml" -> Icons.Filled.Settings
+        "png", "jpg", "jpeg", "gif", "svg", "ico" -> Icons.Filled.Image
+        "pdf" -> Icons.Filled.PictureAsPdf
+        "zip", "tar", "gz", "rar" -> Icons.Filled.Archive
+        "sh", "bash", "zsh" -> Icons.Filled.Terminal
+        "gradle", "gradle.kts" -> Icons.Filled.Settings
+        else -> Icons.AutoMirrored.Filled.InsertDriveFile
     }
 }
 

@@ -35,18 +35,19 @@ class MainViewModel(
     }
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
-    private val childrenCache = mutableMapOf<String, List<IArtifact>>()
 
-    // key = id|lastMod|size
-    private val parseCache = mutableMapOf<String, LoadedFile>()
+    // 解析+高亮缓存，key = id|lastMod|size；accessOrder=true满了只淘汰最久未访问的条目
+    private val parseCache = LinkedHashMap<String, LoadedFile>(PARSE_CACHE_MAX, 0.75f, true)
     private val parseCacheMutex = Mutex()
 
     private var loadJob: Job? = null
     private var selectJob: Job? = null
     private var sizeJob: Job? = null
     // 每轮工作区的树加载句柄：closeWorkspace取消它可级联中止所有已展开的子目录加载，
-    // 防止任务回写已清空的childrenCache
+    // 防止任务回写已清空的树状态
     private var treeOwnerJob: Job? = null
+    // 选中行的item引用：isSelected下沉到行，切换选中只重组旧/新两行
+    private var selectedTreeItem: TreeItemViewModel? = null
 
     // 文件浏览状态
     var currentPath by mutableStateOf("")
@@ -111,6 +112,8 @@ class MainViewModel(
 
     fun closeWorkspace() {
         // 取消所有在途任务
+        selectedTreeItem?.isSelected = false
+        selectedTreeItem = null
         loadJob?.cancel()
         selectJob?.cancel()
         sizeJob?.cancel()
@@ -118,7 +121,6 @@ class MainViewModel(
         isComputingSize = false
         currentPath = ""
         hasWorkspace = false
-        childrenCache.clear()
         treeItems = emptyList()
         totalSize = 0
         selectedArtifact = null
@@ -135,6 +137,9 @@ class MainViewModel(
         if (item.isDir) {
             item.toggleExpanded()
         } else {
+            selectedTreeItem?.isSelected = false
+            item.isSelected = true
+            selectedTreeItem = item
             selectFile(item.artifact)
         }
     }
@@ -170,6 +175,8 @@ class MainViewModel(
     }
 
     fun clearSelection() {
+        selectedTreeItem?.isSelected = false
+        selectedTreeItem = null
         selectedArtifact = null
         hasSelection = false
         selectedContent = null
@@ -196,11 +203,12 @@ class MainViewModel(
         sizeJob?.cancel()
         selectJob?.cancel()
         treeOwnerJob?.cancel()
+        selectedTreeItem?.isSelected = false
+        selectedTreeItem = null
         treeOwnerJob = SupervisorJob()
         loadJob = scope.launch {
             currentPath = path
             hasWorkspace = true
-            childrenCache.clear()
             // 切换工作区时丢旧目录的解析缓存
             parseCacheMutex.withLock { parseCache.clear() }
             totalSize = 0
@@ -211,7 +219,7 @@ class MainViewModel(
                 val listResult = withContext(ioDispatcher) { repo.listAsync(path) }
                 val items = listResult.getOrNull() ?: emptyList()
                 if (!isActive) return@launch
-                treeItems = filterIgnoredDirs(items).map { TreeItemViewModel(it, repo, childrenCache, dispatcher, ioDispatcher, owner = treeOwnerJob) }
+                treeItems = filterIgnoredDirs(items).map { TreeItemViewModel(it, repo, dispatcher, ioDispatcher, owner = treeOwnerJob) }
             } catch (ex: Exception) {
                 if (isActive) messageText = "加载失败: ${ex.message}"
             }
@@ -296,7 +304,7 @@ class MainViewModel(
                         val built = buildPreview(content.replace("\t", "    "), artifact)
                         if (artifact.size <= PREVIEW_PLAIN_LIMIT_BYTES) {
                             parseCacheMutex.withLock {
-                                if (parseCache.size >= PARSE_CACHE_MAX) parseCache.clear()
+                                if (parseCache.size >= PARSE_CACHE_MAX) parseCache.remove(parseCache.keys.first())
                                 parseCache[cacheKey] = built
                             }
                         }

@@ -8,24 +8,16 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -201,62 +193,52 @@ private fun FileTreePanel(viewModel: MainViewModel, modifier: Modifier = Modifie
             TreeItemRow(
                 depth = depth,
                 item = item,
-                isSelected = viewModel.selectedArtifact?.id == item.artifact.id,
-                onClick = { viewModel.selectItem(item) },
+                isSelected = item.isSelected,
+                onSelect = viewModel::selectItem,
             )
         }
     }
 }
 
 @Composable
-private fun TreeItemRow(depth: Int, item: TreeItemViewModel, isSelected: Boolean, onClick: () -> Unit) {
+private fun TreeItemRow(depth: Int, item: TreeItemViewModel, isSelected: Boolean, onSelect: (TreeItemViewModel) -> Unit) {
     val indent = (depth * 20).dp
     val bgColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
-
-    Surface(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick), color = bgColor) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 8.dp + indent, end = 8.dp, top = 2.dp, bottom = 2.dp).heightIn(min = 28.dp),
-        ) {
-            if (item.isDir) {
-                Icon(
-                    if (item.isExpanded) Icons.Filled.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                Spacer(Modifier.width(16.dp))
-            }
-            Spacer(Modifier.width(4.dp))
-
+    val onClick = remember(item) { { onSelect(item) } }
+    
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(bgColor)
+            .clickable(onClick = onClick)
+            .padding(start = 8.dp + indent, end = 8.dp, top = 2.dp, bottom = 2.dp)
+            .heightIn(min = 28.dp),
+    ) {
+        if (item.isDir) {
             Icon(
-                if (item.isDir) (if (item.isExpanded) Icons.Filled.FolderOpen else Icons.Filled.Folder) else getFileIcon(item.artifact.extension),
+                if (item.isExpanded) Icons.Filled.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
-                tint = if (item.isDir) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.width(8.dp))
-
-            Text(item.artifact.name, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            Spacer(Modifier.width(4.dp))
-
-            Text(item.sizeDisplay, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        } else {
+            Spacer(Modifier.width(16.dp))
         }
-    }
-}
+        Spacer(Modifier.width(4.dp))
 
-private fun getFileIcon(extension: String): ImageVector {
-    return when (extension.lowercase().trimStart('.')) {
-        "kt", "kts", "java", "py", "js", "ts", "jsx", "tsx", "rs", "go", "swift", "c", "cpp", "h", "hpp", "cs" -> Icons.Filled.Code
-        "md", "markdown", "txt" -> Icons.Filled.Description
-        "json", "xml", "yaml", "yml", "toml" -> Icons.Filled.Settings
-        "png", "jpg", "jpeg", "gif", "svg", "ico" -> Icons.Filled.Image
-        "pdf" -> Icons.Filled.PictureAsPdf
-        "zip", "tar", "gz", "rar" -> Icons.Filled.Archive
-        "sh", "bash", "zsh" -> Icons.Filled.Terminal
-        "gradle", "gradle.kts" -> Icons.Filled.Settings
-        else -> Icons.AutoMirrored.Filled.InsertDriveFile
+        Icon(
+            if (item.isDir) (if (item.isExpanded) Icons.Filled.FolderOpen else Icons.Filled.Folder) else item.icon,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = if (item.isDir) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(8.dp))
+
+        Text(item.artifact.name, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        Spacer(Modifier.width(4.dp))
+
+        Text(item.sizeDisplay, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
     }
 }
 
