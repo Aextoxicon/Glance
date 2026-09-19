@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.glance.ViewModels.MainViewModel
 import com.example.glance.ViewModels.TreeItemViewModel
+import kotlin.math.abs
 
 @Composable
 fun MainView(viewModel: MainViewModel) {
@@ -43,9 +45,17 @@ fun MainView(viewModel: MainViewModel) {
         }
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        windowWidth = maxWidth.value
-
+    // 用onSizeChanged替代BoxWithConstraints
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onSizeChanged { size ->
+                val newWidth = size.width.toFloat()
+                if (abs(newWidth - windowWidth) >= 1f) {
+                    windowWidth = newWidth
+                }
+            },
+    ) {
         if (!viewModel.hasWorkspace) {
             WelcomeScreen(onOpenFolder = { viewModel.pickFolder() })
         } else if (viewModel.isWide) {
