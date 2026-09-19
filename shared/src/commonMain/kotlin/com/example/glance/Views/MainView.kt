@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -189,15 +191,18 @@ private fun FileTreePanel(viewModel: MainViewModel, modifier: Modifier = Modifie
         return
     }
 
-    LazyColumn(modifier = modifier.fillMaxWidth(), state = listState) {
-        items(items = flatItems.value, key = { (_, item) -> item.artifact.id }) { (depth, item) ->
-            TreeItemRow(
-                depth = depth,
-                item = item,
-                isSelected = item.isSelected,
-                onSelect = viewModel::selectItem,
-            )
+    Box(modifier = modifier.fillMaxWidth()) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
+            items(items = flatItems.value, key = { (_, item) -> item.artifact.id }, contentType = { (_, item) -> if (item.isDir) "dir" else "file" }) { (depth, item) ->
+                TreeItemRow(
+                    depth = depth,
+                    item = item,
+                    isSelected = item.isSelected,
+                    onSelect = viewModel::selectItem,
+                )
+            }
         }
+        PlatformVerticalScrollbar(scrollState = listState, modifier = Modifier.align(Alignment.CenterEnd))
     }
 }
 
@@ -205,14 +210,13 @@ private fun FileTreePanel(viewModel: MainViewModel, modifier: Modifier = Modifie
 private fun TreeItemRow(depth: Int, item: TreeItemViewModel, isSelected: Boolean, onSelect: (TreeItemViewModel) -> Unit) {
     val indent = (depth * 20).dp
     val bgColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
-    val onClick = remember(item) { { onSelect(item) } }
-    
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .background(bgColor)
-            .clickable(onClick = onClick)
+            .clickable(onClick = { onSelect(item) })
             .padding(start = 8.dp + indent, end = 8.dp, top = 2.dp, bottom = 2.dp)
             .heightIn(min = 28.dp),
     ) {
@@ -269,10 +273,7 @@ private fun CodePreviewPanel(viewModel: MainViewModel, modifier: Modifier = Modi
             when {
                 viewModel.messageText != null -> MessageView(viewModel.messageText ?: "")
                 viewModel.selectedContent != null -> key(viewModel.selectedArtifact?.id) {
-                    CodeContentView(
-                        lines = viewModel.selectedAnnotatedLines
-                            ?: (viewModel.selectedContent ?: "").split("\n").map { AnnotatedString(it) }
-                    )
+                    CodeContentView(lines = viewModel.selectedAnnotatedLines.orEmpty())
                 }
                 else -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             }
@@ -310,38 +311,46 @@ private fun CodePreviewToolbar(viewModel: MainViewModel) {
     }
 }
 
+private val CodeLineHeight = 20.sp
+private val LineSeparator = AnnotatedString("\n")
+
 @Composable
 private fun CodeContentView(lines: List<AnnotatedString>) {
     val horizontalScrollState = rememberScrollState()
     val lazyListState = rememberLazyListState()
+    val lineHeight = with(LocalDensity.current) { CodeLineHeight.toDp() }
 
     // LazyColumn只构建可见行，每行独立TextLayout
-    // 固定行高20.dp LazyLayout直接算偏移
+    // 固定行高 LazyLayout直接算偏移
     // 长行撑开LazyColumn宽度，外层统一横向滚动，行列对齐
     Box(
         modifier = Modifier.fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .horizontalScroll(horizontalScrollState),
+            .background(MaterialTheme.colorScheme.surface),
     ) {
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier.fillMaxHeight(),
-            contentPadding = PaddingValues(16.dp),
-        ) {
-            items(count = lines.size, key = { it }) { index ->
-                Text(
-                    text = lines[index],
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 13.sp,
-                    lineHeight = 20.sp,
-                    // min.js这类单行文件可达数MB，softWrap会让Text布局卡死
-                    softWrap = false,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(20.dp),
-                )
+        SelectionContainer {
+            Box(modifier = Modifier.fillMaxSize().horizontalScroll(horizontalScrollState)) {
+                LazyColumn(
+                    state = lazyListState,
+                    modifier = Modifier.fillMaxHeight(),
+                    contentPadding = PaddingValues(16.dp),
+                ) {
+                    items(count = lines.size, key = { it }) { index ->
+                        Text(
+                            text = lines[index] + LineSeparator,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 13.sp,
+                            lineHeight = CodeLineHeight,
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(lineHeight),
+                        )
+                    }
+                }
             }
         }
+        PlatformVerticalScrollbar(scrollState = lazyListState, modifier = Modifier.align(Alignment.CenterEnd))
     }
 }
 
