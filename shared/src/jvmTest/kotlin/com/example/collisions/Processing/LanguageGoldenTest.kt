@@ -19,7 +19,7 @@ import kotlinx.coroutines.test.TestCoroutineScheduler
 
 /**
  * Compose UI golden test — 模拟"打开工作区 → 点击文件 → 验证解析输出"的完整链路。
- * 首次运行：golden 文件生成到 build/，需手动复制到 commonTest/resources/golden/。
+ * 首次运行：golden文件生成到build/，需手动复制到commonTest/resources/golden/。
  */
 @OptIn(ExperimentalTestApi::class)
 class LanguageGoldenTest {

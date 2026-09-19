@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // 初始化全局 ApplicationContext
+        // 初始化全局ApplicationContext
         AndroidContext.init(this)
 
         setContent {

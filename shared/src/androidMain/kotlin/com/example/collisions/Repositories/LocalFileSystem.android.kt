@@ -77,7 +77,7 @@ actual class LocalFileSystem : TextFileDetector {
     }
 
     actual fun toUri(path: String): String {
-        // 已经是 content:// URI
+        // 已经是content:// URI
         return path
     }
 
@@ -114,7 +114,7 @@ actual class LocalFileSystem : TextFileDetector {
                 }
             }
         }
-        // fallback: 从 URI 路径中提取
+        // fallback:从URI路径中提取
         val path = uri.path ?: ""
         return path.substringAfterLast('/')
     }

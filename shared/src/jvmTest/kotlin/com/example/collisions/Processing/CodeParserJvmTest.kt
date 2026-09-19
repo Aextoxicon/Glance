@@ -17,7 +17,7 @@ class CodeParserJvmTest {
                 return f"Hello, {name}"
         """.trimIndent()
 
-        // Rust 端 parse_code 需要带点号的扩展名
+        // Rust端parse_code需要带点号的扩展名
         val result = parseCode(source, ".py")
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
@@ -398,7 +398,7 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            // Rust 端不识别大写扩展名，返回空 highlights
+            // Rust端不识别大写扩展名，返回空highlights
             assertTrue(result.highlightsByLine.all { it.isEmpty() }, "Expected empty highlights for uppercase .PY extension")
         }
     }

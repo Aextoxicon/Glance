@@ -62,7 +62,7 @@ lang_snapshot_test!(test_parse_htm, ".htm", "<!-- htm comment -->\n<p>hello</p>\
 
 #[test]
 fn test_unicode_source_utf16_offsets() {
-    // 含中文/emoji 的源码，验证 UTF-16 偏移映射不破坏高亮
+    // 含中文/emoji的源码，验证UTF-16偏移映射不破坏高亮
     let source = r#"import os
 
 def hello():
@@ -102,7 +102,7 @@ fn main() {
 
 #[test]
 fn test_all_queries_compile() {
-    // 验证每个 grammar 的 highlight query 都能成功编译
+    // 验证每个grammar的highlight query都能成功编译
     let extensions = [".c", ".h", ".cpp", ".hpp", ".go", ".py", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".sh", ".bash", ".zsh", ".cs", ".java", ".json", ".css", ".rs", ".toml", ".yaml", ".yml", ".ini", ".mk", ".kt", ".kts", ".swift", ".html", ".htm"];
     let mut failures = Vec::new();
     for ext in extensions {
@@ -158,7 +158,7 @@ func main() {
     let result: CodeParseResult = parse_code(source.to_string(), ".go".to_string());
     assert!(outline_contains(&result.outline, "package_clause"), "expected package_clause in Go outline");
     assert!(outline_contains(&result.outline, "function_declaration"), "expected function_declaration in Go outline");
-    // 验证 function_definition 的 name 是 "main"
+    // 验证function_definition的name是"main"
     let has_main = result.outline.iter().any(|n| n.name == "main")
         || result.outline.iter().any(|n| n.children.iter().any(|c| c.name == "main"));
     assert!(has_main, "expected function named 'main' in Go outline");
@@ -188,7 +188,7 @@ fn test_outline_java() {
 "#;
     let result: CodeParseResult = parse_code(source.to_string(), ".java".to_string());
     assert!(outline_contains(&result.outline, "class_declaration"), "expected class_declaration in Java outline");
-    // Java 中 main 方法可能是 method_declaration 或 function_declaration
+    // Java中main方法可能是method_declaration或function_declaration
     let has_main = outline_contains(&result.outline, "method_declaration") || outline_contains(&result.outline, "function_declaration");
     assert!(has_main, "expected method/function declaration in Java outline");
     assert_debug_snapshot!(result);
@@ -210,7 +210,7 @@ fn main() {
 "#;
     let result: CodeParseResult = parse_code(source.to_string(), ".rs".to_string());
     assert!(outline_contains(&result.outline, "function_item"), "expected function_item in Rust outline");
-    // Rust 的 mod 项可能是 mod_item
+    // Rust的mod项可能是mod_item
     let has_mod = outline_contains(&result.outline, "mod_item");
     assert!(has_mod, "expected mod_item in Rust outline");
     assert_debug_snapshot!(result);

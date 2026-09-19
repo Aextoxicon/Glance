@@ -161,7 +161,7 @@ private fun WorkspaceHeader(viewModel: MainViewModel) {
 }
 
 private fun flattenTree(items: List<TreeItemViewModel>, depth: Int = 0): List<Pair<Int, TreeItemViewModel>> {
-    val snapshot = items.toList() // 快照，避免 ConcurrentModificationException
+    val snapshot = items.toList() // 快照，避免ConcurrentModificationException
     val result = mutableListOf<Pair<Int, TreeItemViewModel>>()
     for (item in snapshot) {
         if (item.isPlaceholder) continue
@@ -282,6 +282,19 @@ private fun CodePreviewPanel(viewModel: MainViewModel, modifier: Modifier = Modi
                 else -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             }
         }
+
+        // 大文件跳过高亮等降级提示
+        viewModel.previewNotice?.let { notice ->
+            HorizontalDivider()
+            Text(
+                notice,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -326,6 +339,8 @@ private fun CodeContentView(lines: List<AnnotatedString>) {
                     fontFamily = FontFamily.Monospace,
                     fontSize = 13.sp,
                     lineHeight = 20.sp,
+                    // min.js这类单行文件可达数MB，softWrap会让Text布局卡死
+                    softWrap = false,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(20.dp),

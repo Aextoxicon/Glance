@@ -21,25 +21,31 @@ class MainViewModel(
     private val fs: TextFileDetector,
     private val repo: IArtifactRepo,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Main,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    // 文件走IO池
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     companion object {
         private const val WIDE_MODE_THRESHOLD = 640
         private const val PARSE_CACHE_MAX = 32
+        private const val PREVIEW_HARD_LIMIT_BYTES = 10L * 1024 * 1024
+        private const val PREVIEW_PLAIN_LIMIT_BYTES = 1L * 1024 * 1024
+
+        private const val SIZE_SCAN_CONCURRENCY = 8
+        private const val EXPAND_CONCURRENCY = 8
     }
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val childrenCache = mutableMapOf<String, List<IArtifact>>()
 
-    // 解析结果+高亮文本缓存，key = id|lastMod|size
-    private val parseCache = mutableMapOf<String, CachedPreview>()
+    // key = id|lastMod|size
+    private val parseCache = mutableMapOf<String, LoadedFile>()
     private val parseCacheMutex = Mutex()
 
     private var loadJob: Job? = null
     private var selectJob: Job? = null
     private var sizeJob: Job? = null
-    // 每轮工作区的树加载句柄：closeWorkspace 取消它可级联中止所有已展开的子目录加载，
-    // 防止任务回写已清空的 childrenCache
+    // 每轮工作区的树加载句柄：closeWorkspace取消它可级联中止所有已展开的子目录加载，
+    // 防止任务回写已清空的childrenCache
     private var treeOwnerJob: Job? = null
 
     // 文件浏览状态
@@ -59,6 +65,9 @@ class MainViewModel(
         private set
 
     var messageText by mutableStateOf<String?>(null)
+        private set
+
+    var previewNotice by mutableStateOf<String?>(null)
         private set
 
     var selectedParseResult by mutableStateOf<CodeParseResult?>(null)
@@ -101,7 +110,7 @@ class MainViewModel(
     }
 
     fun closeWorkspace() {
-        // 取消所有在途任务，避免旧状态被异步结果改写
+        // 取消所有在途任务
         loadJob?.cancel()
         selectJob?.cancel()
         sizeJob?.cancel()
@@ -118,6 +127,7 @@ class MainViewModel(
         selectedAnnotatedLines = null
         hasSelection = false
         messageText = null
+        previewNotice = null
     }
 
     fun selectItem(item: TreeItemViewModel?) {
@@ -130,8 +140,26 @@ class MainViewModel(
     }
 
     fun expandAll() {
-        for (root in treeItems) {
-            root.expandAllRecursive()
+        // 分批展开
+        scope.launch {
+            val queue = ArrayDeque<TreeItemViewModel>()
+            for (root in treeItems) {
+                if (root.isDir) queue.add(root)
+            }
+            while (queue.isNotEmpty()) {
+                val batch = ArrayDeque<TreeItemViewModel>()
+                while (batch.size < EXPAND_CONCURRENCY && queue.isNotEmpty()) {
+                    batch.add(queue.removeFirst())
+                }
+                coroutineScope {
+                    batch.map { item -> async { item.ensureLoaded() } }.awaitAll()
+                    for (item in batch) {
+                        for (child in item.children) {
+                            if (!child.isPlaceholder) queue.add(child)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -148,6 +176,7 @@ class MainViewModel(
         selectedParseResult = null
         selectedAnnotatedLines = null
         messageText = null
+        previewNotice = null
     }
 
     fun toggleDrawer() {
@@ -162,9 +191,10 @@ class MainViewModel(
     }
 
     fun loadCore(path: String) {
-        // 切换目录时取消上一轮的目录加载与大小计算
+        // 切换目录时取消上一轮
         loadJob?.cancel()
         sizeJob?.cancel()
+        selectJob?.cancel()
         treeOwnerJob?.cancel()
         treeOwnerJob = SupervisorJob()
         loadJob = scope.launch {
@@ -177,11 +207,11 @@ class MainViewModel(
             treeItems = emptyList()
 
             try {
-                // 文件系统读取放到 io 线程，状态写入保持在 dispatcher（主线程）
+                // 文件系统读取放到io线程，状态写入保持在主线程
                 val listResult = withContext(ioDispatcher) { repo.listAsync(path) }
                 val items = listResult.getOrNull() ?: emptyList()
                 if (!isActive) return@launch
-                treeItems = items.map { TreeItemViewModel(it, repo, childrenCache, dispatcher, ioDispatcher, owner = treeOwnerJob) }
+                treeItems = filterIgnoredDirs(items).map { TreeItemViewModel(it, repo, childrenCache, dispatcher, ioDispatcher, owner = treeOwnerJob) }
             } catch (ex: Exception) {
                 if (isActive) messageText = "加载失败: ${ex.message}"
             }
@@ -199,16 +229,12 @@ class MainViewModel(
         }
     }
 
-    private data class CachedPreview(
-        val parseResult: CodeParseResult?,
-        val annotatedLines: List<AnnotatedString>,
-        val content: String,
-    )
-
     private data class LoadedFile(
         val parseResult: CodeParseResult?,
         val annotatedLines: List<AnnotatedString>,
         val content: String,
+        // 预览被降级时给UI的提示
+        val notice: String? = null,
     )
 
     private fun cacheKey(artifact: IArtifact): String =
@@ -221,15 +247,17 @@ class MainViewModel(
             selectedContent = null
             selectedParseResult = null
             selectedAnnotatedLines = null
+            previewNotice = null
             selectedArtifact = artifact
             hasSelection = true
 
             val loaded = loadFile(artifact) ?: return@launch
-            // 期间若用户已切换选择或关闭工作区，丢弃本次结果
+            // 期间切换选择或关闭工作区，丢弃本次结果
             if (!isActive) return@launch
             selectedParseResult = loaded.parseResult
             selectedAnnotatedLines = loaded.annotatedLines
             selectedContent = loaded.content
+            previewNotice = loaded.notice
         }
     }
 
@@ -244,41 +272,38 @@ class MainViewModel(
             return null
         }
 
-        // io 块内不写 Compose 状态，错误信息经返回值带回主线程再写 messageText
+        // 直接放弃预览
+        if (artifact.size > PREVIEW_HARD_LIMIT_BYTES) {
+            messageText = "文件过大（${FormatSize.readable(artifact.size)}），已跳过预览"
+            return null
+        }
+
+        // io块内不写Compose状态，错误信息经返回值带回主线程再写messageText
         val loaded = withContext(ioDispatcher) {
-            val outcome: Pair<LoadedFile?, String?> = if (!fs.isTextFile(path)) {
+            if (!fs.isTextFile(path)) {
                 null to "[二进制文件] ${artifact.name} 无法预览"
             } else {
-                val cached = parseCacheMutex.withLock { parseCache[cacheKey(artifact)] }
+                val cacheKey = cacheKey(artifact)
+                val cached = parseCacheMutex.withLock { parseCache[cacheKey] }
                 if (cached != null) {
-                    LoadedFile(cached.parseResult, cached.annotatedLines, cached.content) to null
+                    cached to null
                 } else {
                     val contentResult = repo.tryReadTextAsync(path)
                     val content = contentResult.getOrNull()
                     if (content == null) {
                         null to "无法读取文件: ${artifact.name}"
                     } else {
-                        val normalizedContent = content.replace("\t", "    ")
-                        val parseResult = try {
-                            FileProcessor.process(normalizedContent, artifact.extension, artifact.name)
-                        } catch (ex: Exception) {
-                            println("Code parsing failed for ${artifact.name}: ${ex.message}")
-                            null
+                        val built = buildPreview(content.replace("\t", "    "), artifact)
+                        if (artifact.size <= PREVIEW_PLAIN_LIMIT_BYTES) {
+                            parseCacheMutex.withLock {
+                                if (parseCache.size >= PARSE_CACHE_MAX) parseCache.clear()
+                                parseCache[cacheKey] = built
+                            }
                         }
-                        val annotatedLines = if (parseResult is CodeParseResult.Code) {
-                            HighlightColor.toAnnotatedLines(parseResult)
-                        } else {
-                            normalizedContent.split("\n").map { AnnotatedString(it) }
-                        }
-                        parseCacheMutex.withLock {
-                            if (parseCache.size >= PARSE_CACHE_MAX) parseCache.clear()
-                            parseCache[cacheKey(artifact)] = CachedPreview(parseResult, annotatedLines, normalizedContent)
-                        }
-                        LoadedFile(parseResult, annotatedLines, normalizedContent) to null
+                        built to null
                     }
                 }
             }
-            outcome
         }
 
         val (file, error) = loaded
@@ -289,29 +314,59 @@ class MainViewModel(
         return file
     }
 
+    private fun buildPreview(normalizedContent: String, artifact: IArtifact): LoadedFile {
+        if (artifact.size > PREVIEW_PLAIN_LIMIT_BYTES) {
+            return LoadedFile(
+                parseResult = null,
+                annotatedLines = normalizedContent.split("\n").map { AnnotatedString(it) },
+                content = normalizedContent,
+                notice = "文件较大（${FormatSize.readable(artifact.size)}），已跳过语法高亮",
+            )
+        }
+
+        val parseResult = try {
+            FileProcessor.process(normalizedContent, artifact.extension, artifact.name)
+        } catch (ex: Exception) {
+            println("Code parsing failed for ${artifact.name}: ${ex.message}")
+            null
+        }
+        val annotatedLines = if (parseResult is CodeParseResult.Code) {
+            HighlightColor.toAnnotatedLines(parseResult)
+        } else {
+            normalizedContent.split("\n").map { AnnotatedString(it) }
+        }
+        return LoadedFile(parseResult, annotatedLines, normalizedContent)
+    }
+
     private suspend fun computeTotalSize(path: String): Long {
         return withContext(ioDispatcher) {
-            try {
-                val items = repo.listAsync(path)
-                val artifacts = items.getOrNull() ?: return@withContext 0L
-
-                val deferredResults = artifacts.map { item ->
-                    async {
-                        if (item.payload is LocalPayload && (item.payload as LocalPayload).isDir) {
-                            val payload = item.payload as LocalPayload
-                            computeTotalSize(payload.absolutePath)
+            // 分批BFS，每批同时展开SIZE_SCAN_CONCURRENCY个目录，
+            // 避免对几十万文件的仓库发起同数量级的并发系统调用
+            var total = 0L
+            val queue = ArrayDeque<String>()
+            queue.add(path)
+            while (queue.isNotEmpty()) {
+                val batch = ArrayDeque<String>()
+                while (batch.size < SIZE_SCAN_CONCURRENCY && queue.isNotEmpty()) {
+                    batch.add(queue.removeFirst())
+                }
+                val deferreds = batch.map { dir ->
+                    async<List<IArtifact>> {
+                        repo.listAsync(dir).getOrNull() ?: emptyList()
+                    }
+                }
+                for (deferred in deferreds) {
+                    for (item in deferred.await()) {
+                        val payload = item.payload as? LocalPayload
+                        if (payload != null && payload.isDir) {
+                            queue.add(payload.absolutePath)
                         } else {
-                            item.size
+                            total += item.size
                         }
                     }
                 }
-                deferredResults.sumOf { it.await() }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                println("computeTotalSize error for path: $path, message: ${e.message}")
-                0L
             }
+            total
         }
     }
 

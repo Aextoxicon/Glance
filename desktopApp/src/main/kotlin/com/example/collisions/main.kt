@@ -42,8 +42,8 @@ private fun configureNativeLib() {
     System.setProperty("uniffi.component.uniffi_code_parser.libraryOverride", libFile.absolutePath)
 }
 
-/** macOS: 使用 AWT FileDialog，调用NSOpenPanel
-    Windows/Linux: JFileChooser+系统 L&F
+/** macOS:使用AWT FileDialog，调用NSOpenPanel
+    Windows/Linux: JFileChooser+系统L&F
  */
 private fun pickFolderNative(): String? {
     val osName = System.getProperty("os.name").lowercase()

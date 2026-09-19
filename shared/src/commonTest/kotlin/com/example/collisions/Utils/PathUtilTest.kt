@@ -7,7 +7,7 @@ class PathUtilTest {
 
     @Test
     fun `windows path returns last segment`() {
-        // Kotlin 里写反斜杠转义写作
+        // Kotlin里写反斜杠转义写作
         assertEquals("Glance", PathUtil.fileName("C:\\Users\\Lwh20\\Documents\\GitHub\\Glance"))
     }
 

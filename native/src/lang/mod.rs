@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-// 消除每个语言文件中的模板代码（LazyLock + GrammarDef 构造）
+// 消除每个语言文件中的模板代码（LazyLock + GrammarDef构造）
 // 用法：
 //   grammar!(tree_sitter_go::LANGUAGE, HIGHLIGHT_QUERY)
 macro_rules! grammar {
@@ -39,11 +39,11 @@ mod html;
 
 pub struct GrammarDef {
     pub language: tree_sitter::Language,
-    /// 预编译的 Query
+    /// 预编译的Query
     pub compiled_query: tree_sitter::Query,
 }
 
-// 按文件扩展名查找对应的 grammar 定义
+// 按文件扩展名查找对应的grammar定义
 pub fn get_grammar(ext: &str) -> Option<&'static LazyLock<GrammarDef>> {
     match ext {
         ".c" => Some(&c::GRAMMAR),
@@ -73,7 +73,7 @@ pub fn get_grammar(ext: &str) -> Option<&'static LazyLock<GrammarDef>> {
     }
 }
 
-/// 按文件名（不含路径）查找对应的 grammar 定义
+/// 按文件名（不含路径）查找对应的grammar定义
 pub fn get_grammar_by_filename(filename: &str) -> Option<&'static LazyLock<GrammarDef>> {
     match filename {
         "Makefile" | "makefile" | "GNUmakefile" => Some(&make::GRAMMAR),

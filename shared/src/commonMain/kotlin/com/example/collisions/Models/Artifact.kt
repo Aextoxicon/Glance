@@ -45,7 +45,7 @@ enum class ArtifactSource {
     BackendChat,
 }
 
-// Artifact 状态。
+// Artifact状态。
 enum class ArtifactStatus {
     Available,
     Loading,
@@ -53,10 +53,10 @@ enum class ArtifactStatus {
     Unavailable,
 }
 
-// Artifact 载荷接口（标记接口，具体类型由实现定义）。
+// Artifact载荷接口（标记接口，具体类型由实现定义）。
 interface IArtifactPayload
 
-// Artifact 接口。
+// Artifact接口。
 interface IArtifact {
     val id: String
     val name: String
@@ -70,7 +70,7 @@ interface IArtifact {
     val payload: IArtifactPayload
 }
 
-// Artifact 元数据。
+// Artifact元数据。
 data class ArtifactMetadata(
     val checksum: String?,
     val thumbnail: String?,

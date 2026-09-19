@@ -4,8 +4,8 @@ use crate::lang::GrammarDef;
 pub static GRAMMAR: LazyLock<GrammarDef> = grammar!(tree_sitter_go::LANGUAGE.into(), HIGHLIGHT_QUERY);
 
 // 高亮优先级规则：
-// 更具体的 capture 写在前面，匹配优先级更高
-// (identifier) 作为兜底，放在最后
+// 更具体的capture写在前面，匹配优先级更高
+// (identifier)作为兜底，放在最后
 const HIGHLIGHT_QUERY: &str = r##"
 ;COMMENTS
 

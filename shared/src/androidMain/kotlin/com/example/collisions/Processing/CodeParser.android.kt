@@ -29,7 +29,7 @@ actual fun parseCode(source: String, extension: String): CodeParseResult {
             outline = result.outline.map { it.toKt() },
         )
     } catch (e: UnsatisfiedLinkError) {
-        // .so 未加载，永久降级
+        // .so未加载，永久降级
         nativeUnavailable = true
         println("parseCode native unavailable: $e")
         fallbackResult(language, source)

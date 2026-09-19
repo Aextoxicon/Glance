@@ -4,8 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Context
 
 /**
- * Android 全局 ApplicationContext 持有者。
- * 在 Application.onCreate() 或 MainActivity.onCreate() 中初始化。
+ * Android全局ApplicationContext持有者。
+ * 在Application.onCreate()或MainActivity.onCreate()中初始化。
  */
 object AndroidContext {
     @SuppressLint("StaticFieldLeak")

@@ -21,14 +21,14 @@ class TreeItemViewModel(
     val artifact: IArtifact,
     private val repo: IArtifactRepo? = null,
     private val childrenCache: MutableMap<String, List<IArtifact>>? = null,
-    // 状态线程：所有 Compose 状态写入统一在这里
+    // 状态线程：所有Compose状态写入统一在这里
     private val uiDispatcher: CoroutineDispatcher? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default,
     owner: Job? = null,
 ) {
-    // owner 非空时作为 SupervisorJob 的 parent：父 Job 取消时级联中止所有子目录加载，
-    // 避免 closeWorkspace 清空 childrenCache 后仍有任务回写造成泄漏。
-    // SupervisorJob 保证兄弟任务之间互不影响。
+    // owner非空时作为SupervisorJob的parent：父Job取消时级联中止所有子目录加载，
+    // 避免closeWorkspace清空childrenCache后仍有任务回写造成泄漏。
+    // SupervisorJob保证兄弟任务之间互不影响。
     private val scope = CoroutineScope(
         SupervisorJob(owner) + (uiDispatcher ?: Dispatchers.Default)
     )
@@ -64,7 +64,7 @@ class TreeItemViewModel(
     val sizeDisplay: String
         get() {
             if (isDir) {
-                // 目录项数在展开时由 children 决定；未展开不显示，避免 listFiles 时预扫子目录
+                // 目录项数在展开时由children决定；未展开不显示，避免listFiles时预扫子目录
                 if (children.isEmpty() || children[0].isPlaceholder) return ""
                 return "${children.count { !it.isPlaceholder }} 项"
             }
@@ -102,12 +102,13 @@ class TreeItemViewModel(
         isLoading = true
         try {
             val payload = artifact.payload as LocalPayload
-            // 放 io 线程，children 的写入留在 ui 线程
+            // 放io线程，children的写入留在ui线程
             val items = cache.getOrPut(payload.absolutePath) {
                 val listResult = withContext(ioDispatcher) { r.listAsync(payload.absolutePath) }
                 listResult.getOrNull() ?: emptyList()
             }
-            val sorted = items.sortedWith(compareBy({ !((it.payload as? LocalPayload)?.isDir ?: false) }, { it.name.lowercase() }))
+            val sorted = filterIgnoredDirs(items)
+                .sortedWith(compareBy({ !((it.payload as? LocalPayload)?.isDir ?: false) }, { it.name.lowercase() }))
             children.clear()
             for (child in sorted) {
                 children.add(TreeItemViewModel(child, r, cache, uiDispatcher, ioDispatcher, owner = scope.coroutineContext.get(Job)))
@@ -128,18 +129,12 @@ class TreeItemViewModel(
         }
     }
 
-    fun expandAllRecursive() {
+    // 展开并等待子节点加载完成。由MainViewModel.expandAll分批调用，以便用固定批次上限并发，而不是每个目录各起一个协程。
+    suspend fun ensureLoaded() {
         if (!isDir) return
         isExpanded = true
         if (children.isNotEmpty() && children[0].isPlaceholder) {
-            scope.launch {
-                loadChildren()
-                for (child in children) {
-                    if (!child.isPlaceholder) {
-                        child.expandAllRecursive()
-                    }
-                }
-            }
+            loadChildren()
         }
     }
 }
@@ -156,3 +151,36 @@ private class PlaceholderArtifact : IArtifact {
     override val metadata: com.example.glance.Models.ArtifactMetadata? = null
     override val payload: com.example.glance.Models.IArtifactPayload = LocalPayload("", "", false)
 }
+
+/**
+ * 常见噪声目录：依赖缓存、VCS、IDE与构建产物。浏览树上不显示，
+ * 避免node_modules级别的仓库把扁平化列表和LazyColumn撑爆。
+ * 注意：computeTotalSize不做此过滤，工作区总大小仍反映真实磁盘占用。
+ */
+internal val IGNORED_DIR_NAMES: Set<String> = setOf(
+    ".git",
+    "node_modules",
+    ".gradle",
+    ".idea",
+    ".dart_tool",
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".next",
+    ".cache",
+    ".pytest_cache",
+    ".mypy_cache",
+    "coverage",
+    "Pods",
+    "DerivedData",
+)
+
+/** 过滤掉 [IGNORED_DIR_NAMES]中的目录项，文件不受影响。 */
+internal fun filterIgnoredDirs(items: List<IArtifact>): List<IArtifact> {
+    if (IGNORED_DIR_NAMES.isEmpty()) return items
+    return items.filterNot { item ->
+        val payload = item.payload as? LocalPayload
+        payload != null && payload.isDir && item.name in IGNORED_DIR_NAMES
+    }
+}
+

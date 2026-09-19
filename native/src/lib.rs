@@ -31,19 +31,19 @@ pub struct OutlineNode {
 
 #[derive(uniffi::Record, Debug)]
 pub struct CodeParseResult {
-    // 按需返回每行的高亮 token
+    // 按需返回每行的高亮token
     pub highlights_by_line: Vec<Vec<HighlightToken>>,
     pub outline: Vec<OutlineNode>,
 }
 
 struct ScanSource {
     line_boundaries: Vec<(u64, u64)>,
-    /// UTF-8 字节偏移转UTF-16偏移的映射表，若源文件纯ASCII则为None
+    /// UTF-8字节偏移转UTF-16偏移的映射表，若源文件纯ASCII则为None
     byte_to_utf16_map: Option<Vec<u32>>,
 }
 
 fn scan_source(source: &str) -> ScanSource {
-    // 纯ASCII-字节偏移=UTF-16 偏移
+    // 纯ASCII-字节偏移=UTF-16偏移
     if source.is_ascii() {
         let mut boundaries = Vec::new();
         let mut line_start: u64 = 0;
@@ -121,7 +121,7 @@ fn split_highlights_by_line(
         return Vec::new();
     }
 
-    // 预先分配每行的 Vec
+    // 预先分配每行的Vec
     let mut result: Vec<Vec<HighlightToken>> = (0..line_count).map(|_| Vec::new()).collect();
     let line_starts: Vec<u64> = line_boundaries.iter().map(|(s, _)| *s).collect();
     for h in highlights {
@@ -174,7 +174,7 @@ fn extract_name(node: tree_sitter::Node, source: &[u8]) -> String {
     }
 }
 
-// 只有这些节点类型会生成 OutlineNode
+// 只有这些节点类型会生成OutlineNode
 const OUTLINE_STRUCTURAL_KINDS: &[&str] = &[
 
     "function_definition",
@@ -211,16 +211,16 @@ const OUTLINE_STRUCTURAL_KINDS: &[&str] = &[
     "package_clause",
 ];
 
-/// 最大 outline 嵌套深度
+/// 最大outline嵌套深度
 const MAX_OUTLINE_DEPTH: usize = 16;
-/// 最大 outline 节点总数（超出直接截断）
+/// 最大outline节点总数（超出直接截断）
 const MAX_OUTLINE_NODES: usize = 1000;
 
 fn is_structural_kind(kind: &str) -> bool {
     OUTLINE_STRUCTURAL_KINDS.contains(&kind)
 }
 
-/// 结构性节点：创建 OutlineNode 并递归收集子节点
+/// 结构性节点：创建OutlineNode并递归收集子节点
 /// 非结构性节点：不创建节点，但继续深入子节点
 fn collect_outline(
     node: tree_sitter::Node,
@@ -366,7 +366,7 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
         outline,
     };
 
-    // 获取 UTF-16 映射表和行边界
+    // 获取UTF-16映射表和行边界
     let scan = scan_source(&source);
     convert_highlights(scan.byte_to_utf16_map.as_deref(), &mut highlights);
     convert_outline(scan.byte_to_utf16_map.as_deref(), &mut result.outline);

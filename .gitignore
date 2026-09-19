@@ -59,6 +59,7 @@ yarn.lock
 
 .DS_Store
 Thumbs.db
+TODO.md
 *.log
 *.lock
 *.tmp

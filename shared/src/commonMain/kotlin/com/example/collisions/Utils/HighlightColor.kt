@@ -85,23 +85,6 @@ object HighlightColor {
         return plainText
     }
 
-    fun toAnnotatedString(
-        parseResult: CodeParseResult,
-        colorDefault: Color = plainText,
-    ): AnnotatedString {
-        return when (parseResult) {
-            is CodeParseResult.PlainText -> {
-                AnnotatedString(
-                    parseResult.content,
-                    spanStyle = SpanStyle(color = colorDefault),
-                )
-            }
-            is CodeParseResult.Code -> {
-                buildAnnotatedString(parseResult.content, parseResult.highlightsByLine, colorDefault)
-            }
-        }
-    }
-
     // LazyColumn逐行使用，每行独立TextLayout，仅布局可见行
     fun toAnnotatedLines(
         parseResult: CodeParseResult,
@@ -160,49 +143,5 @@ object HighlightColor {
                 }
             }
         }
-    }
-
-    private fun buildAnnotatedString(
-        content: String,
-        highlightsByLine: List<List<HighlightToken>>,
-        colorDefault: Color,
-    ): AnnotatedString {
-        val builder = buildAnnotatedString {
-            val lines = content.split("\n")
-            for ((lineIndex, line) in lines.withIndex()) {
-                val tokens = if (lineIndex < highlightsByLine.size) highlightsByLine[lineIndex] else emptyList()
-                if (tokens.isEmpty()) {
-                    append(line)
-                } else {
-                    var pos = 0
-                    for (token in tokens) {
-                        val start = token.startByte.toInt()
-                        val end = token.endByte.toInt()
-                        if (start > pos) {
-                            withStyle(SpanStyle(color = colorDefault)) {
-                                append(line.substring(pos, start.coerceAtMost(line.length)))
-                            }
-                        }
-                        if (start < end && start < line.length) {
-                            val color = colorFor(token.kind)
-                            val tokenEnd = end.coerceAtMost(line.length)
-                            withStyle(SpanStyle(color = color)) {
-                                append(line.substring(start, tokenEnd))
-                            }
-                        }
-                        pos = end.coerceAtMost(line.length)
-                    }
-                    if (pos < line.length) {
-                        withStyle(SpanStyle(color = colorDefault)) {
-                            append(line.substring(pos))
-                        }
-                    }
-                }
-                if (lineIndex < lines.size - 1) {
-                    append("\n")
-                }
-            }
-        }
-        return builder
     }
 }

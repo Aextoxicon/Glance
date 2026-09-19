@@ -15,7 +15,7 @@ pub static GRAMMAR_TSX: LazyLock<GrammarDef> = LazyLock::new(|| {
     }
 });
 
-// 不含 JSX
+// 不含JSX
 const HIGHLIGHT_QUERY_BASE: &str = r##"
 ;COMMENTS
 
@@ -274,7 +274,7 @@ const HIGHLIGHT_QUERY_BASE: &str = r##"
 (type_identifier) @type
 "##;
 
-// 仅 TSX 独有：JSX 元素规则（LANGUAGE_TYPESCRIPT 节点集中无 jsx_*，不可混入公共段）
+// 仅TSX独有：JSX元素规则（LANGUAGE_TYPESCRIPT节点集中无jsx_*，不可混入公共段）
 const JSX_RULES: &str = r##"
 ;JSX
 

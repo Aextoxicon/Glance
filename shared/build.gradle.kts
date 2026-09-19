@@ -4,7 +4,7 @@ val nativeProjectDir = rootProject.file("native")
 val nativeTargetDir = nativeProjectDir.resolve("target")
 val nativeLibName = "uniffi_code_parser"
 
-// JVM/桌面端按平台区分 native 库文件名（cargo 产物命名规则）
+// JVM/桌面端按平台区分native库文件名（cargo产物命名规则）
 val hostOs = System.getProperty("os.name").lowercase()
 val jvmNativeLib = when {
     hostOs.contains("mac") -> nativeTargetDir.resolve("debug/lib${nativeLibName}.dylib")

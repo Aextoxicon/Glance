@@ -96,12 +96,12 @@ class MainViewModelRaceTest {
         val slow = TreeItemViewModel(fileArtifact("/root", "slow.txt"))
         val fast = TreeItemViewModel(fileArtifact("/root", "fast.txt"))
 
-        // 先选中 slow：任务开始读取并在 gate 上挂起
+        // 先选中slow：任务开始读取并在gate上挂起
         vm.selectItem(slow)
         runCurrent()
         assertEquals("slow.txt", vm.selectedArtifact?.name)
 
-        // 再选中 fast：slow 的读取任务应被取消
+        // 再选中fast：slow的读取任务应被取消
         vm.selectItem(fast)
         runCurrent()
 
@@ -139,7 +139,7 @@ class MainViewModelRaceTest {
         assertEquals(0L, vm.totalSize)
         assertFalse(vm.isComputingSize)
 
-        // 迟到的子树计算结果不得复活为 totalSize
+        // 迟到的子树计算结果不得复活为totalSize
         subGate.complete(Result.success(emptyList()))
         runCurrent()
         assertEquals(0L, vm.totalSize)
@@ -175,7 +175,7 @@ class MainViewModelRaceTest {
         assertEquals(100L, vm.totalSize)
         assertFalse(vm.isComputingSize)
 
-        // 旧文件夹 /a 的子树计算结果不得覆盖 /b 的大小
+        // 旧文件夹 /a的子树计算结果不得覆盖/b的大小
         subGateA.complete(Result.success(emptyList()))
         runCurrent()
         assertEquals("/b", vm.currentPath)
