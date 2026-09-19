@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.example.glance.ViewModels.MainViewModel
 import com.example.glance.ViewModels.TreeItemViewModel
 import kotlin.math.abs
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainView(viewModel: MainViewModel) {
@@ -92,14 +93,10 @@ private fun WideLayout(viewModel: MainViewModel) {
 
 @Composable
 private fun NarrowLayout(viewModel: MainViewModel) {
+    // 抽屉状态只保留drawerState一份真源
+    // 变宽时MainView切走WideLayout，NarrowLayout离开组合，rememberDrawerState随之丢弃
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-
-    LaunchedEffect(viewModel.isDrawerOpen) {
-        if (viewModel.isDrawerOpen) drawerState.open() else drawerState.close()
-    }
-    LaunchedEffect(drawerState.isOpen) {
-        if (drawerState.isOpen != viewModel.isDrawerOpen) viewModel.toggleDrawer()
-    }
+    val scope = rememberCoroutineScope()
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -120,7 +117,11 @@ private fun NarrowLayout(viewModel: MainViewModel) {
                         )
                     },
                     navigationIcon = {
-                        TextButton(onClick = { viewModel.toggleDrawer() }) {
+                        TextButton(onClick = {
+                            scope.launch {
+                                if (drawerState.isClosed) drawerState.open() else drawerState.close()
+                            }
+                        }) {
                             Icon(Icons.Filled.Menu, contentDescription = "菜单", modifier = Modifier.size(20.dp))
                         }
                     },

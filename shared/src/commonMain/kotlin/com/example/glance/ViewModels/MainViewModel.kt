@@ -86,9 +86,6 @@ class MainViewModel(
     var hasSelection by mutableStateOf(false)
         private set
 
-    var isDrawerOpen by mutableStateOf(false)
-        private set
-
     var isWide by mutableStateOf(true)
         private set
 
@@ -186,15 +183,9 @@ class MainViewModel(
         previewNotice = null
     }
 
-    fun toggleDrawer() {
-        isDrawerOpen = !isDrawerOpen
-    }
-
     fun onWindowResized(width: Double) {
+        // 抽屉状态归NarrowLayout的drawerState所有
         isWide = width > WIDE_MODE_THRESHOLD
-        if (isWide) {
-            isDrawerOpen = false
-        }
     }
 
     fun loadCore(path: String) {
