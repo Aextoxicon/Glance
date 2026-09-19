@@ -267,10 +267,12 @@ private fun CodePreviewPanel(viewModel: MainViewModel, modifier: Modifier = Modi
         Box(modifier = Modifier.fillMaxSize()) {
             when {
                 viewModel.messageText != null -> MessageView(viewModel.messageText ?: "")
-                viewModel.selectedContent != null -> CodeContentView(
-                    lines = viewModel.selectedAnnotatedLines
-                        ?: (viewModel.selectedContent ?: "").split("\n").map { AnnotatedString(it) }
-                )
+                viewModel.selectedContent != null -> key(viewModel.selectedArtifact?.id) {
+                    CodeContentView(
+                        lines = viewModel.selectedAnnotatedLines
+                            ?: (viewModel.selectedContent ?: "").split("\n").map { AnnotatedString(it) }
+                    )
+                }
                 else -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             }
         }

@@ -18,10 +18,6 @@ fun App(
         vm.pickFolderAction = pickFolderAction
         vm
     }
-    SideEffect {
-        viewModel.pickFolderAction = pickFolderAction
-    }
-
     MaterialTheme {
         MainView(viewModel)
     }
