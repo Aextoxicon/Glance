@@ -197,9 +197,7 @@ class MainViewModelRaceTest {
         runCurrent()
 
         val firstParse = vm.selectedParseResult
-        val firstAnnotated = vm.selectedAnnotatedLines
         assertNotNull(firstParse)
-        assertNotNull(firstAnnotated)
         assertEquals("content of /root/same.txt", vm.selectedContent)
 
         vm.selectItem(file)
@@ -207,7 +205,6 @@ class MainViewModelRaceTest {
 
         assertEquals("content of /root/same.txt", vm.selectedContent)
         assertTrue(vm.selectedParseResult === firstParse, "same file should reuse the cached parse result")
-        assertTrue(vm.selectedAnnotatedLines === firstAnnotated, "same file should reuse the cached annotated lines")
 
         // 不同文件不得复用
         vm.selectItem(TreeItemViewModel(fileArtifact("/root", "other.txt")))

@@ -3,7 +3,6 @@ package com.example.glance.ViewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.AnnotatedString
 import com.example.glance.Models.IArtifact
 import com.example.glance.Models.LocalPayload
 import com.example.glance.Processing.CodeParseResult
@@ -74,9 +73,6 @@ class MainViewModel(
     var selectedParseResult by mutableStateOf<CodeParseResult?>(null)
         private set
 
-    var selectedAnnotatedLines by mutableStateOf<List<AnnotatedString>?>(null)
-        private set
-
     var treeItems by mutableStateOf<List<TreeItemViewModel>>(emptyList())
         private set
 
@@ -123,7 +119,6 @@ class MainViewModel(
         selectedArtifact = null
         selectedContent = null
         selectedParseResult = null
-        selectedAnnotatedLines = null
         hasSelection = false
         messageText = null
         previewNotice = null
@@ -178,7 +173,6 @@ class MainViewModel(
         hasSelection = false
         selectedContent = null
         selectedParseResult = null
-        selectedAnnotatedLines = null
         messageText = null
         previewNotice = null
     }
@@ -230,7 +224,6 @@ class MainViewModel(
 
     private data class LoadedFile(
         val parseResult: CodeParseResult?,
-        val annotatedLines: List<AnnotatedString>,
         val content: String,
         // 预览被降级时给UI的提示
         val notice: String? = null,
@@ -245,7 +238,6 @@ class MainViewModel(
             messageText = null
             selectedContent = null
             selectedParseResult = null
-            selectedAnnotatedLines = null
             previewNotice = null
             selectedArtifact = artifact
             hasSelection = true
@@ -254,7 +246,6 @@ class MainViewModel(
             // 期间切换选择或关闭工作区，丢弃本次结果
             if (!isActive) return@launch
             selectedParseResult = loaded.parseResult
-            selectedAnnotatedLines = loaded.annotatedLines
             selectedContent = loaded.content
             previewNotice = loaded.notice
         }
@@ -317,7 +308,6 @@ class MainViewModel(
         if (artifact.size > PREVIEW_PLAIN_LIMIT_BYTES) {
             return LoadedFile(
                 parseResult = null,
-                annotatedLines = normalizedContent.split("\n").map { AnnotatedString(it) },
                 content = normalizedContent,
                 notice = "文件较大（${FormatSize.readable(artifact.size)}），已跳过语法高亮",
             )
@@ -329,12 +319,7 @@ class MainViewModel(
             println("Code parsing failed for ${artifact.name}: ${ex.message}")
             null
         }
-        val annotatedLines = if (parseResult is CodeParseResult.Code) {
-            HighlightColor.toAnnotatedLines(parseResult)
-        } else {
-            normalizedContent.split("\n").map { AnnotatedString(it) }
-        }
-        return LoadedFile(parseResult, annotatedLines, normalizedContent)
+        return LoadedFile(parseResult, normalizedContent)
     }
 
     private suspend fun computeTotalSize(path: String): Long {

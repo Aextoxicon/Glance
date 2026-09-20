@@ -26,8 +26,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.glance.Processing.CodeParseResult
 import com.example.glance.ViewModels.MainViewModel
 import com.example.glance.ViewModels.TreeItemViewModel
+import com.example.glance.Utils.HighlightColor
 import kotlin.math.abs
 import kotlinx.coroutines.launch
 
@@ -273,7 +275,7 @@ private fun CodePreviewPanel(viewModel: MainViewModel, modifier: Modifier = Modi
             when {
                 viewModel.messageText != null -> MessageView(viewModel.messageText ?: "")
                 viewModel.selectedContent != null -> key(viewModel.selectedArtifact?.id) {
-                    CodeContentView(lines = viewModel.selectedAnnotatedLines.orEmpty())
+                    CodeContentView(parseResult = viewModel.selectedParseResult, content = viewModel.selectedContent ?: "")
                 }
                 else -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             }
@@ -315,10 +317,11 @@ private val CodeLineHeight = 20.sp
 private val LineSeparator = AnnotatedString("\n")
 
 @Composable
-private fun CodeContentView(lines: List<AnnotatedString>) {
+private fun CodeContentView(parseResult: CodeParseResult?, content: String) {
     val horizontalScrollState = rememberScrollState()
     val lazyListState = rememberLazyListState()
     val lineHeight = with(LocalDensity.current) { CodeLineHeight.toDp() }
+    val lines = content.split("\n")
 
     // LazyColumn只构建可见行，每行独立TextLayout
     // 固定行高 LazyLayout直接算偏移
@@ -335,8 +338,13 @@ private fun CodeContentView(lines: List<AnnotatedString>) {
                     contentPadding = PaddingValues(16.dp),
                 ) {
                     items(count = lines.size, key = { it }) { index ->
+                        val text = when {
+                            parseResult is CodeParseResult.Code && index < parseResult.highlightsByLine.size ->
+                                HighlightColor.buildLineAnnotatedString(lines[index], parseResult.highlightsByLine[index])
+                            else -> AnnotatedString(lines[index])
+                        }
                         Text(
-                            text = lines[index] + LineSeparator,
+                            text = text + LineSeparator,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 13.sp,
                             lineHeight = CodeLineHeight,

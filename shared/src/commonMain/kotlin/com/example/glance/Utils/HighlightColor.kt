@@ -5,7 +5,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
-import com.example.glance.Processing.CodeParseResult
 import com.example.glance.Processing.HighlightToken
 import com.example.glance.Processing.OutlineNode
 
@@ -85,35 +84,11 @@ object HighlightColor {
         return plainText
     }
 
-    // LazyColumn逐行使用，每行独立TextLayout，仅布局可见行
-    fun toAnnotatedLines(
-        parseResult: CodeParseResult,
-        colorDefault: Color = plainText,
-    ): List<AnnotatedString> {
-        return when (parseResult) {
-            is CodeParseResult.PlainText -> {
-                parseResult.content.split("\n").map {
-                    AnnotatedString(it, spanStyle = SpanStyle(color = colorDefault))
-                }
-            }
-            is CodeParseResult.Code -> {
-                val lines = parseResult.content.split("\n")
-                lines.mapIndexed { lineIndex, line ->
-                    val tokens = if (lineIndex < parseResult.highlightsByLine.size) {
-                        parseResult.highlightsByLine[lineIndex]
-                    } else {
-                        emptyList()
-                    }
-                    buildLineAnnotatedString(line, tokens, colorDefault)
-                }
-            }
-        }
-    }
-
-    private fun buildLineAnnotatedString(
+    // 逐行构建
+    fun buildLineAnnotatedString(
         line: String,
         tokens: List<HighlightToken>,
-        colorDefault: Color,
+        colorDefault: Color = plainText,
     ): AnnotatedString {
         if (tokens.isEmpty()) {
             return AnnotatedString(line, spanStyle = SpanStyle(color = colorDefault))
