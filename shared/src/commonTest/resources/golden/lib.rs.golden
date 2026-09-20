@@ -1,5 +1,5 @@
 language=rs
-contentLen=850
+contentLen=807
 highlightLineCount=44
 totalTokens=129
 line_0=[0-3:keyword,4-7:namespace,7-9:operator,9-20:constant.builtin,20-22:operator,22-29:constant.builtin,29-30:operator]
@@ -29,12 +29,12 @@ line_39=[4-7:keyword,8-12:variable,13-14:operator,15-19:namespace,19-21:operator
 line_40=[4-8:identifier,9-15:function.method,16-20:identifier,21-22:operator]
 line_41=[4-11:function.builtin,11-12:operator,13-19:string,21-25:identifier,26-29:identifier,30-31:number,33-34:operator]
 outline=
-struct_item:User(59-128)
-impl_item:(132-329)
-  function_item:new(149-326)
-struct_item:UserRepository(333-391)
-impl_item:(395-667)
-  function_item:new(422-487)
-  function_item:insert(495-579)
-  function_item:get(587-664)
-function_item:main(671-848)
+struct_item:User(56-121)
+impl_item:(123-312)
+  function_item:new(139-310)
+struct_item:UserRepository(314-370)
+impl_item:(372-632)
+  function_item:new(398-461)
+  function_item:insert(467-549)
+  function_item:get(555-630)
+function_item:main(634-806)

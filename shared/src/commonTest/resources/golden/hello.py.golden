@@ -1,5 +1,5 @@
 language=py
-contentLen=885
+contentLen=847
 highlightLineCount=39
 totalTokens=99
 line_0=[0-6:keyword,7-9:namespace]
@@ -31,9 +31,9 @@ line_33=[4-9:function,10-17:identifier,18-26:function.method]
 line_36=[0-2:keyword,3-11:identifier,12-14:operator,15-25:string]
 line_37=[4-8:function]
 outline=
-class_definition:Greeter(62-703)
-  function_definition:__init__(119-268)
-  function_definition:greeting_count(291-360)
-  function_definition:greet(368-627)
-  function_definition:farewell(635-703)
-function_definition:main(709-839)
+class_definition:Greeter(57-676)
+  function_definition:__init__(111-257)
+  function_definition:greeting_count(277-345)
+  function_definition:greet(351-603)
+  function_definition:farewell(609-676)
+function_definition:main(679-806)

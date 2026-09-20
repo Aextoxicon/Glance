@@ -1,5 +1,5 @@
 language=js
-contentLen=772
+contentLen=735
 highlightLineCount=38
 totalTokens=118
 line_0=[0-6:keyword,9-17:function,20-24:keyword,25-38:string,26-37:string,38-39:operator]
@@ -27,8 +27,8 @@ line_32=[4-9:keyword,10-17:variable,18-19:operator,20-25:keyword,26-34:function,
 line_33=[4-10:keyword,11-15:identifier,15-16:operator,16-21:function.method,22-29:identifier,30-31:operator]
 line_36=[0-6:keyword,9-15:identifier,17-23:identifier,25-35:identifier,37-38:operator]
 outline=
-class_declaration:Logger(197-595)
-  method_definition:constructor(217-298)
-  method_definition:log(306-511)
-  method_definition:create(519-592)
-function_declaration:loadConfig(599-728)
+class_declaration:Logger(185-566)
+  method_definition:constructor(204-282)
+  method_definition:log(288-487)
+  method_definition:create(493-564)
+function_declaration:loadConfig(568-694)

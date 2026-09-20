@@ -1,5 +1,5 @@
 language=json
-contentLen=577
+contentLen=553
 highlightLineCount=25
 totalTokens=34
 line_1=[4-10:property,12-20:string]

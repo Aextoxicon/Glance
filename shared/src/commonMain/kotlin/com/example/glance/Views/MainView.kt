@@ -158,6 +158,7 @@ private fun WorkspaceHeader(viewModel: MainViewModel) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(viewModel.totalSizeReadable, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
+            TextButton(onClick = { viewModel.expandAll() }, modifier = Modifier.height(28.dp), contentPadding = PaddingValues(horizontal = 4.dp)) { Text("展开全部", fontSize = 12.sp) }
             TextButton(onClick = { viewModel.collapseAll() }, modifier = Modifier.height(28.dp), contentPadding = PaddingValues(horizontal = 4.dp)) { Text("折叠", fontSize = 12.sp) }
             TextButton(onClick = { viewModel.closeWorkspace() }, modifier = Modifier.height(28.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
                 Icon(Icons.Filled.Close, contentDescription = "关闭", modifier = Modifier.size(14.dp))

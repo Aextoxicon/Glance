@@ -51,6 +51,7 @@ class LanguageGoldenTest {
         ) {
             val templates = TEMPLATE_FILES.associateWith { fileName ->
                 loadResource("templates/$fileName")
+                    ?.replace("\r\n", "\n")
                     ?: error("Template not found in resources: templates/$fileName")
             }
 
@@ -93,7 +94,7 @@ class LanguageGoldenTest {
                 assertNotNull(result, "Parse result should not be null for $fileName")
 
                 val content = templates[fileName]!!
-                val codeSnippet = content.take(20).trim()
+                val codeSnippet = content.lineSequence().first().take(20).trim()
                 onAllNodesWithText(codeSnippet, substring = true).onFirst().assertIsDisplayed()
 
                 val serialized = serializeParseResult(result)

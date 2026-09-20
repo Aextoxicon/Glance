@@ -1,5 +1,5 @@
 language=go
-contentLen=689
+contentLen=653
 highlightLineCount=37
 totalTokens=87
 line_0=[0-7:keyword,8-12:namespace]
@@ -7,10 +7,10 @@ line_2=[0-6:keyword]
 line_3=[4-9:string]
 line_4=[4-8:string]
 line_5=[4-13:string]
-line_8=[0-4:keyword,5-11:type,12-18:keyword,12-22:keyword]
-line_9=[0-20:keyword,4-8:property,12-18:type]
-line_10=[0-20:keyword,4-11:property,12-18:type]
-line_11=[0-18:keyword,4-9:property,12-16:type]
+line_8=[0-4:keyword,5-11:type,12-18:keyword,12-21:keyword]
+line_9=[0-19:keyword,4-8:property,12-18:type]
+line_10=[0-19:keyword,4-11:property,12-18:type]
+line_11=[0-17:keyword,4-9:property,12-16:type]
 line_12=[0-1:keyword]
 line_14=[0-4:keyword,5-14:function,15-19:variable,20-26:type,28-35:variable,36-42:type,44-49:variable,50-54:type,56-57:operator,57-63:type]
 line_15=[4-10:keyword,11-12:operator,12-18:type]
@@ -28,7 +28,7 @@ line_32=[8-14:variable,15-17:operator,18-25:namespace,26-30:function.method,31-3
 line_33=[8-11:namespace,12-18:function.method,19-36:string,33-35:escape,38-44:identifier]
 outline=
 package_clause:(0-12)
-type_declaration:(67-148)
-function_declaration:NewConfig(152-324)
-method_declaration:String(328-444)
-function_declaration:main(448-687)
+type_declaration:(59-136)
+function_declaration:NewConfig(138-304)
+method_declaration:String(306-420)
+function_declaration:main(422-652)
