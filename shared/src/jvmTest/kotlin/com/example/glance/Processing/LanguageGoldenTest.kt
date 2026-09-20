@@ -39,6 +39,14 @@ class LanguageGoldenTest {
             "index.js",
             "config.json",
             "README.md",
+            "main.c",
+            "main.cpp",
+            "Program.cs",
+            "Main.java",
+            "style.css",
+            "script.sh",
+            "App.ts",
+            "Component.tsx",
         )
     }
 

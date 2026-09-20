@@ -1,0 +1,38 @@
+language=cs
+contentLen=665
+highlightLineCount=33
+totalTokens=108
+line_0=[0-5:keyword,6-12:identifier,12-13:punctuation]
+line_1=[0-5:keyword,6-12:identifier,12-13:punctuation,13-24:identifier,24-25:punctuation,25-32:identifier,32-33:punctuation]
+line_3=[0-9:keyword,10-16:namespace]
+line_4=[0-1:punctuation]
+line_5=[4-10:keyword,11-16:keyword,17-23:type]
+line_6=[4-5:punctuation]
+line_7=[8-14:keyword,15-21:type,22-26:identifier,27-28:punctuation,32-33:punctuation,37-38:punctuation,39-40:punctuation]
+line_8=[8-14:keyword,15-18:type,19-26:identifier,27-28:punctuation,32-33:punctuation,37-38:punctuation,39-40:punctuation]
+line_10=[8-14:keyword,15-21:identifier,21-22:punctuation,22-28:type,29-33:variable,33-34:punctuation,35-38:type,39-46:variable,46-47:punctuation]
+line_11=[8-9:punctuation]
+line_12=[12-16:identifier,17-18:operator,19-23:identifier,23-24:punctuation]
+line_13=[12-19:identifier,20-21:operator,22-29:identifier,29-30:punctuation]
+line_14=[8-9:punctuation]
+line_16=[8-14:keyword,15-23:keyword,24-30:type,31-39:function,39-40:punctuation,40-41:punctuation]
+line_17=[8-9:punctuation]
+line_18=[12-18:keyword,38-45:identifier,49-50:punctuation]
+line_19=[8-9:punctuation]
+line_20=[4-5:punctuation]
+line_22=[4-9:keyword,10-17:type]
+line_23=[4-5:punctuation]
+line_24=[8-14:keyword,15-19:type,20-24:function,24-25:punctuation,25-31:type,31-32:punctuation,32-33:punctuation,34-38:variable,38-39:punctuation]
+line_25=[8-9:punctuation]
+line_26=[16-22:variable,23-24:operator,25-28:keyword,29-35:identifier,35-36:punctuation,36-44:string,44-45:punctuation,46-47:number,47-48:punctuation,48-49:punctuation]
+line_27=[16-21:variable,22-23:operator,24-27:keyword,28-32:identifier,32-33:operator,33-39:type,39-40:operator,41-42:punctuation,43-49:identifier,49-50:punctuation,50-54:property,55-56:punctuation,56-57:punctuation]
+line_28=[12-19:identifier,19-20:punctuation,20-29:function.method,29-30:punctuation,30-36:identifier,36-37:punctuation,37-38:punctuation]
+line_29=[8-9:punctuation]
+line_30=[4-5:punctuation]
+line_31=[0-1:punctuation]
+outline=
+namespace_declaration:Glance(49-664)
+  class_declaration:Config(72-424)
+    method_declaration:ToString(314-418)
+  class_declaration:Program(430-662)
+    method_declaration:Main(458-656)

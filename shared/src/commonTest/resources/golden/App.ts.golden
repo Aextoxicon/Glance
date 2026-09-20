@@ -1,0 +1,24 @@
+language=ts
+contentLen=490
+highlightLineCount=24
+totalTokens=83
+line_0=[0-6:keyword,7-16:keyword,17-23:type]
+line_1=[4-8:property,8-9:operator,10-16:type,16-17:operator]
+line_2=[4-11:property,11-12:operator,13-19:type,19-20:operator]
+line_3=[4-9:property,9-10:operator,11-18:type,18-19:operator]
+line_6=[0-6:keyword,7-11:keyword,12-15:type,16-17:operator,18-23:string,24-25:operator,26-32:string,32-33:operator]
+line_8=[0-6:keyword,7-15:keyword,16-28:function,29-33:identifier,33-34:operator,35-41:type,43-50:identifier,50-51:operator,52-58:type,59-60:operator,61-67:type]
+line_9=[4-10:keyword,28-33:property,33-34:operator,35-40:constant.builtin,42-43:operator]
+line_12=[0-6:keyword,7-12:keyword,13-21:type]
+line_13=[4-11:keyword,12-17:property,17-18:operator,19-22:type,22-23:operator,31-37:type,37-38:operator,39-40:operator,41-44:keyword,45-48:identifier,50-51:operator]
+line_15=[4-7:function.method,8-14:identifier,14-15:operator,16-22:type,23-24:operator,25-29:type]
+line_16=[12-13:operator,13-18:property,18-19:operator,19-22:function.method,23-29:identifier,29-30:operator,30-34:property,36-42:identifier,43-44:operator]
+line_19=[4-7:function.method,8-12:identifier,12-13:operator,14-20:type,21-22:operator,23-29:type,30-31:operator,32-41:constant.builtin]
+line_20=[8-14:keyword,19-20:operator,20-25:property,25-26:operator,26-29:function.method,30-34:identifier,35-36:operator]
+outline=
+interface_declaration:Config(7-86)
+type_alias_declaration:Env(95-121)
+function_declaration:createConfig(130-238)
+class_declaration:Registry(247-489)
+  method_definition:add(321-399)
+  method_definition:get(405-487)

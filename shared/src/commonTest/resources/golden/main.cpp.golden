@@ -1,0 +1,32 @@
+language=cpp
+contentLen=656
+highlightLineCount=33
+totalTokens=59
+line_0=[0-8:keyword,0-20:keyword]
+line_1=[0-8:keyword,0-18:keyword]
+line_2=[0-8:keyword,0-18:keyword]
+line_4=[0-9:keyword,10-16:namespace]
+line_6=[0-5:keyword,6-12:type]
+line_7=[0-6:keyword]
+line_8=[4-10:function,16-22:type,23-27:variable,29-32:type,33-40:variable,55-59:identifier,60-64:identifier,77-84:identifier]
+line_10=[9-15:type,27-32:keyword]
+line_11=[8-14:keyword,15-24:string,27-32:identifier,35-39:string,47-56:identifier,57-65:identifier,69-72:string]
+line_14=[0-7:keyword]
+line_15=[9-15:type]
+line_16=[4-7:type]
+line_19=[5-11:type,17-23:type,25-32:function,33-38:keyword,39-45:type,47-53:identifier]
+line_20=[9-15:type,21-27:type,29-34:identifier]
+line_21=[4-9:identifier,10-19:function.method,20-26:identifier,27-35:function.method]
+line_22=[4-10:keyword,11-16:identifier]
+line_25=[3-22:comment]
+line_27=[0-3:type,4-8:function]
+line_28=[12-18:type,19-25:identifier,26-34:string,36-37:number]
+line_29=[9-13:identifier,17-23:identifier,24-32:function.method,43-47:identifier]
+line_30=[4-10:keyword,11-12:number]
+outline=
+namespace_definition:glance(57-515)
+  class_specifier:Config(77-357)
+    function_definition:(104-188)
+    function_definition:(194-304)
+  function_definition:(360-512)
+function_definition:(538-655)
