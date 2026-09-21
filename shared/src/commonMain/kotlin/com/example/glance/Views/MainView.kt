@@ -1,6 +1,9 @@
 package com.example.glance.Views
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -37,6 +40,7 @@ import kotlin.math.abs
 import kotlinx.coroutines.launch
 
 private val OUTLINE_DRAWER_WIDTH = 300.dp
+private const val OUTLINE_SCRIM_FADE_MS = 500
 
 @Composable
 fun MainView(viewModel: MainViewModel) {
@@ -46,8 +50,6 @@ fun MainView(viewModel: MainViewModel) {
             viewModel.onWindowResized(windowWidth.toDouble())
         }
     }
-
-    // 用onSizeChanged替代BoxWithConstraints
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -65,24 +67,20 @@ fun MainView(viewModel: MainViewModel) {
         } else {
             NarrowLayout(viewModel)
         }
-
-        // 右侧大纲抽屉：覆盖式，宽窄屏共用一套（Material3 官方 drawer 只支持 start 侧，
-        // 没有 end-side 参数，因此用 AnimatedVisibility 自建）
-        //
-        // 遮罩与面板必须分成两个 AnimatedVisibility：
-        // slideInHorizontally 会平移整个 composable 内容，若遮罩和面板写在同一个
-        // AnimatedVisibility 里，遮罩会跟着面板一起从边缘滑进来（暗色盖不满屏幕）。
-        // 正确行为：遮罩原地 fade，只有面板位移。
         AnimatedVisibility(
             visible = viewModel.outlineOpen,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(
+                animationSpec = tween(durationMillis = OUTLINE_SCRIM_FADE_MS, easing = LinearOutSlowInEasing),
+                initialAlpha = 0f,
+            ),
+            exit = fadeOut(
+                animationSpec = tween(durationMillis = OUTLINE_SCRIM_FADE_MS, easing = FastOutLinearInEasing),
+                targetAlpha = 0f,
+            ),
         ) {
             OutlineScrim(onDismiss = { viewModel.closeOutline() })
         }
 
-        // 位移量取面板自身宽度而非 fullWidth：用 fullWidth 的话面板要从屏幕外一整屏远的地方
-        // 飞进来，前小半段动画完全看不见，观感是「卡一下才出现」。
         val panelWidthPx = with(LocalDensity.current) { OUTLINE_DRAWER_WIDTH.roundToPx() }
         AnimatedVisibility(
             visible = viewModel.outlineOpen,
