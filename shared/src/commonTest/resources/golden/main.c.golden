@@ -21,5 +21,5 @@ line_21=[4-16:function,18-24:identifier]
 line_22=[4-10:keyword,11-12:number]
 outline=
 struct_specifier:(69-136)
-function_definition:(146-283)
-function_definition:(285-456)
+function_definition:print_config(146-283)
+function_definition:main(285-456)

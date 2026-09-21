@@ -7,6 +7,7 @@ import com.example.glance.Models.IArtifact
 import com.example.glance.Models.LocalPayload
 import com.example.glance.Processing.CodeParseResult
 import com.example.glance.Processing.FileProcessor
+import com.example.glance.Processing.OutlineNode
 import com.example.glance.Repositories.IArtifactRepo
 import com.example.glance.Repositories.TextFileDetector
 import com.example.glance.Utils.FormatSize
@@ -84,6 +85,34 @@ class MainViewModel(
 
     var isWide by mutableStateOf(true)
         private set
+
+    // 右侧大纲抽屉：默认关闭
+    var outlineOpen by mutableStateOf(false)
+        private set
+
+    // 点击大纲条目后请求代码区滚动到该行；被消费后置回 null
+    var outlineScrollTargetLine by mutableStateOf<Int?>(null)
+        private set
+
+    // 当前文件的大纲（非代码 / 无大纲时为 null）
+    val currentOutline: List<OutlineNode>?
+        get() = (selectedParseResult as? CodeParseResult.Code)?.outline?.takeIf { it.isNotEmpty() }
+
+    fun toggleOutline() {
+        outlineOpen = !outlineOpen
+    }
+
+    fun closeOutline() {
+        outlineOpen = false
+    }
+
+    fun requestScrollToLine(line: Int) {
+        outlineScrollTargetLine = line
+    }
+
+    fun consumeScrollTargetLine() {
+        outlineScrollTargetLine = null
+    }
 
     val totalSizeReadable: String get() = FormatSize.readable(totalSize)
     val selectedSizeDisplay: String get() = selectedArtifact?.let { FormatSize.readable(it.size) } ?: ""

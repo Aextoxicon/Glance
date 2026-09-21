@@ -1,6 +1,8 @@
 package com.example.glance.Views
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,11 +29,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.glance.Processing.CodeParseResult
+import com.example.glance.Processing.OutlineNode
 import com.example.glance.ViewModels.MainViewModel
 import com.example.glance.ViewModels.TreeItemViewModel
 import com.example.glance.Utils.HighlightColor
 import kotlin.math.abs
 import kotlinx.coroutines.launch
+
+private val OUTLINE_DRAWER_WIDTH = 300.dp
 
 @Composable
 fun MainView(viewModel: MainViewModel) {
@@ -59,6 +64,42 @@ fun MainView(viewModel: MainViewModel) {
             WideLayout(viewModel)
         } else {
             NarrowLayout(viewModel)
+        }
+
+        // 右侧大纲抽屉：覆盖式，宽窄屏共用一套（Material3 官方 drawer 只支持 start 侧，
+        // 没有 end-side 参数，因此用 AnimatedVisibility 自建）
+        //
+        // 遮罩与面板必须分成两个 AnimatedVisibility：
+        // slideInHorizontally 会平移整个 composable 内容，若遮罩和面板写在同一个
+        // AnimatedVisibility 里，遮罩会跟着面板一起从边缘滑进来（暗色盖不满屏幕）。
+        // 正确行为：遮罩原地 fade，只有面板位移。
+        AnimatedVisibility(
+            visible = viewModel.outlineOpen,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            OutlineScrim(onDismiss = { viewModel.closeOutline() })
+        }
+
+        // 位移量取面板自身宽度而非 fullWidth：用 fullWidth 的话面板要从屏幕外一整屏远的地方
+        // 飞进来，前小半段动画完全看不见，观感是「卡一下才出现」。
+        val panelWidthPx = with(LocalDensity.current) { OUTLINE_DRAWER_WIDTH.roundToPx() }
+        AnimatedVisibility(
+            visible = viewModel.outlineOpen,
+            enter = fadeIn() + slideInHorizontally { panelWidthPx },
+            exit = fadeOut() + slideOutHorizontally { panelWidthPx },
+            modifier = Modifier.align(Alignment.CenterEnd),
+        ) {
+            OutlineDrawer(
+                outline = viewModel.currentOutline.orEmpty(),
+                onDismiss = { viewModel.closeOutline() },
+                onSelectNode = { node ->
+                    val content = viewModel.selectedContent
+                    if (content != null) {
+                        viewModel.requestScrollToLine(lineIndexAt(content, node.startByte))
+                    }
+                },
+            )
         }
     }
 }
@@ -250,6 +291,146 @@ private fun TreeItemRow(depth: Int, item: TreeItemViewModel, isSelected: Boolean
     }
 }
 
+// 右侧大纲抽屉
+
+private fun flattenOutline(nodes: List<OutlineNode>, depth: Int = 0): List<Pair<Int, OutlineNode>> {
+    val result = mutableListOf<Pair<Int, OutlineNode>>()
+    for (node in nodes) {
+        result.add(depth to node)
+        if (node.children.isNotEmpty()) {
+            result.addAll(flattenOutline(node.children, depth + 1))
+        }
+    }
+    return result
+}
+
+private fun outlineKindLabel(kind: String): String = when {
+    kind.startsWith("class") || kind.startsWith("record") || kind.startsWith("annotation_type") -> "类"
+    kind.startsWith("interface") -> "接口"
+    kind.startsWith("struct") -> "结构体"
+    kind.startsWith("enum") -> "枚举"
+    kind.startsWith("trait") -> "trait"
+    kind.startsWith("impl") -> "impl"
+    kind.startsWith("method") -> "方法"
+    kind.startsWith("function") || kind.startsWith("generator_function") -> "函数"
+    kind.startsWith("namespace") || kind.startsWith("mod") -> "命名空间"
+    kind.startsWith("type_alias") || kind.startsWith("type_item") || kind == "type_declaration" -> "类型"
+    kind.startsWith("static") || kind.startsWith("const") -> "常量"
+    kind == "package_clause" -> "包"
+    else -> kind.substringBefore('_')
+}
+
+//OutlineNode.startByte已经是被rust的convert_outline转成 UTF-16 偏移
+private fun lineIndexAt(content: String, offset: Long): Int {
+    if (offset <= 0) return 0
+    val end = offset.coerceAtMost(content.length.toLong()).toInt()
+    var line = 0
+    for (i in 0 until end) {
+        if (content[i] == '\n') line++
+    }
+    return line
+}
+
+@Composable
+private fun OutlineDrawer(
+    outline: List<OutlineNode>,
+    onDismiss: () -> Unit,
+    onSelectNode: (OutlineNode) -> Unit,
+) {
+    val flatItems = remember(outline) { flattenOutline(outline) }
+
+    Surface(
+        modifier = Modifier.fillMaxHeight().width(OUTLINE_DRAWER_WIDTH),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+        shadowElevation = 8.dp,
+    ) {
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp).heightIn(min = 44.dp),
+            ) {
+                Text("大纲", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.height(28.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp),
+                ) {
+                    Icon(Icons.Filled.Close, contentDescription = "关闭大纲", modifier = Modifier.size(14.dp))
+                }
+            }
+            HorizontalDivider()
+
+            if (flatItems.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        "该文件没有大纲",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                val listState = rememberLazyListState()
+                Box(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                        items(
+                            items = flatItems,
+                            key = { (_, node) -> "${node.startByte}-${node.endByte}-${node.kind}" },
+                        ) { (depth, node) ->
+                            OutlineRow(depth = depth, node = node, onClick = { onSelectNode(node) })
+                        }
+                    }
+                    PlatformVerticalScrollbar(scrollState = listState, modifier = Modifier.align(Alignment.CenterEnd))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OutlineScrim(onDismiss: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.32f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss,
+            ),
+    )
+}
+
+@Composable
+private fun OutlineRow(depth: Int, node: OutlineNode, onClick: () -> Unit) {
+    val indent = (depth * 14).dp
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(start = 12.dp + indent, end = 12.dp, top = 3.dp, bottom = 3.dp)
+            .heightIn(min = 30.dp),
+    ) {
+        Text(
+            outlineKindLabel(node.kind),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.width(48.dp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            node.name.ifBlank { "（无名）" },
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
 @Composable
 private fun CodePreviewPanel(viewModel: MainViewModel, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
@@ -276,7 +457,12 @@ private fun CodePreviewPanel(viewModel: MainViewModel, modifier: Modifier = Modi
             when {
                 viewModel.messageText != null -> MessageView(viewModel.messageText ?: "")
                 viewModel.selectedContent != null -> key(viewModel.selectedArtifact?.id) {
-                    CodeContentView(parseResult = viewModel.selectedParseResult, content = viewModel.selectedContent ?: "")
+                    CodeContentView(
+                        parseResult = viewModel.selectedParseResult,
+                        content = viewModel.selectedContent ?: "",
+                        scrollTargetLine = viewModel.outlineScrollTargetLine,
+                        onScrolled = { viewModel.consumeScrollTargetLine() },
+                    )
                 }
                 else -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             }
@@ -308,6 +494,17 @@ private fun CodePreviewToolbar(viewModel: MainViewModel) {
         Spacer(Modifier.width(8.dp))
         Text(viewModel.selectedSizeDisplay, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(8.dp))
+        // 只有确实有大纲时才给入口
+        if (viewModel.currentOutline != null) {
+            TextButton(
+                onClick = { viewModel.toggleOutline() },
+                modifier = Modifier.height(28.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp),
+            ) {
+                Text("大纲", fontSize = 12.sp)
+            }
+            Spacer(Modifier.width(4.dp))
+        }
         TextButton(onClick = { viewModel.clearSelection() }, modifier = Modifier.height(28.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
             Icon(Icons.Filled.Close, contentDescription = "关闭预览", modifier = Modifier.size(14.dp))
         }
@@ -318,11 +515,22 @@ private val CodeLineHeight = 20.sp
 private val LineSeparator = AnnotatedString("\n")
 
 @Composable
-private fun CodeContentView(parseResult: CodeParseResult?, content: String) {
+private fun CodeContentView(
+    parseResult: CodeParseResult?,
+    content: String,
+    scrollTargetLine: Int?,
+    onScrolled: () -> Unit,
+) {
     val horizontalScrollState = rememberScrollState()
     val lazyListState = rememberLazyListState()
     val lineHeight = with(LocalDensity.current) { CodeLineHeight.toDp() }
-    val lines = content.split("\n")
+    val lines = remember(content) { content.split("\n") }
+
+    LaunchedEffect(scrollTargetLine) {
+        val line = scrollTargetLine ?: return@LaunchedEffect
+        lazyListState.scrollToItem((line - 1).coerceIn(0, (lines.size - 1).coerceAtLeast(0)))
+        onScrolled()
+    }
 
     // LazyColumn只构建可见行，每行独立TextLayout
     // 固定行高 LazyLayout直接算偏移

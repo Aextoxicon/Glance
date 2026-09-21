@@ -18,8 +18,8 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 
 /**
- * Compose UI golden test — 模拟"打开工作区 → 点击文件 → 验证解析输出"的完整链路。
- * 首次运行：golden文件生成到build/，需手动复制到commonTest/resources/golden/。
+ 默认：只比对，绝不改动已入库的 golden（比对失败时提示更新命令）
+ ./gradlew jvmTest --rerun -PupdateGoldens=true`：把新基线直接写回 commonTest/resources/golden/
  */
 @OptIn(ExperimentalTestApi::class)
 class LanguageGoldenTest {
@@ -30,6 +30,9 @@ class LanguageGoldenTest {
 
     companion object {
         private const val WORKSPACE_PATH = "/workspace"
+
+        private val UPDATE_GOLDENS: Boolean =
+            System.getProperty("updateGoldens")?.equals("true", ignoreCase = true) ?: false
 
         private val TEMPLATE_FILES = listOf(
             "hello.py",
@@ -110,7 +113,12 @@ class LanguageGoldenTest {
                 val goldenPath = "golden/$fileName.golden"
                 val golden = loadResource(goldenPath)
 
-                if (golden == null) {
+                if (UPDATE_GOLDENS) {
+                    // 只写有变化的
+                    if (golden != serialized) {
+                        saveGoldenToSourceTree(goldenPath, serialized)
+                    }
+                } else if (golden == null) {
                     saveResource(goldenPath, serialized)
                     println("=== Generated golden for $fileName ===")
                 } else if (golden != serialized) {
@@ -119,7 +127,8 @@ class LanguageGoldenTest {
                             "--- GOLDEN (first 300 chars) ---\n" +
                             golden.take(300) + "\n" +
                             "--- ACTUAL (first 300 chars) ---\n" +
-                            serialized.take(300)
+                            serialized.take(300) + "\n" +
+                            "--- 若上述变化是预期的，重跑：./gradlew jvmTest --rerun -PupdateGoldens=true ---\n" +
                     )
                 }
             }

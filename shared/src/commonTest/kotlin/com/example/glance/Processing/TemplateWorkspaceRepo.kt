@@ -8,7 +8,7 @@ import com.example.glance.Repositories.IArtifactRepo
 import com.example.glance.Utils.Result
 
 /**
- * Mock工作区，实现[IArtifactRepo]以驱动[MainViewModel]的文件浏览和解析流程。
+ * Mock工作区，实现[IArtifactRepo]以驱动[MainViewModel]的文件浏览和解析流程
  */
 class TemplateWorkspaceRepo(
     private val workspacePath: String,

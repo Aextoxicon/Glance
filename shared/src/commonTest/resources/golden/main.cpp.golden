@@ -26,7 +26,7 @@ line_30=[4-10:keyword,11-12:number]
 outline=
 namespace_definition:glance(57-515)
   class_specifier:Config(77-357)
-    function_definition:(104-188)
-    function_definition:(194-304)
-  function_definition:(360-512)
-function_definition:(538-655)
+    function_definition:Config(104-188)
+    function_definition:ToString(194-304)
+  function_definition:Collect(360-512)
+function_definition:main(538-655)

@@ -35,9 +35,7 @@ class TreeItemViewModel(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     owner: Job? = null,
 ) {
-    // owner非空时作为SupervisorJob的parent：父Job取消时级联中止所有子目录加载，
-    // 避免closeWorkspace清空树后仍有任务回写造成泄漏。
-    // SupervisorJob保证兄弟任务之间互不影响。
+    // SupervisorJob保证兄弟任务之间互不影响
     private val scope = CoroutineScope(
         SupervisorJob(owner) + (uiDispatcher ?: Dispatchers.Default)
     )
@@ -143,7 +141,7 @@ class TreeItemViewModel(
         }
     }
 
-    // 展开并等待子节点加载完成。由MainViewModel.expandAll分批调用，以便用固定批次上限并发，而不是每个目录各起一个协程。
+    // 展开并等待子节点加载完成由MainViewModel.expandAll分批调用
     suspend fun ensureLoaded() {
         if (!isDir) return
         isExpanded = true
@@ -167,9 +165,7 @@ private class PlaceholderArtifact : IArtifact {
 }
 
 /**
- * 常见噪声目录：依赖缓存、VCS、IDE与构建产物。浏览树上不显示，
- * 避免node_modules级别的仓库把扁平化列表和LazyColumn撑爆。
- * 注意：computeTotalSize不做此过滤，工作区总大小仍反映真实磁盘占用。
+可能会删这一部分
  */
 internal val IGNORED_DIR_NAMES: Set<String> = setOf(
     ".git",
@@ -189,7 +185,7 @@ internal val IGNORED_DIR_NAMES: Set<String> = setOf(
     "DerivedData",
 )
 
-/** 过滤掉 [IGNORED_DIR_NAMES]中的目录项，文件不受影响。 */
+/** 过滤掉 [IGNORED_DIR_NAMES]中的目录项，文件不受影响 */
 internal fun filterIgnoredDirs(items: List<IArtifact>): List<IArtifact> {
     if (IGNORED_DIR_NAMES.isEmpty()) return items
     return items.filterNot { item ->

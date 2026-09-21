@@ -1,8 +1,8 @@
 package com.example.glance.Processing
 
 /**
- * 将[CodeParseResult]序列化为纯文本快照，用于golden对比。
- * PlainText类型仅记录language和contentLen。
+ * 将[CodeParseResult]序列化为纯文本快照，用于golden对比
+ * PlainText类型仅记录language和contentLen
  */
 fun serializeParseResult(result: CodeParseResult): String {
     return when (result) {

@@ -26,7 +26,7 @@ line_26=[4-7:keyword,8-13:variable,14-15:operator,16-30:variable,30-31:punctuati
 line_27=[4-11:function,11-12:punctuation.bracket,12-17:variable,17-19:operator,19-23:property,23-24:punctuation.bracket]
 line_28=[0-1:punctuation.bracket]
 outline=
-class_declaration:(25-138)
-function_declaration:(215-266)
-function_declaration:(272-333)
-function_declaration:(409-569)
+class_declaration:User(25-138)
+function_declaration:add(215-266)
+function_declaration:find(272-333)
+function_declaration:main(409-569)

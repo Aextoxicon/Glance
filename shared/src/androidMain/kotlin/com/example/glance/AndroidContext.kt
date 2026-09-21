@@ -3,10 +3,7 @@ package com.example.glance
 import android.annotation.SuppressLint
 import android.content.Context
 
-/**
- * Android全局ApplicationContext持有者。
- * 在Application.onCreate()或MainActivity.onCreate()中初始化。
- */
+// Android全局ApplicationContext持有者，在Application.onCreate()或MainActivity.onCreate()中初始化
 object AndroidContext {
     @SuppressLint("StaticFieldLeak")
     private var _context: Context? = null

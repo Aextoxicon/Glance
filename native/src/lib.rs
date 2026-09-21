@@ -166,12 +166,83 @@ fn split_highlights_by_line(
 }
 
 //helpers
+
+/// 标识符类节点，跨 grammar 的名字节点类型并不统一，穷举常见的几种
+const IDENTIFIER_KINDS: &[&str] = &[
+    "identifier",
+    "type_identifier",
+    "simple_identifier",
+    "package_identifier",
+    "field_identifier",
+    "qualified_identifier",
+];
+
+fn is_identifier_kind(kind: &str) -> bool {
+    IDENTIFIER_KINDS.contains(&kind)
+}
+
+fn text_of(node: tree_sitter::Node, source: &[u8]) -> String {
+    node.utf8_text(source).unwrap_or("").to_string()
+}
+
+fn find_child_of_kind<'a>(
+    node: tree_sitter::Node<'a>,
+    kinds: &[&str],
+) -> Option<tree_sitter::Node<'a>> {
+    let mut cursor = node.walk();
+    let found = node
+        .named_children(&mut cursor)
+        .find(|child| kinds.contains(&child.kind()));
+    found
+}
+
+fn first_identifier_child(node: tree_sitter::Node, source: &[u8]) -> Option<String> {
+    let mut cursor = node.walk();
+    let found = node
+        .named_children(&mut cursor)
+        .find(|child| is_identifier_kind(child.kind()))
+        .map(|child| text_of(child, source));
+    found
+}
+
+/// 沿 declarator 链下钻找真正的标识符
+fn declarator_identifier(node: tree_sitter::Node, source: &[u8]) -> Option<String> {
+    if is_identifier_kind(node.kind()) {
+        return Some(text_of(node, source));
+    }
+    let mut cursor = node.walk();
+    for child in node.named_children(&mut cursor) {
+        if let Some(name) = declarator_identifier(child, source) {
+            return Some(name);
+        }
+    }
+    None
+}
+
 fn extract_name(node: tree_sitter::Node, source: &[u8]) -> String {
     if let Some(name_node) = node.child_by_field_name("name") {
-        name_node.utf8_text(source).unwrap_or("").to_string()
-    } else {
-        String::new()
+        return text_of(name_node, source);
     }
+
+    match node.kind() {
+        "function_definition" | "declaration" => {
+            if let Some(declarator) = node.child_by_field_name("declarator") {
+                if let Some(name) = declarator_identifier(declarator, source) {
+                    return name;
+                }
+            }
+        }
+        "type_declaration" => {
+            if let Some(name) = find_child_of_kind(node, &["type_spec"])
+                .and_then(|spec| spec.child_by_field_name("name"))
+            {
+                return text_of(name, source);
+            }
+        }
+        _ => {}
+    }
+
+    first_identifier_child(node, source).unwrap_or_default()
 }
 
 // 只有这些节点类型会生成OutlineNode

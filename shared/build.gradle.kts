@@ -171,6 +171,11 @@ tasks.withType<Test>().configureEach {
     dependsOn(cargoBuildJvm)
     systemProperty("uniffi.component.$nativeLibName.libraryOverride", jvmNativeLib.absolutePath)
     systemProperty("java.library.path", jvmNativeLib.parentFile.absolutePath)
+    // 仅在显式传入 -PupdateGoldens=true（或 -DupdateGoldens=true）时，golden 测试才把新基线写入到资源目录，否则仅做比对
+    systemProperty(
+        "updateGoldens",
+        (project.findProperty("updateGoldens") ?: System.getProperty("updateGoldens") ?: "false").toString(),
+    )
 }
 
 tasks.named("assemble") {

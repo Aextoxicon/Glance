@@ -48,7 +48,7 @@ iOS 暂不考虑
 ./gradlew :shared:jvmTest
 ```
 
-Rust 库构建后，UniFFI 会生成 JNA 绑定到 `shared/build/generated/uniffi/kotlin/`，由 `jvmMain` 和 `androidMain` 共用。
+Rust 库构建后，UniFFI 会生成 JNA 绑定到 `shared/build/generated/uniffi/kotlin/`，由 `jvmMain` 和 `androidMain` 共用
 
 note
 ```

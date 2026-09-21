@@ -30,10 +30,10 @@ line_40=[4-8:identifier,9-15:function.method,16-20:identifier,21-22:operator]
 line_41=[4-11:function.builtin,11-12:operator,13-19:string,21-25:identifier,26-29:identifier,30-31:number,33-34:operator]
 outline=
 struct_item:User(56-121)
-impl_item:(123-312)
+impl_item:User(123-312)
   function_item:new(139-310)
 struct_item:UserRepository(314-370)
-impl_item:(372-632)
+impl_item:UserRepository(372-632)
   function_item:new(398-461)
   function_item:insert(467-549)
   function_item:get(555-630)

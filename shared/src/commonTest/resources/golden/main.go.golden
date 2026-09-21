@@ -27,8 +27,8 @@ line_31=[4-6:keyword,7-10:function.builtin,11-15:identifier,17-18:operator,19-20
 line_32=[8-14:variable,15-17:operator,18-25:namespace,26-30:function.method,31-35:identifier,37-40:string]
 line_33=[8-11:namespace,12-18:function.method,19-36:string,33-35:escape,38-44:identifier]
 outline=
-package_clause:(0-12)
-type_declaration:(59-136)
+package_clause:main(0-12)
+type_declaration:Config(59-136)
 function_declaration:NewConfig(138-304)
 method_declaration:String(306-420)
 function_declaration:main(422-652)

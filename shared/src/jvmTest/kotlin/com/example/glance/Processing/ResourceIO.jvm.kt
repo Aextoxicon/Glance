@@ -15,3 +15,20 @@ actual fun saveResource(path: String, content: String) {
     file.writeText(content)
     println("Golden saved: ${file.absolutePath}")
 }
+
+fun saveGoldenToSourceTree(path: String, content: String) {
+    val file = resolveSourceTreeResource(path)
+    file.parentFile.mkdirs()
+    file.writeText(content)
+    println("=== Golden updated: ${file.absolutePath} ===")
+}
+
+private fun resolveSourceTreeResource(path: String): File {
+    var dir = File(System.getProperty("user.dir")).absoluteFile
+    repeat(4) {
+        val resources = File(dir, "src/commonTest/resources")
+        if (resources.isDirectory) return resources.resolve(path)
+        dir = dir.parentFile ?: return resources.resolve(path)
+    }
+    return File(dir, "src/commonTest/resources").resolve(path)
+}
