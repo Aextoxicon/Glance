@@ -42,7 +42,7 @@ CodeParseResult {
             HighlightToken {
                 start_byte: 4,
                 end_byte: 11,
-                kind: "function",
+                kind: "function.builtin",
             },
             HighlightToken {
                 start_byte: 11,
@@ -77,7 +77,7 @@ CodeParseResult {
     outline: [
         OutlineNode {
             kind: "function_declaration",
-            name: "",
+            name: "main",
             detail: "",
             start_byte: 18,
             end_byte: 63,

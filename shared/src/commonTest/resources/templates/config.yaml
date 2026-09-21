@@ -1,0 +1,15 @@
+name: glance
+version: 1.0.0
+
+services:
+  parser:
+    image: glance/parser:latest
+    ports:
+      - "8080:8080"
+    environment:
+      LOG_LEVEL: info
+      MAX_FILE_SIZE: 2097152
+
+defaults:
+  theme: dark
+  outline_enabled: true

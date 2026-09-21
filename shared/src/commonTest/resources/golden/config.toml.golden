@@ -1,0 +1,16 @@
+language=toml
+contentLen=216
+highlightLineCount=15
+totalTokens=68
+line_0=[0-5:type,5-6:property,6-7:operator,7-8:property,8-21:string]
+line_2=[0-1:punctuation.bracket,1-8:type,8-9:punctuation.bracket]
+line_3=[0-4:type,4-5:property,5-6:operator,6-7:property,7-15:string]
+line_4=[0-7:type,7-8:property,8-9:operator,9-10:property,10-17:string]
+line_5=[0-7:type,7-8:property,8-9:operator,9-10:property,10-16:string]
+line_7=[0-1:punctuation.bracket,1-13:type,13-14:punctuation.bracket]
+line_8=[0-5:type,5-6:property,6-7:operator,7-8:property,8-9:punctuation.bracket,9-10:property,10-17:type,17-18:property,18-19:operator,19-20:property,20-25:string,25-26:punctuation.delimiter,26-27:property,27-35:type,35-36:property,36-37:operator,37-38:property,38-39:punctuation.bracket,39-47:string,47-48:punctuation.bracket,48-49:property,49-50:punctuation.bracket]
+line_9=[0-11:type,11-12:property,12-13:operator,13-14:property,14-20:string]
+line_11=[0-1:punctuation.bracket,1-8:type,8-9:punctuation.delimiter,9-16:type,16-17:punctuation.bracket]
+line_12=[0-9:type,9-10:property,10-11:operator,11-12:property,12-13:number]
+line_13=[0-3:type,3-4:property,4-5:operator,5-6:property,6-10:boolean]
+outline=

@@ -11,14 +11,19 @@ CodeParseResult {
                 kind: "keyword",
             },
             HighlightToken {
-                start_byte: 0,
-                end_byte: 19,
+                start_byte: 8,
+                end_byte: 9,
                 kind: "keyword",
             },
             HighlightToken {
                 start_byte: 9,
                 end_byte: 18,
                 kind: "string",
+            },
+            HighlightToken {
+                start_byte: 18,
+                end_byte: 19,
+                kind: "keyword",
             },
         ],
         [
@@ -68,7 +73,7 @@ CodeParseResult {
     outline: [
         OutlineNode {
             kind: "function_definition",
-            name: "",
+            name: "main",
             detail: "",
             start_byte: 19,
             end_byte: 70,

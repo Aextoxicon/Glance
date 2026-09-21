@@ -1,0 +1,14 @@
+title = "Glance 配置样例"
+
+[package]
+name = "glance"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+tree-sitter = "0.25"
+
+[profile.release]
+opt-level = 3
+lto = true

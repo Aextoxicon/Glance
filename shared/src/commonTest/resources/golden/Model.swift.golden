@@ -1,0 +1,27 @@
+language=swift
+contentLen=359
+highlightLineCount=24
+totalTokens=83
+line_0=[0-6:keyword.import,7-17:variable]
+line_2=[0-6:keyword.type,7-11:type,11-12:punctuation.delimiter,13-20:type,21-22:punctuation.bracket]
+line_3=[4-7:keyword,8-10:variable.member,10-11:punctuation.delimiter,12-15:type]
+line_4=[4-7:keyword,8-12:variable.member,12-13:punctuation.delimiter,14-20:type]
+line_5=[4-7:keyword,8-13:variable.member,13-14:punctuation.delimiter,15-21:type,21-22:operator]
+line_6=[0-1:punctuation.bracket]
+line_8=[0-5:keyword.modifier,6-11:keyword.type,12-26:type,27-28:punctuation.bracket]
+line_9=[4-11:keyword.modifier,12-15:keyword,16-21:variable.member,21-22:punctuation.delimiter,23-24:punctuation.bracket,24-28:type,28-29:punctuation.bracket,30-31:operator,32-33:punctuation.bracket,33-34:punctuation.bracket]
+line_11=[4-8:keyword.function,9-12:function.method,12-13:punctuation.bracket,13-14:variable.parameter,15-19:variable.parameter,19-20:punctuation.delimiter,21-25:type,25-26:punctuation.bracket,27-28:punctuation.bracket]
+line_12=[8-13:variable,13-14:punctuation.delimiter,14-20:function.call,20-21:punctuation.bracket,21-25:variable,25-26:punctuation.bracket]
+line_13=[4-5:punctuation.bracket]
+line_15=[4-8:keyword.function,9-13:function.method,13-14:punctuation.bracket,14-16:variable.parameter,16-17:punctuation.delimiter,18-21:type,21-22:punctuation.bracket,23-25:operator,26-30:type,30-31:operator,32-33:punctuation.bracket]
+line_16=[8-13:variable,13-14:punctuation.delimiter,14-19:function.call,20-21:punctuation.bracket,22-24:variable,24-25:punctuation.delimiter,25-27:variable.member,28-30:operator,31-33:variable,34-35:punctuation.bracket]
+line_17=[4-5:punctuation.bracket]
+line_19=[4-7:keyword,8-13:variable.member,13-14:punctuation.delimiter,15-18:type,19-20:punctuation.bracket]
+line_20=[8-13:variable,13-14:punctuation.delimiter,14-19:variable.member]
+line_21=[4-5:punctuation.bracket]
+line_22=[0-1:punctuation.bracket]
+outline=
+class_declaration:User(19-103)
+class_declaration:UserRepository(105-358)
+  function_declaration:add(174-231)
+  function_declaration:find(237-308)

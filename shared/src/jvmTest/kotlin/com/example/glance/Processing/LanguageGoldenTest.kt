@@ -51,6 +51,12 @@ class LanguageGoldenTest {
             "App.ts",
             "Component.tsx",
             "Dockerfile",
+            "config.ini",
+            "Makefile",
+            "config.toml",
+            "config.yaml",
+            "index.html",
+            "Model.swift",
         )
     }
 

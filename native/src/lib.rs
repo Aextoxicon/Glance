@@ -344,6 +344,89 @@ fn collect_outline_children(
     }
 }
 
+fn capture_specificity(kind: &str) -> usize {
+    kind.split('.').count()
+}
+
+// 解决高亮token的冲突，叠加的token按优先级保留更具体的，嵌套的token切开成互不重叠的
+fn resolve_capture_conflicts(mut tokens: Vec<HighlightToken>) -> Vec<HighlightToken> {
+    tokens.sort_by(|a, b| {
+        a.start_byte
+            .cmp(&b.start_byte)
+            .then_with(|| b.end_byte.cmp(&a.end_byte))
+            .then_with(|| capture_specificity(&b.kind).cmp(&capture_specificity(&a.kind)))
+    });
+    tokens.dedup_by(|a, b| a.start_byte == b.start_byte && a.end_byte == b.end_byte);
+
+    struct Open {
+        cursor: u64,
+        end: u64,
+        kind: String,
+    }
+    let mut out: Vec<HighlightToken> = Vec::with_capacity(tokens.len());
+    let mut stack: Vec<Open> = Vec::new();
+
+    fn close_top(stack: &mut Vec<Open>, out: &mut Vec<HighlightToken>) {
+        if let Some(top) = stack.pop() {
+            if top.cursor < top.end {
+                out.push(HighlightToken {
+                    start_byte: top.cursor,
+                    end_byte: top.end,
+                    kind: top.kind,
+                });
+            }
+            // 外层跳过刚被内层占用的那一段
+            if let Some(next) = stack.last_mut() {
+                if next.cursor < top.end {
+                    next.cursor = top.end;
+                }
+            }
+        }
+    }
+
+    for t in tokens {
+        // 关掉所有在 t 起点之前（含）就结束的外层
+        while stack.last().map_or(false, |top| top.end <= t.start_byte) {
+            close_top(&mut stack, &mut out);
+        }
+
+        if let Some(top) = stack.last_mut() {
+            if top.end > t.end_byte {
+                // 先吐出 top 在 t 之前的那一段
+                if top.cursor < t.start_byte {
+                    out.push(HighlightToken {
+                        start_byte: top.cursor,
+                        end_byte: t.start_byte,
+                        kind: top.kind.clone(),
+                    });
+                    top.cursor = t.start_byte;
+                }
+            } else {
+                // 交叉重叠（top 在 t 内部结束）
+                if top.cursor < t.start_byte {
+                    out.push(HighlightToken {
+                        start_byte: top.cursor,
+                        end_byte: t.start_byte,
+                        kind: top.kind.clone(),
+                    });
+                }
+                stack.pop();
+            }
+        }
+
+        stack.push(Open {
+            cursor: t.start_byte,
+            end: t.end_byte,
+            kind: t.kind,
+        });
+    }
+    while !stack.is_empty() {
+        close_top(&mut stack, &mut out);
+    }
+
+    out
+}
+
 //exported
 #[uniffi::export]
 pub fn parse_code(source: String, extension: String) -> CodeParseResult {
@@ -405,9 +488,7 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
                 });
             }
         }
-        // 线性去重
-        results.sort_by_key(|t| (t.start_byte, t.end_byte));
-        results.dedup_by_key(|t| (t.start_byte, t.end_byte));
+        results = resolve_capture_conflicts(results);
         debug_log!("[RUST] highlights count: {} (deduplicated)", results.len());
         for h in &results {
             debug_log!(

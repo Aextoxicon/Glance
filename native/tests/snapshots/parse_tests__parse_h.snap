@@ -23,14 +23,19 @@ CodeParseResult {
                 kind: "keyword",
             },
             HighlightToken {
-                start_byte: 0,
-                end_byte: 10,
+                start_byte: 7,
+                end_byte: 8,
                 kind: "keyword",
             },
             HighlightToken {
                 start_byte: 8,
                 end_byte: 9,
                 kind: "identifier",
+            },
+            HighlightToken {
+                start_byte: 9,
+                end_byte: 10,
+                kind: "keyword",
             },
         ],
         [

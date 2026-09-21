@@ -1,0 +1,16 @@
+language=makefile
+contentLen=216
+highlightLineCount=17
+totalTokens=47
+line_0=[0-2:constant.builtin,3-5:operator,6-9:string]
+line_1=[0-6:constant.builtin,7-9:operator,10-19:string]
+line_2=[0-6:string,7-9:operator,10-16:string]
+line_4=[0-3:constant.macro,3-4:punctuation.delimiter,5-6:punctuation.special,6-7:punctuation.bracket,7-13:constant,13-14:punctuation.bracket]
+line_6=[0-1:punctuation.special,1-2:punctuation.bracket,2-8:constant,8-9:punctuation.bracket,9-10:punctuation.delimiter]
+line_7=[4-5:punctuation.special,5-6:punctuation.bracket,6-8:constant.builtin,8-9:punctuation.bracket,10-11:punctuation.special,11-12:punctuation.bracket,12-18:constant.builtin,18-19:punctuation.bracket,23-24:punctuation.special,24-25:punctuation.special,26-27:punctuation.special,27-28:punctuation.special]
+line_9=[4-5:punctuation.delimiter,6-7:punctuation.special,7-8:punctuation.bracket,8-14:constant,14-15:punctuation.bracket]
+line_10=[6-7:punctuation.special,7-8:punctuation.bracket,8-14:constant,14-15:punctuation.bracket]
+line_12=[5-6:punctuation.delimiter]
+line_13=[10-11:punctuation.special,11-12:punctuation.bracket,12-18:constant,18-19:punctuation.bracket]
+line_15=[6-7:punctuation.delimiter]
+outline=

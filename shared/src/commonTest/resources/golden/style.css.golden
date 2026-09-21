@@ -1,7 +1,7 @@
 language=css
 contentLen=352
 highlightLineCount=26
-totalTokens=31
+totalTokens=32
 line_0=[0-5:function.builtin]
 line_1=[4-11:property,13-20:constant.builtin]
 line_2=[4-10:property,12-19:constant.builtin]
@@ -12,7 +12,7 @@ line_8=[4-9:property,15-21:string]
 line_11=[0-10:constant.builtin,13-19:constant.builtin]
 line_12=[4-13:property,15-19:number]
 line_13=[4-15:property,17-20:number]
-line_16=[0-8:constant.builtin,0-20:function.builtin,9-14:constant.builtin]
+line_16=[0-8:constant.builtin,8-9:function.builtin,9-14:constant.builtin,14-20:function.builtin]
 line_17=[4-20:property,27-30:number,32-34:number,36-39:number,41-44:number]
 line_20=[19-24:number]
 line_21=[4-14:constant.builtin]

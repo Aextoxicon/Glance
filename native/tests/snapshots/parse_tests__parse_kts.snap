@@ -15,7 +15,7 @@ CodeParseResult {
             HighlightToken {
                 start_byte: 0,
                 end_byte: 7,
-                kind: "function",
+                kind: "function.builtin",
             },
             HighlightToken {
                 start_byte: 7,

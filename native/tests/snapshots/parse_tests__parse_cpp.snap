@@ -54,7 +54,7 @@ CodeParseResult {
     outline: [
         OutlineNode {
             kind: "function_definition",
-            name: "",
+            name: "main",
             detail: "",
             start_byte: 0,
             end_byte: 65,

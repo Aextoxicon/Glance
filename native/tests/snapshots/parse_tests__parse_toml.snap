@@ -35,14 +35,19 @@ CodeParseResult {
                 kind: "type",
             },
             HighlightToken {
-                start_byte: 0,
-                end_byte: 13,
+                start_byte: 4,
+                end_byte: 5,
                 kind: "property",
             },
             HighlightToken {
                 start_byte: 5,
                 end_byte: 6,
                 kind: "operator",
+            },
+            HighlightToken {
+                start_byte: 6,
+                end_byte: 7,
+                kind: "property",
             },
             HighlightToken {
                 start_byte: 7,
@@ -57,14 +62,19 @@ CodeParseResult {
                 kind: "type",
             },
             HighlightToken {
-                start_byte: 0,
-                end_byte: 17,
+                start_byte: 7,
+                end_byte: 8,
                 kind: "property",
             },
             HighlightToken {
                 start_byte: 8,
                 end_byte: 9,
                 kind: "operator",
+            },
+            HighlightToken {
+                start_byte: 9,
+                end_byte: 10,
+                kind: "property",
             },
             HighlightToken {
                 start_byte: 10,

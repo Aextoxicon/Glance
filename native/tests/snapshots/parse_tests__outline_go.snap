@@ -47,7 +47,7 @@ CodeParseResult {
     outline: [
         OutlineNode {
             kind: "package_clause",
-            name: "",
+            name: "main",
             detail: "",
             start_byte: 0,
             end_byte: 12,
