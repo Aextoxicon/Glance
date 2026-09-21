@@ -47,6 +47,7 @@ class LanguageGoldenTest {
             "script.sh",
             "App.ts",
             "Component.tsx",
+            "Dockerfile",
         )
     }
 

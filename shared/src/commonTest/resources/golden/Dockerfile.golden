@@ -1,0 +1,15 @@
+language=dockerfile
+contentLen=224
+highlightLineCount=15
+totalTokens=17
+line_0=[0-4:keyword,9-10:operator,20-22:keyword]
+line_2=[0-7:keyword]
+line_3=[0-4:keyword]
+line_4=[0-3:keyword]
+line_6=[0-4:keyword,9-10:operator]
+line_7=[0-7:keyword]
+line_9=[0-4:keyword]
+line_10=[0-3:keyword,4-12:property]
+line_11=[0-6:keyword,7-11:number]
+line_13=[0-3:keyword,5-10:string,12-19:string]
+outline=

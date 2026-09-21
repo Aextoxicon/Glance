@@ -96,21 +96,23 @@ object HighlightColor {
         return buildAnnotatedString {
             var pos = 0
             for (token in tokens) {
-                val start = token.startByte.toInt()
-                val end = token.endByte.toInt()
-                if (start > pos) {
-                    withStyle(SpanStyle(color = colorDefault)) {
-                        append(line.substring(pos, start.coerceAtMost(line.length)))
+                val rawStart = token.startByte.toInt()
+                val end = token.endByte.toInt().coerceAtMost(line.length)
+                // 区间与已渲染部分重叠时只补未渲染的段
+                if (end > pos) {
+                    val start = rawStart.coerceAtLeast(pos).coerceAtMost(line.length)
+                    if (start > pos) {
+                        withStyle(SpanStyle(color = colorDefault)) {
+                            append(line.substring(pos, start))
+                        }
                     }
-                }
-                if (start < end && start < line.length) {
-                    val color = colorFor(token.kind)
-                    val tokenEnd = end.coerceAtMost(line.length)
-                    withStyle(SpanStyle(color = color)) {
-                        append(line.substring(start, tokenEnd))
+                    if (start < end) {
+                        withStyle(SpanStyle(color = colorFor(token.kind))) {
+                            append(line.substring(start, end))
+                        }
                     }
+                    pos = end
                 }
-                pos = end.coerceAtMost(line.length)
             }
             if (pos < line.length) {
                 withStyle(SpanStyle(color = colorDefault)) {

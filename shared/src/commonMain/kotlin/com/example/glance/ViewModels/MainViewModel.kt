@@ -87,7 +87,6 @@ class MainViewModel(
 
     val totalSizeReadable: String get() = FormatSize.readable(totalSize)
     val selectedSizeDisplay: String get() = selectedArtifact?.let { FormatSize.readable(it.size) } ?: ""
-    val isCodePreviewVisible: Boolean get() = hasSelection && messageText == null
     val currentFolderName: String
         get() = if (currentPath.isEmpty()) "" else PathUtil.fileName(currentPath)
 
