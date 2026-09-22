@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 use crate::lang::GrammarDef;
 
-pub static GRAMMAR: LazyLock<GrammarDef> = grammar!(tree_sitter_javascript::LANGUAGE.into(), HIGHLIGHT_QUERY);
+pub static GRAMMAR: LazyLock<GrammarDef> = grammar!(tree_sitter_javascript::LANGUAGE, HIGHLIGHT_QUERY);
 
 const HIGHLIGHT_QUERY: &str = r##"
 ;COMMENTS

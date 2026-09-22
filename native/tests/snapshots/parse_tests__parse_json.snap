@@ -1,5 +1,6 @@
 ---
 source: tests/parse_tests.rs
+assertion_line: 47
 expression: result
 ---
 CodeParseResult {
@@ -9,7 +10,7 @@ CodeParseResult {
             HighlightToken {
                 start_byte: 2,
                 end_byte: 7,
-                kind: "property",
+                kind: "string.special.key",
             },
             HighlightToken {
                 start_byte: 9,

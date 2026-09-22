@@ -1,5 +1,6 @@
 ---
 source: tests/parse_tests.rs
+assertion_line: 179
 expression: result
 ---
 CodeParseResult {
@@ -13,7 +14,7 @@ CodeParseResult {
             HighlightToken {
                 start_byte: 6,
                 end_byte: 13,
-                kind: "type",
+                kind: "constructor",
             },
         ],
         [
@@ -37,7 +38,7 @@ CodeParseResult {
             HighlightToken {
                 start_byte: 8,
                 end_byte: 13,
-                kind: "function",
+                kind: "function.builtin",
             },
             HighlightToken {
                 start_byte: 14,

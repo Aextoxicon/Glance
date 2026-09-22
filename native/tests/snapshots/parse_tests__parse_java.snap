@@ -1,5 +1,6 @@
 ---
 source: tests/parse_tests.rs
+assertion_line: 46
 expression: result
 ---
 CodeParseResult {
@@ -40,12 +41,12 @@ CodeParseResult {
             HighlightToken {
                 start_byte: 34,
                 end_byte: 38,
-                kind: "keyword",
+                kind: "type.builtin",
             },
             HighlightToken {
                 start_byte: 39,
                 end_byte: 43,
-                kind: "function",
+                kind: "function.method",
             },
             HighlightToken {
                 start_byte: 44,

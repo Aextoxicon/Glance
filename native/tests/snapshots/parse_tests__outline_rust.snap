@@ -1,5 +1,6 @@
 ---
 source: tests/parse_tests.rs
+assertion_line: 216
 expression: result
 ---
 CodeParseResult {
@@ -11,24 +12,14 @@ CodeParseResult {
                 kind: "keyword",
             },
             HighlightToken {
-                start_byte: 4,
-                end_byte: 7,
-                kind: "namespace",
-            },
-            HighlightToken {
                 start_byte: 7,
                 end_byte: 9,
-                kind: "operator",
-            },
-            HighlightToken {
-                start_byte: 9,
-                end_byte: 12,
-                kind: "constant.builtin",
+                kind: "punctuation.delimiter",
             },
             HighlightToken {
                 start_byte: 12,
                 end_byte: 13,
-                kind: "operator",
+                kind: "punctuation.delimiter",
             },
         ],
         [],
@@ -39,9 +30,9 @@ CodeParseResult {
                 kind: "keyword",
             },
             HighlightToken {
-                start_byte: 4,
-                end_byte: 9,
-                kind: "identifier",
+                start_byte: 10,
+                end_byte: 11,
+                kind: "punctuation.bracket",
             },
         ],
         [
@@ -61,20 +52,47 @@ CodeParseResult {
                 kind: "function",
             },
             HighlightToken {
-                start_byte: 20,
-                end_byte: 22,
-                kind: "operator",
+                start_byte: 17,
+                end_byte: 18,
+                kind: "punctuation.bracket",
+            },
+            HighlightToken {
+                start_byte: 18,
+                end_byte: 19,
+                kind: "punctuation.bracket",
+            },
+            HighlightToken {
+                start_byte: 23,
+                end_byte: 26,
+                kind: "type.builtin",
+            },
+            HighlightToken {
+                start_byte: 27,
+                end_byte: 28,
+                kind: "punctuation.bracket",
             },
         ],
         [
             HighlightToken {
                 start_byte: 8,
                 end_byte: 10,
-                kind: "number",
+                kind: "constant.builtin",
             },
         ],
-        [],
-        [],
+        [
+            HighlightToken {
+                start_byte: 4,
+                end_byte: 5,
+                kind: "punctuation.bracket",
+            },
+        ],
+        [
+            HighlightToken {
+                start_byte: 0,
+                end_byte: 1,
+                kind: "punctuation.bracket",
+            },
+        ],
         [],
         [
             HighlightToken {
@@ -87,6 +105,21 @@ CodeParseResult {
                 end_byte: 7,
                 kind: "function",
             },
+            HighlightToken {
+                start_byte: 7,
+                end_byte: 8,
+                kind: "punctuation.bracket",
+            },
+            HighlightToken {
+                start_byte: 8,
+                end_byte: 9,
+                kind: "punctuation.bracket",
+            },
+            HighlightToken {
+                start_byte: 10,
+                end_byte: 11,
+                kind: "punctuation.bracket",
+            },
         ],
         [
             HighlightToken {
@@ -95,27 +128,23 @@ CodeParseResult {
                 kind: "keyword",
             },
             HighlightToken {
-                start_byte: 8,
-                end_byte: 9,
-                kind: "variable",
-            },
-            HighlightToken {
-                start_byte: 10,
-                end_byte: 11,
-                kind: "operator",
-            },
-            HighlightToken {
                 start_byte: 12,
                 end_byte: 13,
-                kind: "number",
+                kind: "constant.builtin",
             },
             HighlightToken {
                 start_byte: 13,
                 end_byte: 14,
-                kind: "operator",
+                kind: "punctuation.delimiter",
             },
         ],
-        [],
+        [
+            HighlightToken {
+                start_byte: 0,
+                end_byte: 1,
+                kind: "punctuation.bracket",
+            },
+        ],
         [],
     ],
     outline: [

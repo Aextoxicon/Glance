@@ -344,19 +344,29 @@ fn collect_outline_children(
     }
 }
 
-fn capture_specificity(kind: &str) -> usize {
-    kind.split('.').count()
+struct RawCapture {
+    start_byte: u64,
+    end_byte: u64,
+    kind: String,
+    specificity: u8,
 }
 
-// 解决高亮token的冲突，叠加的token按优先级保留更具体的，嵌套的token切开成互不重叠的
-fn resolve_capture_conflicts(mut tokens: Vec<HighlightToken>) -> Vec<HighlightToken> {
+// 具体度打分：结构具体度高 256 倍于 capture 名点分段数，两级同时生效
+fn capture_score(t: &RawCapture) -> u16 {
+    (u16::from(t.specificity) << 8) | (t.kind.split('.').count() as u16)
+}
+
+// 解决高亮token的冲突：同区间按具体度择优，嵌套区间切开成互不重叠的
+fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<HighlightToken> {
     tokens.sort_by(|a, b| {
         a.start_byte
             .cmp(&b.start_byte)
             .then_with(|| b.end_byte.cmp(&a.end_byte))
-            .then_with(|| capture_specificity(&b.kind).cmp(&capture_specificity(&a.kind)))
+            .then_with(|| capture_score(b).cmp(&capture_score(a)))
     });
-    tokens.dedup_by(|a, b| a.start_byte == b.start_byte && a.end_byte == b.end_byte);
+    tokens.dedup_by(|a, b| {
+        a.start_byte == b.start_byte && a.end_byte == b.end_byte && a.kind == b.kind
+    });
 
     struct Open {
         cursor: u64,
@@ -388,6 +398,13 @@ fn resolve_capture_conflicts(mut tokens: Vec<HighlightToken>) -> Vec<HighlightTo
         // 关掉所有在 t 起点之前（含）就结束的外层
         while stack.last().map_or(false, |top| top.end <= t.start_byte) {
             close_top(&mut stack, &mut out);
+        }
+
+        if let Some(top) = stack.last() {
+            // 区间完全相同：已按具体度降序，栈顶胜出，直接丢弃 t
+            if top.cursor == t.start_byte && top.end == t.end_byte {
+                continue;
+            }
         }
 
         if let Some(top) = stack.last_mut() {
@@ -475,20 +492,26 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
 
     let mut highlights = {
         let mut qc = QueryCursor::new();
-        let mut results = Vec::new();
+        let mut results: Vec<RawCapture> = Vec::new();
         let mut matches = qc.matches(query, tree.root_node(), source.as_bytes());
         while let Some(match_) = matches.next() {
+            let specificity = grammar
+                .pattern_specificity
+                .get(match_.pattern_index)
+                .copied()
+                .unwrap_or(0);
             for capture in match_.captures {
                 let node = capture.node;
                 let kind_str = query.capture_names()[capture.index as usize];
-                results.push(HighlightToken {
+                results.push(RawCapture {
                     start_byte: node.start_byte() as u64,
                     end_byte: node.end_byte() as u64,
                     kind: kind_str.to_string(),
+                    specificity,
                 });
             }
         }
-        results = resolve_capture_conflicts(results);
+        let results = resolve_capture_conflicts(results);
         debug_log!("[RUST] highlights count: {} (deduplicated)", results.len());
         for h in &results {
             debug_log!(

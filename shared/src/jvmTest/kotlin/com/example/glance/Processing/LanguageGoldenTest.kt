@@ -134,7 +134,7 @@ class LanguageGoldenTest {
                             golden.take(300) + "\n" +
                             "--- ACTUAL (first 300 chars) ---\n" +
                             serialized.take(300) + "\n" +
-                            "--- 若上述变化是预期的，重跑：./gradlew jvmTest --rerun -PupdateGoldens=true ---\n" +
+                            "--- 若上述变化是预期的，重跑：./gradlew jvmTest --rerun -PupdateGoldens=true ---\n"
                     )
                 }
             }

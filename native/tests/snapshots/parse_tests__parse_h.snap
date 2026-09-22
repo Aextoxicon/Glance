@@ -1,5 +1,6 @@
 ---
 source: tests/parse_tests.rs
+assertion_line: 32
 expression: result
 ---
 CodeParseResult {
@@ -13,7 +14,7 @@ CodeParseResult {
             HighlightToken {
                 start_byte: 8,
                 end_byte: 9,
-                kind: "identifier",
+                kind: "constant",
             },
         ],
         [
@@ -23,19 +24,9 @@ CodeParseResult {
                 kind: "keyword",
             },
             HighlightToken {
-                start_byte: 7,
-                end_byte: 8,
-                kind: "keyword",
-            },
-            HighlightToken {
                 start_byte: 8,
                 end_byte: 9,
-                kind: "identifier",
-            },
-            HighlightToken {
-                start_byte: 9,
-                end_byte: 10,
-                kind: "keyword",
+                kind: "constant",
             },
         ],
         [
@@ -47,7 +38,7 @@ CodeParseResult {
             HighlightToken {
                 start_byte: 4,
                 end_byte: 7,
-                kind: "identifier",
+                kind: "function",
             },
             HighlightToken {
                 start_byte: 8,
@@ -68,6 +59,11 @@ CodeParseResult {
                 start_byte: 19,
                 end_byte: 20,
                 kind: "variable",
+            },
+            HighlightToken {
+                start_byte: 21,
+                end_byte: 22,
+                kind: "delimiter",
             },
             HighlightToken {
                 start_byte: 23,

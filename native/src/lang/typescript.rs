@@ -1,19 +1,12 @@
 use std::sync::LazyLock;
 use crate::lang::GrammarDef;
 
-pub static GRAMMAR_TS: LazyLock<GrammarDef> = grammar!(tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(), HIGHLIGHT_QUERY_BASE);
-pub static GRAMMAR_TSX: LazyLock<GrammarDef> = LazyLock::new(|| {
-    let query_source = format!("{}{}", HIGHLIGHT_QUERY_BASE, JSX_RULES);
-    let query = tree_sitter::Query::new(
-        &tree_sitter_typescript::LANGUAGE_TSX.into(),
-        &query_source,
-    )
-    .expect("invalid TSX highlight query");
-    GrammarDef {
-        language: tree_sitter_typescript::LANGUAGE_TSX.into(),
-        compiled_query: query,
-    }
-});
+pub static GRAMMAR_TS: LazyLock<GrammarDef> =
+    grammar!(tree_sitter_typescript::LANGUAGE_TYPESCRIPT, HIGHLIGHT_QUERY_BASE);
+
+// TSX = 基类query+JSX增量
+pub static GRAMMAR_TSX: LazyLock<GrammarDef> =
+    grammar!(tree_sitter_typescript::LANGUAGE_TSX, HIGHLIGHT_QUERY_BASE, JSX_RULES);
 
 // 不含JSX
 const HIGHLIGHT_QUERY_BASE: &str = r##"
