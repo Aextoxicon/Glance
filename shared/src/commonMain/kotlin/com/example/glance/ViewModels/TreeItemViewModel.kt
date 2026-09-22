@@ -208,4 +208,3 @@ internal fun fileIconFor(extension: String): ImageVector {
         else -> Icons.AutoMirrored.Filled.InsertDriveFile
     }
 }
-
