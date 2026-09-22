@@ -1,5 +1,6 @@
 ---
 source: tests/parse_tests.rs
+assertion_line: 41
 expression: result
 ---
 CodeParseResult {
@@ -30,32 +31,37 @@ CodeParseResult {
             HighlightToken {
                 start_byte: 11,
                 end_byte: 12,
-                kind: "operator",
+                kind: "punctuation.bracket",
             },
             HighlightToken {
                 start_byte: 12,
                 end_byte: 15,
-                kind: "function",
+                kind: "tag",
             },
             HighlightToken {
                 start_byte: 15,
                 end_byte: 16,
-                kind: "operator",
+                kind: "punctuation.bracket",
+            },
+            HighlightToken {
+                start_byte: 18,
+                end_byte: 20,
+                kind: "punctuation.bracket",
             },
             HighlightToken {
                 start_byte: 20,
                 end_byte: 23,
-                kind: "function",
+                kind: "tag",
             },
             HighlightToken {
                 start_byte: 23,
                 end_byte: 24,
-                kind: "operator",
+                kind: "punctuation.bracket",
             },
             HighlightToken {
                 start_byte: 24,
                 end_byte: 25,
-                kind: "operator",
+                kind: "punctuation.delimiter",
             },
         ],
         [],

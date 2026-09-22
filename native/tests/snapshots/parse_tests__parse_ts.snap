@@ -1,5 +1,6 @@
 ---
 source: tests/parse_tests.rs
+assertion_line: 40
 expression: result
 ---
 CodeParseResult {
@@ -23,29 +24,34 @@ CodeParseResult {
                 kind: "function",
             },
             HighlightToken {
-                start_byte: 13,
-                end_byte: 14,
-                kind: "identifier",
+                start_byte: 12,
+                end_byte: 13,
+                kind: "punctuation.bracket",
             },
             HighlightToken {
-                start_byte: 14,
-                end_byte: 15,
-                kind: "operator",
+                start_byte: 13,
+                end_byte: 14,
+                kind: "variable.parameter",
             },
             HighlightToken {
                 start_byte: 16,
                 end_byte: 22,
-                kind: "type",
+                kind: "type.builtin",
             },
             HighlightToken {
-                start_byte: 23,
-                end_byte: 24,
-                kind: "operator",
+                start_byte: 22,
+                end_byte: 23,
+                kind: "punctuation.bracket",
             },
             HighlightToken {
                 start_byte: 25,
                 end_byte: 31,
-                kind: "type",
+                kind: "type.builtin",
+            },
+            HighlightToken {
+                start_byte: 32,
+                end_byte: 33,
+                kind: "punctuation.bracket",
             },
             HighlightToken {
                 start_byte: 34,
@@ -55,12 +61,17 @@ CodeParseResult {
             HighlightToken {
                 start_byte: 41,
                 end_byte: 42,
-                kind: "identifier",
+                kind: "variable",
             },
             HighlightToken {
                 start_byte: 42,
                 end_byte: 43,
-                kind: "operator",
+                kind: "punctuation.delimiter",
+            },
+            HighlightToken {
+                start_byte: 44,
+                end_byte: 45,
+                kind: "punctuation.bracket",
             },
         ],
         [],

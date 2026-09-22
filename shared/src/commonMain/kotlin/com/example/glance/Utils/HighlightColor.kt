@@ -69,6 +69,12 @@ object HighlightColor {
         // 细分
         "function.builtin" to functionBuiltin,
         "function.method" to functionMethod,
+        "function_declaration" to function,
+        "function_definition" to function,
+        "class_declaration" to constructor,
+        "class_definition" to constructor,
+        "class_specifier" to constructor,
+        "method_declaration" to functionMethod,
         "string.escape" to escape,
         "string.special.key" to property,
         "constant.builtin" to constantBuiltin,
