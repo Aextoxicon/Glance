@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Glance XML 示例 -->
+<catalog>
+  <book id="bk101" edition="1st">
+    <author>Gambardella, Matthew</author>
+    <price>11.99</price>
+    <summary><![CDATA[Simple code preview]]></summary>
+  </book>
+  <book id="bk102" edition="2nd">
+    <author>Rales, Mike</author>
+    <price>19.95</price>
+  </book>
+  <empty/>
+</catalog>

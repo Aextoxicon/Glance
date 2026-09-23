@@ -1,0 +1,29 @@
+language=php
+contentLen=604
+highlightLineCount=38
+totalTokens=78
+line_0=[0-5:tag]
+line_2=[0-9:keyword,10-16:module]
+line_4=[0-5:keyword,6-15:constant,18-21:number]
+line_6=[0-5:keyword,6-11:keyword]
+line_8=[4-11:keyword,12-17:type.builtin,18-19:operator,19-24:property]
+line_10=[4-10:keyword,11-19:keyword,20-23:function.method,24-30:type.builtin,31-32:operator,32-36:variable,38-43:type.builtin,44-45:operator,45-50:variable,53-57:type.builtin]
+line_12=[8-9:operator,9-13:variable,15-20:property,21-22:operator,22-26:variable,30-31:operator,31-36:variable]
+line_15=[4-10:keyword,11-19:keyword,20-26:function.method,27-33:type.builtin,34-35:operator,35-39:variable,42-47:type.builtin]
+line_17=[8-14:keyword,15-16:operator,16-20:variable,22-27:property,28-29:operator,29-33:variable,38-42:constant.builtin]
+line_20=[4-10:keyword,11-19:keyword,20-25:function.method,29-32:type.builtin]
+line_22=[8-14:keyword,15-20:function,21-22:operator,22-26:variable,28-33:property]
+line_25=[4-10:keyword,11-17:keyword,18-26:keyword,27-32:function.method,36-40:type]
+line_27=[8-14:keyword,15-18:keyword,19-23:constructor]
+line_31=[0-8:keyword,9-13:function,17-21:type.builtin]
+line_33=[4-5:operator,5-13:variable,16-24:type,26-31:function]
+line_34=[4-5:operator,5-13:variable,15-18:function.method,19-20:string,20-23:string,23-24:string,26-27:number]
+line_35=[4-8:keyword,9-10:operator,10-18:variable,20-25:function.method]
+outline=
+namespace_definition:Glance(7-24)
+class_declaration:Registry(50-482)
+  method_declaration:add(109-212)
+  method_declaration:lookup(218-317)
+  method_declaration:count(323-399)
+  method_declaration:reset(405-480)
+function_definition:main(484-603)

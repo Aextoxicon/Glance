@@ -57,6 +57,9 @@ lang_snapshot_test!(test_parse_kts, ".kts", "// kts comment\nprintln(\"hi\")\n")
 lang_snapshot_test!(test_parse_swift, ".swift", "// swift comment\nfunc main() { /* block */ print(\"hi\") }\n");
 lang_snapshot_test!(test_parse_html, ".html", "<!-- html comment -->\n<div class=\"x\">hi</div>\n");
 lang_snapshot_test!(test_parse_htm, ".htm", "<!-- htm comment -->\n<p>hello</p>\n");
+lang_snapshot_test!(test_parse_rb, ".rb", "# ruby comment\nrequire \"singleton\"\nmodule M\n  class C\n    def m(x)\n      x > 1 ? 2 : 0\n    end\n  end\nend\n");
+lang_snapshot_test!(test_parse_php, ".php", "<?php\n// php comment\nclass C {\n  public function m(int $x): int { return $x + 1; }\n}\n");
+lang_snapshot_test!(test_parse_xml, ".xml", "<?xml version=\"1.0\"?>\n<!-- xml comment -->\n<root id=\"a\"><child>hi</child><empty/></root>\n");
 
 // Unicode快照测试
 
@@ -103,7 +106,7 @@ fn main() {
 #[test]
 fn test_all_queries_compile() {
     // 验证每个grammar的highlight query都能成功编译
-    let extensions = [".c", ".h", ".cpp", ".hpp", ".go", ".py", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".sh", ".bash", ".zsh", ".cs", ".java", ".json", ".css", ".rs", ".toml", ".yaml", ".yml", ".ini", ".mk", ".kt", ".kts", ".swift", ".html", ".htm"];
+    let extensions = [".c", ".h", ".cpp", ".hpp", ".go", ".py", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".sh", ".bash", ".zsh", ".cs", ".java", ".json", ".css", ".rs", ".toml", ".yaml", ".yml", ".ini", ".mk", ".kt", ".kts", ".swift", ".html", ".htm", ".xml", ".rb", ".php"];
     let mut failures = Vec::new();
     for ext in extensions {
         let grammar = uniffi_code_parser::lang::get_grammar(ext)

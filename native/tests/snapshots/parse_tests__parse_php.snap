@@ -1,0 +1,108 @@
+---
+source: tests/parse_tests.rs
+assertion_line: 61
+expression: result
+---
+CodeParseResult {
+    highlights_by_line: [
+        [
+            HighlightToken {
+                start_byte: 0,
+                end_byte: 5,
+                kind: "tag",
+            },
+        ],
+        [
+            HighlightToken {
+                start_byte: 0,
+                end_byte: 14,
+                kind: "comment",
+            },
+        ],
+        [
+            HighlightToken {
+                start_byte: 0,
+                end_byte: 5,
+                kind: "keyword",
+            },
+        ],
+        [
+            HighlightToken {
+                start_byte: 2,
+                end_byte: 8,
+                kind: "keyword",
+            },
+            HighlightToken {
+                start_byte: 9,
+                end_byte: 17,
+                kind: "keyword",
+            },
+            HighlightToken {
+                start_byte: 18,
+                end_byte: 19,
+                kind: "function.method",
+            },
+            HighlightToken {
+                start_byte: 20,
+                end_byte: 23,
+                kind: "type.builtin",
+            },
+            HighlightToken {
+                start_byte: 24,
+                end_byte: 25,
+                kind: "operator",
+            },
+            HighlightToken {
+                start_byte: 25,
+                end_byte: 26,
+                kind: "variable",
+            },
+            HighlightToken {
+                start_byte: 29,
+                end_byte: 32,
+                kind: "type.builtin",
+            },
+            HighlightToken {
+                start_byte: 35,
+                end_byte: 41,
+                kind: "keyword",
+            },
+            HighlightToken {
+                start_byte: 42,
+                end_byte: 43,
+                kind: "operator",
+            },
+            HighlightToken {
+                start_byte: 43,
+                end_byte: 44,
+                kind: "variable",
+            },
+            HighlightToken {
+                start_byte: 47,
+                end_byte: 48,
+                kind: "number",
+            },
+        ],
+        [],
+        [],
+    ],
+    outline: [
+        OutlineNode {
+            kind: "class_declaration",
+            name: "C",
+            detail: "",
+            start_byte: 21,
+            end_byte: 84,
+            children: [
+                OutlineNode {
+                    kind: "method_declaration",
+                    name: "m",
+                    detail: "",
+                    start_byte: 33,
+                    end_byte: 82,
+                    children: [],
+                },
+            ],
+        },
+    ],
+}

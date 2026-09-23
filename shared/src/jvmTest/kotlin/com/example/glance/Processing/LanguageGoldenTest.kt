@@ -6,7 +6,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.v2.runComposeUiTest
 import com.example.glance.Repositories.TextFileDetector
 import com.example.glance.ViewModels.MainViewModel
@@ -57,6 +59,9 @@ class LanguageGoldenTest {
             "config.yaml",
             "index.html",
             "Model.swift",
+            "test.rb",
+            "test.php",
+            "test.xml",
         )
     }
 
@@ -96,11 +101,16 @@ class LanguageGoldenTest {
             waitUntil(conditionDescription = "workspace loaded", timeoutMillis = 10_000) { vm.hasWorkspace }
             waitUntil(conditionDescription = "tree items loaded", timeoutMillis = 10_000) { vm.treeItems.isNotEmpty() }
 
-            for (fileName in TEMPLATE_FILES) {
+            for ((index, fileName) in TEMPLATE_FILES.withIndex()) {
+                // LazyColumn只构建可见行，先滚动到目标行再断言
+                onNodeWithTag("FileTree").performScrollToIndex(index)
+                mainClock.advanceTimeBy(0, ignoreFrameDuration = true)
                 onAllNodesWithText(fileName).onFirst().assertIsDisplayed()
             }
 
-            for (fileName in TEMPLATE_FILES) {
+            for ((index, fileName) in TEMPLATE_FILES.withIndex()) {
+                onNodeWithTag("FileTree").performScrollToIndex(index)
+                mainClock.advanceTimeBy(0, ignoreFrameDuration = true)
                 onAllNodesWithText(fileName).onFirst().performClick()
                 mainClock.advanceTimeBy(0, ignoreFrameDuration = true)
 

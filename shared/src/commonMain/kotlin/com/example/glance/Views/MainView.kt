@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -234,7 +235,7 @@ private fun FileTreePanel(viewModel: MainViewModel, modifier: Modifier = Modifie
     }
 
     Box(modifier = modifier.fillMaxWidth()) {
-        LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
+        LazyColumn(modifier = Modifier.fillMaxSize().testTag("FileTree"), state = listState) {
             items(items = flatItems.value, key = { (_, item) -> item.artifact.id }, contentType = { (_, item) -> if (item.isDir) "dir" else "file" }) { (depth, item) ->
                 TreeItemRow(
                     depth = depth,

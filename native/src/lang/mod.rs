@@ -81,6 +81,8 @@ mod java;
 mod json;
 mod css;
 mod rust;
+mod ruby;
+mod php;
 mod toml;
 mod yaml;
 mod ini;
@@ -89,6 +91,7 @@ mod containerfile;
 mod kotlin;
 mod swift;
 mod html;
+mod xml;
 
 pub struct GrammarDef {
     pub language: tree_sitter::Language,
@@ -124,6 +127,9 @@ pub fn get_grammar(ext: &str) -> Option<&'static LazyLock<GrammarDef>> {
         ".dockerfile" => Some(&containerfile::GRAMMAR),
         ".swift" => Some(&swift::GRAMMAR),
         ".html" | ".htm" => Some(&html::GRAMMAR),
+        ".xml" | ".xsl" | ".xsd" => Some(&xml::GRAMMAR),
+        ".rb" => Some(&ruby::GRAMMAR),
+        ".php" => Some(&php::GRAMMAR),
         _ => None,
     }
 }
