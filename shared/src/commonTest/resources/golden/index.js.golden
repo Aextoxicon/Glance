@@ -1,6 +1,6 @@
 language=js
 contentLen=735
-highlightLineCount=38
+highlightLineCount=37
 totalTokens=162
 line_0=[0-6:keyword,7-8:punctuation.bracket,9-17:variable,18-19:punctuation.bracket,20-24:keyword,25-38:string,38-39:punctuation.delimiter]
 line_1=[0-6:keyword,7-11:variable,12-16:keyword,17-23:string,23-24:punctuation.delimiter]

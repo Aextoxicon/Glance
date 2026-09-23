@@ -1,6 +1,6 @@
 language=c
 contentLen=457
-highlightLineCount=25
+highlightLineCount=23
 totalTokens=71
 line_0=[0-8:keyword,9-18:string]
 line_1=[0-8:keyword,9-19:string]

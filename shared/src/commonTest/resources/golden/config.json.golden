@@ -1,6 +1,6 @@
 language=json
 contentLen=553
-highlightLineCount=25
+highlightLineCount=23
 totalTokens=34
 line_1=[4-10:string.special.key,12-20:string]
 line_2=[4-13:string.special.key,15-22:string]

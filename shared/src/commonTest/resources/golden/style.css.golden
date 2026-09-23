@@ -1,6 +1,6 @@
 language=css
 contentLen=352
-highlightLineCount=26
+highlightLineCount=25
 totalTokens=90
 line_0=[0-1:punctuation.delimiter,1-5:attribute,6-7:punctuation.bracket]
 line_1=[4-11:variable,11-12:punctuation.delimiter,13-14:punctuation.delimiter,14-20:string.special,20-21:punctuation.delimiter]

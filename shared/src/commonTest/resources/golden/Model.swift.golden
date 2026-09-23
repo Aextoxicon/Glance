@@ -1,6 +1,6 @@
 language=swift
 contentLen=359
-highlightLineCount=24
+highlightLineCount=23
 totalTokens=83
 line_0=[0-6:keyword.import,7-17:variable]
 line_2=[0-6:keyword.type,7-11:type,11-12:punctuation.delimiter,13-20:type,21-22:punctuation.bracket]

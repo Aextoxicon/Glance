@@ -1,6 +1,6 @@
 language=php
 contentLen=604
-highlightLineCount=38
+highlightLineCount=36
 totalTokens=78
 line_0=[0-5:tag]
 line_2=[0-9:keyword,10-16:module]

@@ -64,7 +64,6 @@ CodeParseResult {
                 kind: "string",
             },
         ],
-        [],
     ],
     outline: [],
 }

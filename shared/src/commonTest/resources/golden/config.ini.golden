@@ -1,6 +1,6 @@
 language=ini
 contentLen=181
-highlightLineCount=16
+highlightLineCount=15
 totalTokens=28
 line_0=[0-14:comment]
 line_1=[0-1:punctuation.bracket,1-4:type,4-5:punctuation.bracket]

@@ -1,6 +1,5 @@
 ---
 source: tests/parse_tests.rs
-assertion_line: 179
 expression: result
 ---
 CodeParseResult {
@@ -46,7 +45,6 @@ CodeParseResult {
                 kind: "string",
             },
         ],
-        [],
     ],
     outline: [
         OutlineNode {

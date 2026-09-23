@@ -40,7 +40,6 @@ CodeParseResult {
                 kind: "operator",
             },
         ],
-        [],
     ],
     outline: [],
 }

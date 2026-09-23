@@ -82,7 +82,6 @@ CodeParseResult {
                 kind: "string",
             },
         ],
-        [],
     ],
     outline: [],
 }

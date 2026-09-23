@@ -1,6 +1,6 @@
 language=tsx
 contentLen=414
-highlightLineCount=19
+highlightLineCount=18
 totalTokens=97
 line_0=[0-6:keyword,7-12:constructor,12-13:punctuation.delimiter,14-15:punctuation.bracket,16-24:variable,25-26:punctuation.bracket,27-31:keyword,32-39:string,39-40:punctuation.delimiter]
 line_2=[0-9:keyword,10-15:type,16-17:punctuation.bracket]

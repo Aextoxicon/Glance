@@ -121,8 +121,8 @@ fn split_highlights_by_line(
         return Vec::new();
     }
 
-    // 预先分配每行的Vec
-    let mut result: Vec<Vec<HighlightToken>> = (0..line_count).map(|_| Vec::new()).collect();
+    // 仅预留容量，空行不占用容器
+    let mut result: Vec<Vec<HighlightToken>> = Vec::with_capacity(line_count);
     let line_starts: Vec<u64> = line_boundaries.iter().map(|(s, _)| *s).collect();
     for h in highlights {
         let start_line = match line_starts.binary_search(&h.start_byte) {
@@ -148,6 +148,10 @@ fn split_highlights_by_line(
             let overlap_start = h.start_byte.max(line_start);
             let overlap_end = h.end_byte.min(line_end);
             if overlap_start < overlap_end {
+                // 惰性补齐到目标行
+                while result.len() <= line_idx {
+                    result.push(Vec::new());
+                }
                 let line_len = line_end.saturating_sub(line_start);
                 result[line_idx].push(HighlightToken {
                     start_byte: overlap_start.saturating_sub(line_start).min(line_len),

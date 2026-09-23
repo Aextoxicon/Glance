@@ -1,6 +1,5 @@
 ---
 source: tests/parse_tests.rs
-assertion_line: 98
 expression: result
 ---
 CodeParseResult {
@@ -100,7 +99,6 @@ CodeParseResult {
                 kind: "punctuation.bracket",
             },
         ],
-        [],
     ],
     outline: [
         OutlineNode {

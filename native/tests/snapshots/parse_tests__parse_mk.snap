@@ -23,8 +23,6 @@ CodeParseResult {
                 kind: "punctuation.delimiter",
             },
         ],
-        [],
-        [],
     ],
     outline: [],
 }

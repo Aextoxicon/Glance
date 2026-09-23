@@ -1,6 +1,5 @@
 ---
 source: tests/parse_tests.rs
-assertion_line: 60
 expression: result
 ---
 CodeParseResult {
@@ -118,7 +117,6 @@ CodeParseResult {
                 kind: "keyword",
             },
         ],
-        [],
     ],
     outline: [],
 }

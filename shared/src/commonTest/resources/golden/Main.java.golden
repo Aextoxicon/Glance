@@ -1,6 +1,6 @@
 language=java
 contentLen=658
-highlightLineCount=29
+highlightLineCount=26
 totalTokens=73
 line_0=[0-7:keyword,8-11:variable,12-19:variable,20-26:variable]
 line_2=[0-6:keyword,7-11:variable,12-16:variable,17-21:variable]

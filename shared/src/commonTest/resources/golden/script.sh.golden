@@ -1,6 +1,6 @@
 language=sh
 contentLen=322
-highlightLineCount=25
+highlightLineCount=24
 totalTokens=54
 line_0=[0-19:comment]
 line_1=[0-3:function,4-8:constant]

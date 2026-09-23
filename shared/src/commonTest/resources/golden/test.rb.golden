@@ -1,6 +1,6 @@
 language=rb
 contentLen=477
-highlightLineCount=34
+highlightLineCount=33
 totalTokens=92
 line_0=[0-7:function.method,8-19:string]
 line_2=[0-6:keyword,7-13:constructor]

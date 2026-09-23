@@ -1,6 +1,6 @@
 language=rs
 contentLen=807
-highlightLineCount=44
+highlightLineCount=43
 totalTokens=198
 line_0=[0-3:keyword,7-9:punctuation.delimiter,20-22:punctuation.delimiter,22-29:constructor,29-30:punctuation.delimiter]
 line_2=[0-1:attribute,1-2:punctuation.bracket,2-8:attribute,8-9:punctuation.bracket,9-14:constructor,14-15:punctuation.delimiter,15-16:attribute,16-21:constructor,21-22:punctuation.bracket,22-23:attribute]

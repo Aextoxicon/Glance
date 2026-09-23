@@ -1,6 +1,6 @@
 language=cpp
 contentLen=656
-highlightLineCount=33
+highlightLineCount=31
 totalTokens=85
 line_0=[0-8:keyword,9-19:string]
 line_1=[0-8:keyword,9-17:string]

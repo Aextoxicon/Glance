@@ -1,6 +1,6 @@
 language=html
 contentLen=285
-highlightLineCount=18
+highlightLineCount=17
 totalTokens=57
 line_0=[0-14:constant,14-15:punctuation.bracket]
 line_1=[0-1:punctuation.bracket,1-5:tag,6-10:attribute,12-14:string,15-16:punctuation.bracket]

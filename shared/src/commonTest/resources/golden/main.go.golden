@@ -1,6 +1,6 @@
 language=go
 contentLen=653
-highlightLineCount=37
+highlightLineCount=34
 totalTokens=82
 line_0=[0-7:keyword]
 line_2=[0-6:keyword]

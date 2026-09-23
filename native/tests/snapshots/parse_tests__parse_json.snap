@@ -1,6 +1,5 @@
 ---
 source: tests/parse_tests.rs
-assertion_line: 47
 expression: result
 ---
 CodeParseResult {
@@ -23,8 +22,6 @@ CodeParseResult {
                 kind: "comment",
             },
         ],
-        [],
-        [],
     ],
     outline: [],
 }

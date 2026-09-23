@@ -41,7 +41,6 @@ CodeParseResult {
                 kind: "number",
             },
         ],
-        [],
     ],
     outline: [
         OutlineNode {

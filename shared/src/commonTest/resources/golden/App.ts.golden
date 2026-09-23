@@ -1,6 +1,6 @@
 language=ts
 contentLen=490
-highlightLineCount=24
+highlightLineCount=23
 totalTokens=103
 line_0=[0-6:keyword,7-16:keyword,17-23:type,24-25:punctuation.bracket]
 line_1=[4-8:property,10-16:type.builtin,16-17:punctuation.delimiter]
