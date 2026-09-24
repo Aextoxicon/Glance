@@ -14,8 +14,9 @@ macro_rules! debug_log {
 // UniFFI types
 #[derive(uniffi::Record, Debug)]
 pub struct HighlightToken {
-    pub start_byte: u64,
-    pub end_byte: u64,
+    // 行内偏移不超过行长
+    pub start_byte: i32,
+    pub end_byte: i32,
     pub kind: String,
 }
 
@@ -98,8 +99,8 @@ fn map_byte(map: &[u32], byte_pos: u64) -> u64 {
 fn convert_highlights(map: Option<&[u32]>, highlights: &mut [HighlightToken]) {
     let Some(map) = map else { return };
     for h in highlights {
-        h.start_byte = map_byte(map, h.start_byte);
-        h.end_byte = map_byte(map, h.end_byte);
+        h.start_byte = map_byte(map, h.start_byte as u64) as i32;
+        h.end_byte = map_byte(map, h.end_byte as u64) as i32;
     }
 }
 
@@ -125,7 +126,9 @@ fn split_highlights_by_line(
     let mut result: Vec<Vec<HighlightToken>> = Vec::with_capacity(line_count);
     let line_starts: Vec<u64> = line_boundaries.iter().map(|(s, _)| *s).collect();
     for h in highlights {
-        let start_line = match line_starts.binary_search(&h.start_byte) {
+        let start = h.start_byte as u64;w
+        let end = h.end_byte as u64;
+        let start_line = match line_starts.binary_search(&start) {
             Ok(idx) => idx,
             Err(idx) => {
                 if idx == 0 {
@@ -136,7 +139,7 @@ fn split_highlights_by_line(
         };
         let end_line = {
             let idx = line_starts
-                .binary_search(&h.end_byte)
+                .binary_search(&end)
                 .unwrap_or_else(|insertion_point| insertion_point);
             if idx == 0 {
                 continue;
@@ -145,8 +148,8 @@ fn split_highlights_by_line(
         };
         for line_idx in start_line..=end_line.min(line_count - 1) {
             let (line_start, line_end) = line_boundaries[line_idx];
-            let overlap_start = h.start_byte.max(line_start);
-            let overlap_end = h.end_byte.min(line_end);
+            let overlap_start = start.max(line_start);
+            let overlap_end = end.min(line_end);
             if overlap_start < overlap_end {
                 // 惰性补齐到目标行
                 while result.len() <= line_idx {
@@ -154,8 +157,8 @@ fn split_highlights_by_line(
                 }
                 let line_len = line_end.saturating_sub(line_start);
                 result[line_idx].push(HighlightToken {
-                    start_byte: overlap_start.saturating_sub(line_start).min(line_len),
-                    end_byte: overlap_end.saturating_sub(line_start).min(line_len),
+                    start_byte: overlap_start.saturating_sub(line_start).min(line_len) as i32,
+                    end_byte: overlap_end.saturating_sub(line_start).min(line_len) as i32,
                     kind: h.kind.clone(),
                 });
             }
@@ -384,8 +387,8 @@ fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<HighlightToken>
         if let Some(top) = stack.pop() {
             if top.cursor < top.end {
                 out.push(HighlightToken {
-                    start_byte: top.cursor,
-                    end_byte: top.end,
+                    start_byte: top.cursor as i32,
+                    end_byte: top.end as i32,
                     kind: top.kind,
                 });
             }
@@ -416,8 +419,8 @@ fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<HighlightToken>
                 // 先吐出 top 在 t 之前的那一段
                 if top.cursor < t.start_byte {
                     out.push(HighlightToken {
-                        start_byte: top.cursor,
-                        end_byte: t.start_byte,
+                        start_byte: top.cursor as i32,
+                        end_byte: t.start_byte as i32,
                         kind: top.kind.clone(),
                     });
                     top.cursor = t.start_byte;
@@ -426,8 +429,8 @@ fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<HighlightToken>
                 // 交叉重叠（top 在 t 内部结束）
                 if top.cursor < t.start_byte {
                     out.push(HighlightToken {
-                        start_byte: top.cursor,
-                        end_byte: t.start_byte,
+                        start_byte: top.cursor as i32,
+                        end_byte: t.start_byte as i32,
                         kind: top.kind.clone(),
                     });
                 }

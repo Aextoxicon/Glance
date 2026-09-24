@@ -13,8 +13,8 @@ actual fun parseCode(source: String, extension: String): CodeParseResult {
             highlightsByLine = result.highlightsByLine.map { line ->
                 line.map { token ->
                     HighlightToken(
-                        startByte = token.startByte.toLong(),
-                        endByte = token.endByte.toLong(),
+                        startByte = token.startByte,
+                        endByte = token.endByte,
                         kind = token.kind,
                     )
                 }

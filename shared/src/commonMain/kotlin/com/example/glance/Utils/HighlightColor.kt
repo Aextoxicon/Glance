@@ -107,8 +107,8 @@ object HighlightColor {
         return buildAnnotatedString {
             var pos = 0
             for (token in tokens) {
-                val rawStart = token.startByte.toInt()
-                val end = token.endByte.toInt().coerceAtMost(line.length)
+                val rawStart = token.startByte
+                val end = token.endByte.coerceAtMost(line.length)
                 // 区间与已渲染部分重叠时只补未渲染的段
                 if (end > pos) {
                     val start = rawStart.coerceAtLeast(pos).coerceAtMost(line.length)
