@@ -126,7 +126,7 @@ fn split_highlights_by_line(
     let mut result: Vec<Vec<HighlightToken>> = Vec::with_capacity(line_count);
     let line_starts: Vec<u64> = line_boundaries.iter().map(|(s, _)| *s).collect();
     for h in highlights {
-        let start = h.start_byte as u64;w
+        let start = h.start_byte as u64;
         let end = h.end_byte as u64;
         let start_line = match line_starts.binary_search(&start) {
             Ok(idx) => idx,

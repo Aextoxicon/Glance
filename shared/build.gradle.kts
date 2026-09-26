@@ -21,6 +21,8 @@ val cargoBuildJvm by tasks.registering(Exec::class) {
     commandLine("cargo", "build")
     inputs.dir(nativeProjectDir.resolve("src"))
     inputs.file(nativeProjectDir.resolve("Cargo.toml"))
+    inputs.file(nativeProjectDir.resolve("Cargo.lock"))
+    inputs.file(nativeProjectDir.resolve("build.rs"))
     outputs.file(jvmNativeLib)
 }
 
@@ -49,6 +51,8 @@ val cargoBuildAndroid by tasks.registering(Exec::class) {
     )
     inputs.dir(nativeProjectDir.resolve("src"))
     inputs.file(nativeProjectDir.resolve("Cargo.toml"))
+    inputs.file(nativeProjectDir.resolve("Cargo.lock"))
+    inputs.file(nativeProjectDir.resolve("build.rs"))
     outputs.dir(androidJniLibsDir)
 }
 
@@ -66,6 +70,7 @@ val generateUniffiKotlinBindings by tasks.registering(Exec::class) {
     workingDir = nativeProjectDir
     val outDir = uniffiKotlinOutDir.get().asFile
     val nativeLibPath = jvmNativeLib.absolutePath
+    inputs.file(jvmNativeLib)
     outputs.dir(outDir)
     doFirst {
         outDir.mkdirs()
