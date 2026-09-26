@@ -20,6 +20,14 @@ pub struct HighlightToken {
     pub kind: String,
 }
 
+// 出口前不产生String分配
+#[derive(Clone, Copy)]
+struct Token {
+    start_byte: i32,
+    end_byte: i32,
+    kind: u32,
+}
+
 #[derive(uniffi::Record, Debug)]
 pub struct OutlineNode {
     pub kind: String,
@@ -96,7 +104,7 @@ fn map_byte(map: &[u32], byte_pos: u64) -> u64 {
     map.get(byte_pos as usize).copied().unwrap_or(0) as u64
 }
 
-fn convert_highlights(map: Option<&[u32]>, highlights: &mut [HighlightToken]) {
+fn convert_highlights(map: Option<&[u32]>, highlights: &mut [Token]) {
     let Some(map) = map else { return };
     for h in highlights {
         h.start_byte = map_byte(map, h.start_byte as u64) as i32;
@@ -115,7 +123,8 @@ fn convert_outline(map: Option<&[u32]>, outline: &mut [OutlineNode]) {
 
 fn split_highlights_by_line(
     line_boundaries: &[(u64, u64)],
-    highlights: &[HighlightToken],
+    highlights: &[Token],
+    names: &[&str],
 ) -> Vec<Vec<HighlightToken>> {
     let line_count = line_boundaries.len();
     if line_count == 0 {
@@ -159,7 +168,7 @@ fn split_highlights_by_line(
                 result[line_idx].push(HighlightToken {
                     start_byte: overlap_start.saturating_sub(line_start).min(line_len) as i32,
                     end_byte: overlap_end.saturating_sub(line_start).min(line_len) as i32,
-                    kind: h.kind.clone(),
+                    kind: names[h.kind as usize].to_string(),
                 });
             }
         }
@@ -354,22 +363,22 @@ fn collect_outline_children(
 struct RawCapture {
     start_byte: u64,
     end_byte: u64,
-    kind: String,
-    specificity: u8,
+    kind: u32,
+    score: u16,
 }
 
-// 具体度打分：结构具体度高 256 倍于 capture 名点分段数，两级同时生效
-fn capture_score(t: &RawCapture) -> u16 {
-    (u16::from(t.specificity) << 8) | (t.kind.split('.').count() as u16)
+// 结构具体度高 256 倍于 capture 名点分段数，两级同时生效
+fn capture_score(specificity: u8, dotted: u8) -> u16 {
+    (u16::from(specificity) << 8) | u16::from(dotted)
 }
 
 // 解决高亮token的冲突：同区间按具体度择优，嵌套区间切开成互不重叠的
-fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<HighlightToken> {
+fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<Token> {
     tokens.sort_by(|a, b| {
         a.start_byte
             .cmp(&b.start_byte)
             .then_with(|| b.end_byte.cmp(&a.end_byte))
-            .then_with(|| capture_score(b).cmp(&capture_score(a)))
+            .then_with(|| b.score.cmp(&a.score))
     });
     tokens.dedup_by(|a, b| {
         a.start_byte == b.start_byte && a.end_byte == b.end_byte && a.kind == b.kind
@@ -378,15 +387,15 @@ fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<HighlightToken>
     struct Open {
         cursor: u64,
         end: u64,
-        kind: String,
+        kind: u32,
     }
-    let mut out: Vec<HighlightToken> = Vec::with_capacity(tokens.len());
+    let mut out: Vec<Token> = Vec::with_capacity(tokens.len());
     let mut stack: Vec<Open> = Vec::new();
 
-    fn close_top(stack: &mut Vec<Open>, out: &mut Vec<HighlightToken>) {
+    fn close_top(stack: &mut Vec<Open>, out: &mut Vec<Token>) {
         if let Some(top) = stack.pop() {
             if top.cursor < top.end {
-                out.push(HighlightToken {
+                out.push(Token {
                     start_byte: top.cursor as i32,
                     end_byte: top.end as i32,
                     kind: top.kind,
@@ -418,20 +427,20 @@ fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<HighlightToken>
             if top.end > t.end_byte {
                 // 先吐出 top 在 t 之前的那一段
                 if top.cursor < t.start_byte {
-                    out.push(HighlightToken {
+                    out.push(Token {
                         start_byte: top.cursor as i32,
                         end_byte: t.start_byte as i32,
-                        kind: top.kind.clone(),
+                        kind: top.kind,
                     });
                     top.cursor = t.start_byte;
                 }
             } else {
                 // 交叉重叠（top 在 t 内部结束）
                 if top.cursor < t.start_byte {
-                    out.push(HighlightToken {
+                    out.push(Token {
                         start_byte: top.cursor as i32,
                         end_byte: t.start_byte as i32,
-                        kind: top.kind.clone(),
+                        kind: top.kind,
                     });
                 }
                 stack.pop();
@@ -489,6 +498,7 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
     };
 
     let query = &grammar.compiled_query;
+    let names: &[&str] = query.capture_names();
 
     debug_log!(
         "[RUST] parse_code called, source length={}, extension={}",
@@ -509,12 +519,16 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
                 .unwrap_or(0);
             for capture in match_.captures {
                 let node = capture.node;
-                let kind_str = query.capture_names()[capture.index as usize];
+                let dotted = grammar
+                    .capture_dotted
+                    .get(capture.index as usize)
+                    .copied()
+                    .unwrap_or(0);
                 results.push(RawCapture {
                     start_byte: node.start_byte() as u64,
                     end_byte: node.end_byte() as u64,
-                    kind: kind_str.to_string(),
-                    specificity,
+                    kind: capture.index,
+                    score: capture_score(specificity, dotted),
                 });
             }
         }
@@ -523,7 +537,9 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
         for h in &results {
             debug_log!(
                 "[RUST]   highlight: start={} end={} kind={:?}",
-                h.start_byte, h.end_byte, h.kind
+                h.start_byte,
+                h.end_byte,
+                names[h.kind as usize]
             );
         }
         results
@@ -553,7 +569,7 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
     convert_highlights(scan.byte_to_utf16_map.as_deref(), &mut highlights);
     convert_outline(scan.byte_to_utf16_map.as_deref(), &mut result.outline);
 
-    result.highlights_by_line = split_highlights_by_line(&scan.line_boundaries, &highlights);
+    result.highlights_by_line = split_highlights_by_line(&scan.line_boundaries, &highlights, names);
 
     debug_log!(
         "[RUST] returning result with {} lines of highlights",

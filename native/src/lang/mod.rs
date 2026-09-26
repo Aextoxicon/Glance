@@ -19,10 +19,12 @@ pub fn build_grammar(language: tree_sitter::Language, segments: &[&str]) -> Gram
     let compiled_query = tree_sitter::Query::new(&language, &highlight)
         .expect("invalid highlight query");
     let pattern_specificity = compute_pattern_specificity(&highlight, &compiled_query);
+    let capture_dotted = compute_capture_dotted(&compiled_query);
     GrammarDef {
         language,
         compiled_query,
         pattern_specificity,
+        capture_dotted,
     }
 }
 
@@ -69,6 +71,15 @@ pub fn compute_pattern_specificity(query_text: &str, query: &tree_sitter::Query)
         .collect()
 }
 
+// 预计算后运行时直接查表
+fn compute_capture_dotted(query: &tree_sitter::Query) -> Vec<u8> {
+    query
+        .capture_names()
+        .iter()
+        .map(|name| (name.split('.').count()).min(u8::MAX as usize) as u8)
+        .collect()
+}
+
 mod c;
 mod cpp;
 mod go;
@@ -95,9 +106,9 @@ mod xml;
 
 pub struct GrammarDef {
     pub language: tree_sitter::Language,
-    /// 预编译的Query
     pub compiled_query: tree_sitter::Query,
     pub pattern_specificity: Vec<u8>,
+    pub capture_dotted: Vec<u8>,
 }
 
 // 按文件扩展名查找对应的grammar定义
@@ -163,6 +174,20 @@ mod tests {
         assert!(def.pattern_specificity[1] > def.pattern_specificity[0]);
         // 带谓词的约束更具体
         assert!(def.pattern_specificity[2] > def.pattern_specificity[0]);
+    }
+
+    #[test]
+    fn capture_dotted_counts_dot_segments() {
+        let query = r#"
+            (identifier) @variable
+            (function_declaration name: (identifier) @function.method.builtin)
+        "#;
+        let def = build_grammar(tree_sitter_go::LANGUAGE.into(), &[query]);
+        let names = def.compiled_query.capture_names();
+        assert_eq!(def.capture_dotted.len(), names.len());
+        let idx = |name: &str| names.iter().position(|n| *n == name).unwrap();
+        assert_eq!(def.capture_dotted[idx("variable")], 1);
+        assert_eq!(def.capture_dotted[idx("function.method.builtin")], 3);
     }
 
     #[test]
