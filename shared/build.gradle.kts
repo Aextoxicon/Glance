@@ -7,18 +7,19 @@ val nativeLibName = "uniffi_code_parser"
 // JVM/桌面端按平台区分native库文件名（cargo产物命名规则）
 val hostOs = System.getProperty("os.name").lowercase()
 val jvmNativeLib = when {
-    hostOs.contains("mac") -> nativeTargetDir.resolve("debug/lib${nativeLibName}.dylib")
-    hostOs.contains("win") -> nativeTargetDir.resolve("debug/${nativeLibName}.dll")
-    else -> nativeTargetDir.resolve("debug/lib${nativeLibName}.so")
+    hostOs.contains("mac") -> nativeTargetDir.resolve("release/lib${nativeLibName}.dylib")
+    hostOs.contains("win") -> nativeTargetDir.resolve("release/${nativeLibName}.dll")
+    else -> nativeTargetDir.resolve("release/lib${nativeLibName}.so")
 }
 
 val uniffiKotlinOutDir = layout.buildDirectory.dir("generated/uniffi/kotlin")
 
 val cargoBuildJvm by tasks.registering(Exec::class) {
     group = "uniffi"
-    description = "Build Rust native library for JVM (debug)"
+    description = "Build Rust native library for JVM (release)"
     workingDir = nativeProjectDir
-    commandLine("cargo", "build")
+    // release 必需：26 个 grammar 是 C 代码，debug 下 opt-level=0 会慢数倍
+    commandLine("cargo", "build", "--release")
     inputs.dir(nativeProjectDir.resolve("src"))
     inputs.file(nativeProjectDir.resolve("Cargo.toml"))
     inputs.file(nativeProjectDir.resolve("Cargo.lock"))
@@ -47,7 +48,7 @@ val cargoBuildAndroid by tasks.registering(Exec::class) {
         "-t", "armeabi-v7a",
         "-t", "x86_64",
         "-o", androidJniLibsDir.asFile.absolutePath,
-        "build"
+        "build", "--release"
     )
     inputs.dir(nativeProjectDir.resolve("src"))
     inputs.file(nativeProjectDir.resolve("Cargo.toml"))
