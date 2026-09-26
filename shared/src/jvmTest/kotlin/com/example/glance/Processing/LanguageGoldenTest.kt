@@ -127,7 +127,8 @@ class LanguageGoldenTest {
 
                 val serialized = serializeParseResult(result)
                 val goldenPath = "golden/$fileName.golden"
-                val golden = loadResource(goldenPath)
+                // golden 与模板同用一套规范化，否则本机 core.autocrlf=true 会让工作区 golden 变 CRLF 而始终不等
+                val golden = loadResource(goldenPath)?.replace("\r\n", "\n")
 
                 if (UPDATE_GOLDENS) {
                     // 只写有变化的
