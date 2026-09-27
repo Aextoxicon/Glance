@@ -80,7 +80,8 @@ val generateUniffiKotlinBindings by tasks.registering(Exec::class) {
         "uniffi-bindgen", "generate",
         "--library", nativeLibPath,
         "--language", "kotlin",
-        "--out-dir", outDir.absolutePath
+        "--out-dir", outDir.absolutePath,
+        "--no-format"
     )
 }
 
@@ -199,6 +200,6 @@ tasks.named("build") {
 
 val testApp by tasks.registering {
     group = "verification"
-    description = "Run UI golden tests (JVM now; add testDebugUnitTest when Android is ready)"
-    dependsOn("jvmTest")
+    description = "Run JVM tests + Android host tests (no device needed)"
+    dependsOn("jvmTest", "testAndroidHostTest")
 }

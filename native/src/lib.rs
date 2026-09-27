@@ -3,11 +3,12 @@ use tree_sitter::{Language, Parser, QueryCursor};
 pub mod lang;
 uniffi::setup_scaffolding!();
 
-// 调试日志宏
+// 调试日志宏,release下cfg!为常量false,分支被优化掉
 macro_rules! debug_log {
     ($($arg:tt)*) => {
-        #[cfg(debug_assertions)]
-        eprintln!($($arg)*);
+        if cfg!(debug_assertions) {
+            eprintln!($($arg)*);
+        }
     };
 }
 

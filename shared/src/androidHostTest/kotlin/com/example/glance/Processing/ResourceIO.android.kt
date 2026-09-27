@@ -5,7 +5,7 @@ import java.io.File
 
 actual fun loadResource(path: String): String? {
     return try {
-        val stream = Thread.currentThread().contextClassLoader.getResourceAsStream(path)
+        val stream = Thread.currentThread().contextClassLoader?.getResourceAsStream(path)
         stream?.use { it.reader().readText() }
     } catch (e: Exception) {
         Log.e("ResourceIO", "Failed to load $path", e)
