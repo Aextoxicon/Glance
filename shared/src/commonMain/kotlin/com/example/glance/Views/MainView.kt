@@ -512,6 +512,7 @@ private fun CodePreviewToolbar(viewModel: MainViewModel) {
 
 private val CodeLineHeight = 20.sp
 private val LineSeparator = AnnotatedString("\n")
+private const val OUTLINE_SCROLL_CONTEXT_LINES = 3
 
 @Composable
 private fun CodeContentView(
@@ -527,7 +528,8 @@ private fun CodeContentView(
 
     LaunchedEffect(scrollTargetLine) {
         val line = scrollTargetLine ?: return@LaunchedEffect
-        lazyListState.scrollToItem((line - 1).coerceIn(0, (lines.size - 1).coerceAtLeast(0)))
+        val target = (line - 1 - OUTLINE_SCROLL_CONTEXT_LINES).coerceAtLeast(0)
+        lazyListState.scrollToItem(target.coerceAtMost((lines.size - 1).coerceAtLeast(0)))
         onScrolled()
     }
 
@@ -546,13 +548,19 @@ private fun CodeContentView(
                     contentPadding = PaddingValues(16.dp),
                 ) {
                     items(count = lines.size, key = { it }) { index ->
-                        val text = when {
-                            parseResult is CodeParseResult.Code && index < parseResult.highlightsByLine.size ->
-                                HighlightColor.buildLineAnnotatedString(lines[index], parseResult.highlightsByLine[index])
-                            else -> AnnotatedString(lines[index])
+                        val lineText = lines[index]
+                        val tokens = (parseResult as? CodeParseResult.Code)
+                            ?.highlightsByLine
+                            ?.getOrNull(index)
+                        // 滚动时的重组不再重建 AnnotatedString
+                        val text = remember(lineText, tokens) {
+                            val base = tokens
+                                ?.let { HighlightColor.buildLineAnnotatedString(lineText, it) }
+                                ?: AnnotatedString(lineText)
+                            base + LineSeparator
                         }
                         Text(
-                            text = text + LineSeparator,
+                            text = text,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 13.sp,
                             lineHeight = CodeLineHeight,
