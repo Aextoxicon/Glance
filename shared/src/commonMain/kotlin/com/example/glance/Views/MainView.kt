@@ -513,6 +513,7 @@ private fun CodePreviewToolbar(viewModel: MainViewModel) {
 private val CodeLineHeight = 20.sp
 private val LineSeparator = AnnotatedString("\n")
 private const val OUTLINE_SCROLL_CONTEXT_LINES = 3
+private const val OUTLINE_SCROLL_PRE_JUMP_LINES = 30
 
 @Composable
 private fun CodeContentView(
@@ -528,8 +529,16 @@ private fun CodeContentView(
 
     LaunchedEffect(scrollTargetLine) {
         val line = scrollTargetLine ?: return@LaunchedEffect
-        val target = (line - 1 - OUTLINE_SCROLL_CONTEXT_LINES).coerceAtLeast(0)
-        lazyListState.scrollToItem(target.coerceAtMost((lines.size - 1).coerceAtLeast(0)))
+        val maxIndex = (lines.size - 1).coerceAtLeast(0)
+        val target = (line - 1 - OUTLINE_SCROLL_CONTEXT_LINES).coerceAtLeast(0).coerceAtMost(maxIndex)
+        val current = lazyListState.firstVisibleItemIndex
+        val preJump = when {
+            target - current > OUTLINE_SCROLL_PRE_JUMP_LINES -> target - OUTLINE_SCROLL_PRE_JUMP_LINES
+            current - target > OUTLINE_SCROLL_PRE_JUMP_LINES -> target + OUTLINE_SCROLL_PRE_JUMP_LINES
+            else -> current
+        }
+        if (preJump != current) lazyListState.scrollToItem(preJump)
+        lazyListState.animateScrollToItem(target)
         onScrolled()
     }
 
