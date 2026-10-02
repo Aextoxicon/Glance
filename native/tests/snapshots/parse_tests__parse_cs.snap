@@ -1,83 +1,84 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 13,
-                kind: "comment",
-            },
+            (
+                0,
+                13,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 5,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 6,
-                end_byte: 7,
-                kind: "type",
-            },
-            HighlightToken {
-                start_byte: 8,
-                end_byte: 9,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 10,
-                end_byte: 13,
-                kind: "type.builtin",
-            },
-            HighlightToken {
-                start_byte: 14,
-                end_byte: 15,
-                kind: "function",
-            },
-            HighlightToken {
-                start_byte: 15,
-                end_byte: 16,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 16,
-                end_byte: 17,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 18,
-                end_byte: 19,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 20,
-                end_byte: 26,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 27,
-                end_byte: 28,
-                kind: "number",
-            },
-            HighlightToken {
-                start_byte: 28,
-                end_byte: 29,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 30,
-                end_byte: 31,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 32,
-                end_byte: 33,
-                kind: "punctuation.bracket",
-            },
+            (
+                0,
+                5,
+                "keyword",
+            ),
+            (
+                6,
+                7,
+                "type",
+            ),
+            (
+                8,
+                9,
+                "punctuation.bracket",
+            ),
+            (
+                10,
+                13,
+                "type.builtin",
+            ),
+            (
+                14,
+                15,
+                "function",
+            ),
+            (
+                15,
+                16,
+                "punctuation.bracket",
+            ),
+            (
+                16,
+                17,
+                "punctuation.bracket",
+            ),
+            (
+                18,
+                19,
+                "punctuation.bracket",
+            ),
+            (
+                20,
+                26,
+                "keyword",
+            ),
+            (
+                27,
+                28,
+                "number",
+            ),
+            (
+                28,
+                29,
+                "punctuation.delimiter",
+            ),
+            (
+                30,
+                31,
+                "punctuation.bracket",
+            ),
+            (
+                32,
+                33,
+                "punctuation.bracket",
+            ),
         ],
+        [],
     ],
     outline: [
         OutlineNode {

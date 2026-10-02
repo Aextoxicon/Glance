@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 // 消除每个语言文件中的模板代码（LazyLock + GrammarDef构造）
 // 用法：
 //   grammar!(tree_sitter_go::LANGUAGE, HIGHLIGHT_QUERY)
-// 多段 query 按顺序拼接（例如 CPP = C + C++ 增量）
+// 多段query按顺序拼接（例如CPP = C + C++增量）
 macro_rules! grammar {
     ($lang:expr, $($seg:expr),+ $(,)?) => {
         ::std::sync::LazyLock::new(|| {
@@ -13,7 +13,7 @@ macro_rules! grammar {
     };
 }
 
-// 编译 query（多段按换行拼接）并算出每条 pattern 的结构具体度
+// 编译query（多段按换行拼接）并算出每条pattern的结构具体度
 pub fn build_grammar(language: tree_sitter::Language, segments: &[&str]) -> GrammarDef {
     let highlight = segments.join("\n");
     let compiled_query = tree_sitter::Query::new(&language, &highlight)
@@ -28,7 +28,7 @@ pub fn build_grammar(language: tree_sitter::Language, segments: &[&str]) -> Gram
     }
 }
 
-// 数出 query 文本里的节点模式个数：语法里 `(` 只开节点模式，开谓词时紧跟 `#`
+// 数出query文本里的节点模式个数：语法里 `(` 只开节点模式，开谓词时紧跟 `#`
 fn count_pattern_nodes(text: &str) -> usize {
     let bytes = text.as_bytes();
     let mut nodes = 0usize;
@@ -56,7 +56,7 @@ fn count_pattern_nodes(text: &str) -> usize {
     nodes
 }
 
-// 每条 pattern 的结构具体度 = 节点模式数 + 谓词约束数；节点越多越具体
+// 每条pattern的结构具体度 = 节点模式数 + 谓词约束数；节点越多越具体
 pub fn compute_pattern_specificity(query_text: &str, query: &tree_sitter::Query) -> Vec<u8> {
     (0..query.pattern_count())
         .map(|i| {

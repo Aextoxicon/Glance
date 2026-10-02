@@ -1,69 +1,70 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 14,
-                kind: "comment",
-            },
+            (
+                0,
+                14,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 3,
-                kind: "property",
-            },
-            HighlightToken {
-                start_byte: 3,
-                end_byte: 4,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 5,
-                end_byte: 10,
-                kind: "string",
-            },
+            (
+                0,
+                3,
+                "property",
+            ),
+            (
+                3,
+                4,
+                "punctuation.delimiter",
+            ),
+            (
+                5,
+                10,
+                "string",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 4,
-                kind: "property",
-            },
-            HighlightToken {
-                start_byte: 4,
-                end_byte: 5,
-                kind: "punctuation.delimiter",
-            },
+            (
+                0,
+                4,
+                "property",
+            ),
+            (
+                4,
+                5,
+                "punctuation.delimiter",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 2,
-                end_byte: 3,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 4,
-                end_byte: 5,
-                kind: "string",
-            },
+            (
+                2,
+                3,
+                "punctuation.delimiter",
+            ),
+            (
+                4,
+                5,
+                "string",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 2,
-                end_byte: 3,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 4,
-                end_byte: 5,
-                kind: "string",
-            },
+            (
+                2,
+                3,
+                "punctuation.delimiter",
+            ),
+            (
+                4,
+                5,
+                "string",
+            ),
         ],
+        [],
     ],
     outline: [],
 }

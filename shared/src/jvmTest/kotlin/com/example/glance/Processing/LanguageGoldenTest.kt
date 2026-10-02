@@ -20,8 +20,8 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 
 /**
- 默认：只比对，绝不改动已入库的 golden（比对失败时提示更新命令）
- ./gradlew jvmTest --rerun -PupdateGoldens=true`：把新基线直接写回 commonTest/resources/golden/
+ 默认：只比对，绝不改动已入库的golden（比对失败时提示更新命令）
+ ./gradlew jvmTest --rerun -PupdateGoldens=true：把新基线直接写回commonTest/resources/golden/
  */
 @OptIn(ExperimentalTestApi::class)
 class LanguageGoldenTest {
@@ -127,7 +127,7 @@ class LanguageGoldenTest {
 
                 val serialized = serializeParseResult(result)
                 val goldenPath = "golden/$fileName.golden"
-                // golden 与模板同用一套规范化，否则本机 core.autocrlf=true 会让工作区 golden 变 CRLF 而始终不等
+                // golden与模板同用一套规范化，否则本机core.autocrlf=true会让工作区golden变CRLF而始终不等
                 val golden = loadResource(goldenPath)?.replace("\r\n", "\n")
 
                 if (UPDATE_GOLDENS) {

@@ -1,51 +1,52 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 5,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 6,
-                end_byte: 9,
-                kind: "type",
-            },
-            HighlightToken {
-                start_byte: 12,
-                end_byte: 18,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 20,
-                end_byte: 23,
-                kind: "type",
-            },
-            HighlightToken {
-                start_byte: 24,
-                end_byte: 27,
-                kind: "function",
-            },
-            HighlightToken {
-                start_byte: 29,
-                end_byte: 30,
-                kind: "delimiter",
-            },
-            HighlightToken {
-                start_byte: 32,
-                end_byte: 33,
-                kind: "delimiter",
-            },
-            HighlightToken {
-                start_byte: 34,
-                end_byte: 48,
-                kind: "comment",
-            },
+            (
+                0,
+                5,
+                "keyword",
+            ),
+            (
+                6,
+                9,
+                "type",
+            ),
+            (
+                12,
+                18,
+                "keyword",
+            ),
+            (
+                20,
+                23,
+                "type",
+            ),
+            (
+                24,
+                27,
+                "function",
+            ),
+            (
+                29,
+                30,
+                "delimiter",
+            ),
+            (
+                32,
+                33,
+                "delimiter",
+            ),
+            (
+                34,
+                48,
+                "comment",
+            ),
         ],
+        [],
     ],
     outline: [
         OutlineNode {

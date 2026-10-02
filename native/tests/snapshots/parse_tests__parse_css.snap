@@ -1,48 +1,49 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 17,
-                kind: "comment",
-            },
+            (
+                0,
+                17,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 4,
-                kind: "tag",
-            },
-            HighlightToken {
-                start_byte: 5,
-                end_byte: 6,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 7,
-                end_byte: 12,
-                kind: "property",
-            },
-            HighlightToken {
-                start_byte: 12,
-                end_byte: 13,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 17,
-                end_byte: 18,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 19,
-                end_byte: 20,
-                kind: "punctuation.bracket",
-            },
+            (
+                0,
+                4,
+                "tag",
+            ),
+            (
+                5,
+                6,
+                "punctuation.bracket",
+            ),
+            (
+                7,
+                12,
+                "property",
+            ),
+            (
+                12,
+                13,
+                "punctuation.delimiter",
+            ),
+            (
+                17,
+                18,
+                "punctuation.delimiter",
+            ),
+            (
+                19,
+                20,
+                "punctuation.bracket",
+            ),
         ],
+        [],
     ],
     outline: [],
 }

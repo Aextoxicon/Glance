@@ -1,165 +1,166 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 2,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 2,
-                end_byte: 5,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 6,
-                end_byte: 13,
-                kind: "property",
-            },
-            HighlightToken {
-                start_byte: 13,
-                end_byte: 14,
-                kind: "operator",
-            },
-            HighlightToken {
-                start_byte: 14,
-                end_byte: 15,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 15,
-                end_byte: 18,
-                kind: "number",
-            },
-            HighlightToken {
-                start_byte: 18,
-                end_byte: 19,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 19,
-                end_byte: 21,
-                kind: "punctuation.delimiter",
-            },
+            (
+                0,
+                2,
+                "punctuation.delimiter",
+            ),
+            (
+                2,
+                5,
+                "keyword",
+            ),
+            (
+                6,
+                13,
+                "property",
+            ),
+            (
+                13,
+                14,
+                "operator",
+            ),
+            (
+                14,
+                15,
+                "punctuation.delimiter",
+            ),
+            (
+                15,
+                18,
+                "number",
+            ),
+            (
+                18,
+                19,
+                "punctuation.delimiter",
+            ),
+            (
+                19,
+                21,
+                "punctuation.delimiter",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 20,
-                kind: "comment",
-            },
+            (
+                0,
+                20,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 1,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 1,
-                end_byte: 5,
-                kind: "tag",
-            },
-            HighlightToken {
-                start_byte: 6,
-                end_byte: 8,
-                kind: "property",
-            },
-            HighlightToken {
-                start_byte: 8,
-                end_byte: 9,
-                kind: "operator",
-            },
-            HighlightToken {
-                start_byte: 9,
-                end_byte: 10,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 10,
-                end_byte: 11,
-                kind: "string",
-            },
-            HighlightToken {
-                start_byte: 11,
-                end_byte: 12,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 12,
-                end_byte: 13,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 13,
-                end_byte: 14,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 14,
-                end_byte: 19,
-                kind: "tag",
-            },
-            HighlightToken {
-                start_byte: 19,
-                end_byte: 20,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 20,
-                end_byte: 22,
-                kind: "markup",
-            },
-            HighlightToken {
-                start_byte: 22,
-                end_byte: 24,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 24,
-                end_byte: 29,
-                kind: "tag",
-            },
-            HighlightToken {
-                start_byte: 29,
-                end_byte: 30,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 30,
-                end_byte: 31,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 31,
-                end_byte: 36,
-                kind: "tag",
-            },
-            HighlightToken {
-                start_byte: 36,
-                end_byte: 38,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 38,
-                end_byte: 40,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 40,
-                end_byte: 44,
-                kind: "tag",
-            },
-            HighlightToken {
-                start_byte: 44,
-                end_byte: 45,
-                kind: "punctuation.delimiter",
-            },
+            (
+                0,
+                1,
+                "punctuation.delimiter",
+            ),
+            (
+                1,
+                5,
+                "tag",
+            ),
+            (
+                6,
+                8,
+                "property",
+            ),
+            (
+                8,
+                9,
+                "operator",
+            ),
+            (
+                9,
+                10,
+                "punctuation.delimiter",
+            ),
+            (
+                10,
+                11,
+                "string",
+            ),
+            (
+                11,
+                12,
+                "punctuation.delimiter",
+            ),
+            (
+                12,
+                13,
+                "punctuation.delimiter",
+            ),
+            (
+                13,
+                14,
+                "punctuation.delimiter",
+            ),
+            (
+                14,
+                19,
+                "tag",
+            ),
+            (
+                19,
+                20,
+                "punctuation.delimiter",
+            ),
+            (
+                20,
+                22,
+                "markup",
+            ),
+            (
+                22,
+                24,
+                "punctuation.delimiter",
+            ),
+            (
+                24,
+                29,
+                "tag",
+            ),
+            (
+                29,
+                30,
+                "punctuation.delimiter",
+            ),
+            (
+                30,
+                31,
+                "punctuation.delimiter",
+            ),
+            (
+                31,
+                36,
+                "tag",
+            ),
+            (
+                36,
+                38,
+                "punctuation.delimiter",
+            ),
+            (
+                38,
+                40,
+                "punctuation.delimiter",
+            ),
+            (
+                40,
+                44,
+                "tag",
+            ),
+            (
+                44,
+                45,
+                "punctuation.delimiter",
+            ),
         ],
+        [],
     ],
     outline: [],
 }

@@ -13,21 +13,16 @@ macro_rules! debug_log {
 }
 
 // UniFFI types
-#[derive(uniffi::Record, Debug)]
-pub struct HighlightToken {
-    // 行内偏移不超过行长
-    pub start_byte: i32,
-    pub end_byte: i32,
-    pub kind: String,
-}
 
-// 出口前不产生String分配
+/// kind是capture下标，出口才转成字符串
 #[derive(Clone, Copy)]
 struct Token {
     start_byte: i32,
     end_byte: i32,
     kind: u32,
 }
+
+const PACKED_TOKEN_BYTES: usize = 12;
 
 #[derive(uniffi::Record, Debug)]
 pub struct OutlineNode {
@@ -41,8 +36,11 @@ pub struct OutlineNode {
 
 #[derive(uniffi::Record, Debug)]
 pub struct CodeParseResult {
-    // 按需返回每行的高亮token
-    pub highlights_by_line: Vec<Vec<HighlightToken>>,
+    /// 每12字节一条：[start:u32][end:u32][kind:u32]
+    pub highlight_data: Vec<u8>,
+    pub line_index: Vec<u8>,
+    /// 下标即token的kind
+    pub kinds: Vec<String>,
     pub outline: Vec<OutlineNode>,
 }
 
@@ -122,69 +120,112 @@ fn convert_outline(map: Option<&[u32]>, outline: &mut [OutlineNode]) {
     }
 }
 
-fn split_highlights_by_line(
-    line_boundaries: &[(u64, u64)],
-    highlights: &[Token],
-    names: &[&str],
-) -> Vec<Vec<HighlightToken>> {
-    let line_count = line_boundaries.len();
-    if line_count == 0 {
-        return Vec::new();
-    }
-
-    // 仅预留容量，空行不占用容器
-    let mut result: Vec<Vec<HighlightToken>> = Vec::with_capacity(line_count);
-    let line_starts: Vec<u64> = line_boundaries.iter().map(|(s, _)| *s).collect();
-    for h in highlights {
-        let start = h.start_byte as u64;
-        let end = h.end_byte as u64;
-        let start_line = match line_starts.binary_search(&start) {
-            Ok(idx) => idx,
-            Err(idx) => {
-                if idx == 0 {
-                    continue; // 在文件开头之前，不应发生
-                }
-                idx - 1
-            }
-        };
-        let end_line = {
-            let idx = line_starts
-                .binary_search(&end)
-                .unwrap_or_else(|insertion_point| insertion_point);
+/// None表示它落在任何行之外
+fn line_span_of(token: &Token, line_starts: &[u64], line_count: usize) -> Option<(usize, usize)> {
+    let start = token.start_byte as u64;
+    let end = token.end_byte as u64;
+    let start_line = match line_starts.binary_search(&start) {
+        Ok(idx) => idx,
+        Err(idx) => {
             if idx == 0 {
-                continue;
+                return None;
             }
             idx - 1
+        }
+    };
+    let end_line = {
+        let idx = line_starts
+            .binary_search(&end)
+            .unwrap_or_else(|insertion_point| insertion_point);
+        if idx == 0 {
+            return None;
+        }
+        idx - 1
+    };
+    Some((start_line, end_line.min(line_count - 1)))
+}
+
+/// 按行打包高亮。两趟：先数每行几条，再写入 —— 不为每行建Vec，也不产生String。
+fn pack_highlights_by_line(
+    line_boundaries: &[(u64, u64)],
+    highlights: &[Token],
+) -> (Vec<u8>, Vec<u8>) {
+    let line_count = line_boundaries.len();
+    let mut line_index = vec![0u8; (line_count + 1) * 4];
+    if line_count == 0 || highlights.is_empty() {
+        return (Vec::new(), line_index);
+    }
+    let line_starts: Vec<u64> = line_boundaries.iter().map(|(s, _)| *s).collect();
+
+    let mut counts = vec![0u32; line_count];
+    let mut total = 0usize;
+    for h in highlights {
+        let (start, end) = (h.start_byte as u64, h.end_byte as u64);
+        let Some((start_line, end_line)) = line_span_of(h, &line_starts, line_count) else {
+            continue;
         };
-        for line_idx in start_line..=end_line.min(line_count - 1) {
+        for line_idx in start_line..=end_line {
             let (line_start, line_end) = line_boundaries[line_idx];
-            let overlap_start = start.max(line_start);
-            let overlap_end = end.min(line_end);
-            if overlap_start < overlap_end {
-                // 惰性补齐到目标行
-                while result.len() <= line_idx {
-                    result.push(Vec::new());
-                }
-                let line_len = line_end.saturating_sub(line_start);
-                result[line_idx].push(HighlightToken {
-                    start_byte: overlap_start.saturating_sub(line_start).min(line_len) as i32,
-                    end_byte: overlap_end.saturating_sub(line_start).min(line_len) as i32,
-                    kind: names[h.kind as usize].to_string(),
-                });
+            if start.max(line_start) < end.min(line_end) {
+                counts[line_idx] += 1;
+                total += 1;
             }
         }
     }
-    // 排序
-    for tokens in &mut result {
-        tokens.sort_by_key(|t| t.start_byte);
+
+    let mut starts: Vec<u32> = Vec::with_capacity(line_count + 1);
+    let mut acc = 0u32;
+    for c in &counts {
+        starts.push(acc);
+        acc += *c;
+    }
+    starts.push(acc);
+
+    // 写入扁平缓冲
+    let mut data = vec![0u8; total * PACKED_TOKEN_BYTES];
+    let mut cursors = starts[..line_count].to_vec();
+    for h in highlights {
+        let (start, end) = (h.start_byte as u64, h.end_byte as u64);
+        let Some((start_line, end_line)) = line_span_of(h, &line_starts, line_count) else {
+            continue;
+        };
+        for line_idx in start_line..=end_line {
+            let (line_start, line_end) = line_boundaries[line_idx];
+            let overlap_start = start.max(line_start);
+            let overlap_end = end.min(line_end);
+            if overlap_start >= overlap_end {
+                continue;
+            }
+            let line_len = line_end.saturating_sub(line_start);
+            let rel_start = overlap_start.saturating_sub(line_start).min(line_len) as u32;
+            let rel_end = overlap_end.saturating_sub(line_start).min(line_len) as u32;
+            let off = cursors[line_idx] as usize * PACKED_TOKEN_BYTES;
+            data[off..off + 4].copy_from_slice(&rel_start.to_le_bytes());
+            data[off + 4..off + 8].copy_from_slice(&rel_end.to_le_bytes());
+            data[off + 8..off + PACKED_TOKEN_BYTES].copy_from_slice(&h.kind.to_le_bytes());
+            cursors[line_idx] += 1;
+        }
     }
 
-    result
+    debug_assert!(
+        cursors
+            .iter()
+            .enumerate()
+            .all(|(i, c)| *c == starts[i + 1]),
+        "游标未走到下一行起点，两趟统计不一致"
+    );
+
+    for (i, s) in starts.iter().enumerate() {
+        let off = i * 4;
+        line_index[off..off + 4].copy_from_slice(&s.to_le_bytes());
+    }
+
+    (data, line_index)
 }
 
 //helpers
 
-/// 标识符类节点，跨 grammar 的名字节点类型并不统一，穷举常见的几种
+/// 标识符类节点，穷举常见的几种
 const IDENTIFIER_KINDS: &[&str] = &[
     "identifier",
     "type_identifier",
@@ -222,7 +263,7 @@ fn first_identifier_child(node: tree_sitter::Node, source: &[u8]) -> Option<Stri
     found
 }
 
-/// 沿 declarator 链下钻找真正的标识符
+/// 沿declarator链下钻找真正的标识符
 fn declarator_identifier(node: tree_sitter::Node, source: &[u8]) -> Option<String> {
     if is_identifier_kind(node.kind()) {
         return Some(text_of(node, source));
@@ -299,9 +340,8 @@ const OUTLINE_STRUCTURAL_KINDS: &[&str] = &[
     "package_clause",
 ];
 
-/// 最大outline嵌套深度
 const MAX_OUTLINE_DEPTH: usize = 16;
-/// 最大outline节点总数（超出直接截断）
+/// 超出直接截断
 const MAX_OUTLINE_NODES: usize = 1000;
 
 fn is_structural_kind(kind: &str) -> bool {
@@ -368,12 +408,12 @@ struct RawCapture {
     score: u16,
 }
 
-// 结构具体度高 256 倍于 capture 名点分段数，两级同时生效
+// 结构具体度高256倍于capture名点分段数，两级同时生效
 fn capture_score(specificity: u8, dotted: u8) -> u16 {
     (u16::from(specificity) << 8) | u16::from(dotted)
 }
 
-// 解决高亮token的冲突：同区间按具体度择优，嵌套区间切开成互不重叠的
+// 解决高亮token的冲突
 fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<Token> {
     tokens.sort_by(|a, b| {
         a.start_byte
@@ -402,7 +442,6 @@ fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<Token> {
                     kind: top.kind,
                 });
             }
-            // 外层跳过刚被内层占用的那一段
             if let Some(next) = stack.last_mut() {
                 if next.cursor < top.end {
                     next.cursor = top.end;
@@ -412,13 +451,13 @@ fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<Token> {
     }
 
     for t in tokens {
-        // 关掉所有在 t 起点之前（含）就结束的外层
+        // 关掉所有在t起点之前（含）就结束的外层
         while stack.last().map_or(false, |top| top.end <= t.start_byte) {
             close_top(&mut stack, &mut out);
         }
 
         if let Some(top) = stack.last() {
-            // 区间完全相同：已按具体度降序，栈顶胜出，直接丢弃 t
+            // 区间完全相同：已按具体度降序，栈顶胜出，直接丢弃t
             if top.cursor == t.start_byte && top.end == t.end_byte {
                 continue;
             }
@@ -426,7 +465,7 @@ fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<Token> {
 
         if let Some(top) = stack.last_mut() {
             if top.end > t.end_byte {
-                // 先吐出 top 在 t 之前的那一段
+                // 先吐出top在t之前的那一段
                 if top.cursor < t.start_byte {
                     out.push(Token {
                         start_byte: top.cursor as i32,
@@ -436,7 +475,7 @@ fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<Token> {
                     top.cursor = t.start_byte;
                 }
             } else {
-                // 交叉重叠（top 在 t 内部结束）
+                // 交叉重叠（top在t内部结束）
                 if top.cursor < t.start_byte {
                     out.push(Token {
                         start_byte: top.cursor as i32,
@@ -471,7 +510,9 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
         None => {
             debug_log!("[RUST] unsupported extension: {}", extension);
             return CodeParseResult {
-                highlights_by_line: Vec::new(),
+                highlight_data: Vec::new(),
+                line_index: Vec::new(),
+                kinds: Vec::new(),
                 outline: Vec::new(),
             };
         }
@@ -482,7 +523,9 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
     if parser.set_language(&language).is_err() {
         debug_log!("[RUST] failed to set language for extension: {}", extension);
         return CodeParseResult {
-            highlights_by_line: Vec::new(),
+            highlight_data: Vec::new(),
+            line_index: Vec::new(),
+            kinds: Vec::new(),
             outline: Vec::new(),
         };
     }
@@ -492,7 +535,9 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
         None => {
             debug_log!("[RUST] failed to parse source for extension: {}", extension);
             return CodeParseResult {
-                highlights_by_line: Vec::new(),
+                highlight_data: Vec::new(),
+                line_index: Vec::new(),
+                kinds: Vec::new(),
                 outline: Vec::new(),
             };
         }
@@ -561,7 +606,9 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
     };
 
     let mut result = CodeParseResult {
-        highlights_by_line: Vec::new(),
+        highlight_data: Vec::new(),
+        line_index: Vec::new(),
+        kinds: names.iter().map(|n| (*n).to_string()).collect(),
         outline,
     };
 
@@ -570,11 +617,15 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
     convert_highlights(scan.byte_to_utf16_map.as_deref(), &mut highlights);
     convert_outline(scan.byte_to_utf16_map.as_deref(), &mut result.outline);
 
-    result.highlights_by_line = split_highlights_by_line(&scan.line_boundaries, &highlights, names);
+    let (data, line_index) = pack_highlights_by_line(&scan.line_boundaries, &highlights);
+    result.highlight_data = data;
+    result.line_index = line_index;
 
     debug_log!(
-        "[RUST] returning result with {} lines of highlights",
-        result.highlights_by_line.len()
+        "[RUST] returning {} packed tokens over {} lines (kinds={})",
+        result.highlight_data.len() / PACKED_TOKEN_BYTES,
+        result.line_index.len() / 4 - 1,
+        result.kinds.len()
     );
     result
 }

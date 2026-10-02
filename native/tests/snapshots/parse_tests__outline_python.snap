@@ -1,50 +1,51 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(&result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 5,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 6,
-                end_byte: 13,
-                kind: "constructor",
-            },
+            (
+                0,
+                5,
+                "keyword",
+            ),
+            (
+                6,
+                13,
+                "constructor",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 4,
-                end_byte: 7,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 8,
-                end_byte: 13,
-                kind: "function",
-            },
-            HighlightToken {
-                start_byte: 14,
-                end_byte: 18,
-                kind: "variable",
-            },
+            (
+                4,
+                7,
+                "keyword",
+            ),
+            (
+                8,
+                13,
+                "function",
+            ),
+            (
+                14,
+                18,
+                "variable",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 8,
-                end_byte: 13,
-                kind: "function.builtin",
-            },
-            HighlightToken {
-                start_byte: 14,
-                end_byte: 21,
-                kind: "string",
-            },
+            (
+                8,
+                13,
+                "function.builtin",
+            ),
+            (
+                14,
+                21,
+                "string",
+            ),
         ],
+        [],
     ],
     outline: [
         OutlineNode {

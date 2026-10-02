@@ -1,48 +1,49 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 14,
-                kind: "comment",
-            },
+            (
+                0,
+                14,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 6,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 7,
-                end_byte: 12,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 13,
-                end_byte: 14,
-                kind: "variable",
-            },
-            HighlightToken {
-                start_byte: 15,
-                end_byte: 16,
-                kind: "operator",
-            },
-            HighlightToken {
-                start_byte: 17,
-                end_byte: 18,
-                kind: "number",
-            },
-            HighlightToken {
-                start_byte: 18,
-                end_byte: 19,
-                kind: "punctuation.delimiter",
-            },
+            (
+                0,
+                6,
+                "keyword",
+            ),
+            (
+                7,
+                12,
+                "keyword",
+            ),
+            (
+                13,
+                14,
+                "variable",
+            ),
+            (
+                15,
+                16,
+                "operator",
+            ),
+            (
+                17,
+                18,
+                "number",
+            ),
+            (
+                18,
+                19,
+                "punctuation.delimiter",
+            ),
         ],
+        [],
     ],
     outline: [],
 }

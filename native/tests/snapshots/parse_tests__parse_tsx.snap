@@ -1,68 +1,69 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 14,
-                kind: "comment",
-            },
+            (
+                0,
+                14,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 5,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 6,
-                end_byte: 8,
-                kind: "variable",
-            },
-            HighlightToken {
-                start_byte: 9,
-                end_byte: 10,
-                kind: "operator",
-            },
-            HighlightToken {
-                start_byte: 11,
-                end_byte: 12,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 12,
-                end_byte: 15,
-                kind: "tag",
-            },
-            HighlightToken {
-                start_byte: 15,
-                end_byte: 16,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 18,
-                end_byte: 20,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 20,
-                end_byte: 23,
-                kind: "tag",
-            },
-            HighlightToken {
-                start_byte: 23,
-                end_byte: 24,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 24,
-                end_byte: 25,
-                kind: "punctuation.delimiter",
-            },
+            (
+                0,
+                5,
+                "keyword",
+            ),
+            (
+                6,
+                8,
+                "variable",
+            ),
+            (
+                9,
+                10,
+                "operator",
+            ),
+            (
+                11,
+                12,
+                "punctuation.bracket",
+            ),
+            (
+                12,
+                15,
+                "tag",
+            ),
+            (
+                15,
+                16,
+                "punctuation.bracket",
+            ),
+            (
+                18,
+                20,
+                "punctuation.bracket",
+            ),
+            (
+                20,
+                23,
+                "tag",
+            ),
+            (
+                23,
+                24,
+                "punctuation.bracket",
+            ),
+            (
+                24,
+                25,
+                "punctuation.delimiter",
+            ),
         ],
+        [],
     ],
     outline: [],
 }

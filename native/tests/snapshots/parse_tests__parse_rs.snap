@@ -1,68 +1,69 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 15,
-                kind: "comment",
-            },
+            (
+                0,
+                15,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 2,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 3,
-                end_byte: 7,
-                kind: "function",
-            },
-            HighlightToken {
-                start_byte: 7,
-                end_byte: 8,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 8,
-                end_byte: 9,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 10,
-                end_byte: 11,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 12,
-                end_byte: 23,
-                kind: "comment",
-            },
-            HighlightToken {
-                start_byte: 24,
-                end_byte: 27,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 32,
-                end_byte: 33,
-                kind: "constant.builtin",
-            },
-            HighlightToken {
-                start_byte: 33,
-                end_byte: 34,
-                kind: "punctuation.delimiter",
-            },
-            HighlightToken {
-                start_byte: 35,
-                end_byte: 36,
-                kind: "punctuation.bracket",
-            },
+            (
+                0,
+                2,
+                "keyword",
+            ),
+            (
+                3,
+                7,
+                "function",
+            ),
+            (
+                7,
+                8,
+                "punctuation.bracket",
+            ),
+            (
+                8,
+                9,
+                "punctuation.bracket",
+            ),
+            (
+                10,
+                11,
+                "punctuation.bracket",
+            ),
+            (
+                12,
+                23,
+                "comment",
+            ),
+            (
+                24,
+                27,
+                "keyword",
+            ),
+            (
+                32,
+                33,
+                "constant.builtin",
+            ),
+            (
+                33,
+                34,
+                "punctuation.delimiter",
+            ),
+            (
+                35,
+                36,
+                "punctuation.bracket",
+            ),
         ],
+        [],
     ],
     outline: [
         OutlineNode {

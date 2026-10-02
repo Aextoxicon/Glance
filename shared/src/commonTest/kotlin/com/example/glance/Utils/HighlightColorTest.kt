@@ -6,8 +6,8 @@ import com.example.glance.Processing.HighlightToken
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-// 渲染层单测：golden 只钉 token 列表，钉不住「token 怎么拼成一行带色文本」
-// 当年 TOML 的 `a = 1` 显示成 `aa = 1` 就是漏在这里
+// 渲染层单测：golden只钉token列表，钉不住「token怎么拼成一行带色文本」
+// 当年TOML的 `a = 1` 显示成 `aa = 1` 就是漏在这里
 class HighlightColorTest {
 
     private fun AnnotatedString.colorPerChar(): List<Color> {
@@ -53,7 +53,7 @@ class HighlightColorTest {
 
     @Test
     fun `container token followed by inner tokens must not duplicate text`() {
-        // native 曾产出 (0-5:property) 与 (0-1:type) 嵌套，旧渲染把 a = 1 又画一遍 → "aa = 1"
+        // native曾产出 (0-5:property) 与 (0-1:type) 嵌套，旧渲染把a = 1又画一遍 → "aa = 1"
         assertEquals(5, text("a = 1", tok(0, 5, "property"), tok(0, 1, "type")).length)
         assertEquals("a = 1", text("a = 1", tok(0, 5, "property"), tok(0, 1, "type")))
     }

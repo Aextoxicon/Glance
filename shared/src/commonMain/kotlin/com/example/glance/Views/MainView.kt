@@ -137,8 +137,7 @@ private fun WideLayout(viewModel: MainViewModel) {
 
 @Composable
 private fun NarrowLayout(viewModel: MainViewModel) {
-    // 抽屉状态只保留drawerState一份真源
-    // 变宽时MainView切走WideLayout，NarrowLayout离开组合，rememberDrawerState随之丢弃
+    // 抽屉状态只保留drawerState一份真源，变宽切走WideLayout时随组合丢弃
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -319,7 +318,7 @@ private fun outlineKindLabel(kind: String): String = when {
     else -> kind.substringBefore('_')
 }
 
-//OutlineNode.startByte已经是被rust的convert_outline转成 UTF-16 偏移
+// OutlineNode.startByte已经是被rust的convert_outline转成UTF-16偏移
 private fun lineIndexAt(content: String, offset: Long): Int {
     if (offset <= 0) return 0
     val end = offset.coerceAtMost(content.length.toLong()).toInt()
@@ -493,7 +492,6 @@ private fun CodePreviewToolbar(viewModel: MainViewModel) {
         Spacer(Modifier.width(8.dp))
         Text(viewModel.selectedSizeDisplay, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(8.dp))
-        // 只有确实有大纲时才给入口
         if (viewModel.currentOutline != null) {
             TextButton(
                 onClick = { viewModel.toggleOutline() },
@@ -526,6 +524,7 @@ private fun CodeContentView(
     val lazyListState = rememberLazyListState()
     val lineHeight = with(LocalDensity.current) { CodeLineHeight.toDp() }
     val lines = remember(content) { content.split("\n") }
+    val highlights = (parseResult as? CodeParseResult.Code)?.highlights
 
     LaunchedEffect(scrollTargetLine) {
         val line = scrollTargetLine ?: return@LaunchedEffect
@@ -542,9 +541,7 @@ private fun CodeContentView(
         onScrolled()
     }
 
-    // LazyColumn只构建可见行，每行独立TextLayout
-    // 固定行高 LazyLayout直接算偏移
-    // 长行撑开LazyColumn宽度，外层统一横向滚动，行列对齐
+    // LazyColumn只构建可见行+固定行高LazyLayout直接算偏移+长行撑开宽度统一横向滚动，行列对齐
     Box(
         modifier = Modifier.fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
@@ -558,13 +555,10 @@ private fun CodeContentView(
                 ) {
                     items(count = lines.size, key = { it }) { index ->
                         val lineText = lines[index]
-                        val tokens = (parseResult as? CodeParseResult.Code)
-                            ?.highlightsByLine
-                            ?.getOrNull(index)
-                        // 滚动时的重组不再重建 AnnotatedString
-                        val text = remember(lineText, tokens) {
-                            val base = tokens
-                                ?.let { HighlightColor.buildLineAnnotatedString(lineText, it) }
+                        // 滚动时的重组不再重建AnnotatedString
+                        val text = remember(lineText, index, highlights) {
+                            val base = highlights
+                                ?.let { HighlightColor.buildLineAnnotatedString(lineText, it.tokensOf(index)) }
                                 ?: AnnotatedString(lineText)
                             base + LineSeparator
                         }

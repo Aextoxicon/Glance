@@ -164,9 +164,7 @@ private class PlaceholderArtifact : IArtifact {
     override val payload: com.example.glance.Models.IArtifactPayload = LocalPayload("", "", false)
 }
 
-/**
-可能会删这一部分
- */
+// 忽略目录（待清理）
 internal val IGNORED_DIR_NAMES: Set<String> = setOf(
     ".git",
     "node_modules",

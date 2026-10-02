@@ -1,27 +1,58 @@
 use insta::assert_debug_snapshot;
-use uniffi_code_parser::{
-    parse_code,
-    CodeParseResult,
-    HighlightToken,
-    OutlineNode,
-};
+use uniffi_code_parser::{parse_code, CodeParseResult, OutlineNode};
+
+fn u32_at(src: &[u8], index: usize) -> u32 {
+    let o = index * 4;
+    u32::from_le_bytes([src[o], src[o + 1], src[o + 2], src[o + 3]])
+}
+
+/// 把扁平打包解回按行的 (start, end, kind) 三元组
+fn unpack_lines(result: &CodeParseResult) -> Vec<Vec<(i32, i32, String)>> {
+    let line_count = (result.line_index.len() / 4).saturating_sub(1);
+    let mut out = Vec::with_capacity(line_count);
+    for line in 0..line_count {
+        let from = u32_at(&result.line_index, line) as usize;
+        let to = u32_at(&result.line_index, line + 1) as usize;
+        let mut row = Vec::with_capacity(to.saturating_sub(from));
+        for i in from..to {
+            row.push((
+                u32_at(&result.highlight_data, i * 3) as i32,
+                u32_at(&result.highlight_data, i * 3 + 1) as i32,
+                result.kinds[u32_at(&result.highlight_data, i * 3 + 2) as usize].clone(),
+            ));
+        }
+        out.push(row);
+    }
+    out
+}
+
+/// 高亮/大纲
+#[derive(Debug)]
+#[allow(dead_code)]
+struct Snapshot<'a> {
+    highlights: Vec<Vec<(i32, i32, String)>>,
+    outline: &'a [OutlineNode],
+}
+
+fn snapshot_of(result: &CodeParseResult) -> Snapshot<'_> {
+    Snapshot {
+        highlights: unpack_lines(result),
+        outline: &result.outline,
+    }
+}
 
 macro_rules! lang_snapshot_test {
     ($name:ident, $ext:literal, $source:literal) => {
         #[test]
         fn $name() {
             let result: CodeParseResult = parse_code($source.to_string(), $ext.to_string());
-            let total_tokens: usize = result
-                .highlights_by_line
-                .iter()
-                .map(|t: &Vec<HighlightToken>| t.len())
-                .sum();
+            let total_tokens: usize = unpack_lines(&result).iter().map(|t| t.len()).sum();
             assert!(
                 total_tokens > 0,
                 "{}: expected at least 1 highlight token, got 0",
                 $ext
             );
-            assert_debug_snapshot!(result);
+            assert_debug_snapshot!(snapshot_of(&result));
         }
     };
 }
@@ -74,15 +105,11 @@ def hello():
     return name
 "#;
     let result: CodeParseResult = parse_code(source.to_string(), ".py".to_string());
-    let total_tokens: usize = result
-        .highlights_by_line
-        .iter()
-        .map(|t: &Vec<HighlightToken>| t.len())
-        .sum();
+    let total_tokens: usize = unpack_lines(&result).iter().map(|t| t.len()).sum();
     assert!(total_tokens > 5, "expected more than 5 tokens with unicode, got {}", total_tokens);
-    let has_string = result.highlights_by_line.iter().flatten().any(|t| t.kind == "string");
+    let has_string = unpack_lines(&result).iter().flatten().any(|t| t.2 == "string");
     assert!(has_string, "expected at least one string highlight with unicode source");
-    assert_debug_snapshot!(result);
+    assert_debug_snapshot!(snapshot_of(&result));
 }
 
 #[test]
@@ -94,11 +121,11 @@ fn main() {
 }
 "#;
     let result: CodeParseResult = parse_code(source.to_string(), ".rs".to_string());
-    let has_comment = result.highlights_by_line.iter().flatten().any(|t| t.kind == "comment");
+    let has_comment = unpack_lines(&result).iter().flatten().any(|t| t.2 == "comment");
     assert!(has_comment, "expected at least one comment highlight for Chinese comment");
-    let has_string = result.highlights_by_line.iter().flatten().any(|t| t.kind == "string");
+    let has_string = unpack_lines(&result).iter().flatten().any(|t| t.2 == "string");
     assert!(has_string, "expected at least one string highlight for emoji string");
-    assert_debug_snapshot!(result);
+    assert_debug_snapshot!(snapshot_of(&result));
 }
 
 // Query编译、Filename测试
@@ -165,7 +192,7 @@ func main() {
     let has_main = result.outline.iter().any(|n| n.name == "main")
         || result.outline.iter().any(|n| n.children.iter().any(|c| c.name == "main"));
     assert!(has_main, "expected function named 'main' in Go outline");
-    assert_debug_snapshot!(result);
+    assert_debug_snapshot!(snapshot_of(&result));
 }
 
 #[test]
@@ -179,7 +206,7 @@ fn test_outline_python() {
     assert!(outline_contains(&result.outline, "function_definition"), "expected function_definition in Python outline");
     let has_greeter = result.outline.iter().any(|n| n.name == "Greeter");
     assert!(has_greeter, "expected class named 'Greeter' in Python outline");
-    assert_debug_snapshot!(result);
+    assert_debug_snapshot!(snapshot_of(&result));
 }
 
 #[test]
@@ -194,7 +221,7 @@ fn test_outline_java() {
     // Java中main方法可能是method_declaration或function_declaration
     let has_main = outline_contains(&result.outline, "method_declaration") || outline_contains(&result.outline, "function_declaration");
     assert!(has_main, "expected method/function declaration in Java outline");
-    assert_debug_snapshot!(result);
+    assert_debug_snapshot!(snapshot_of(&result));
 }
 
 #[test]
@@ -216,5 +243,72 @@ fn main() {
     // Rust的mod项可能是mod_item
     let has_mod = outline_contains(&result.outline, "mod_item");
     assert!(has_mod, "expected mod_item in Rust outline");
-    assert_debug_snapshot!(result);
+    assert_debug_snapshot!(snapshot_of(&result));
+}
+
+/// 含跨行字符串（一条token覆盖多行）与一个空行
+const SPANNING_SRC: &str = "fn main() {\n    let x = \"a\nb\";\n\n    println!(\"{}\", x);\n}\n";
+
+#[test]
+fn packed_layout_is_self_consistent() {
+    let result: CodeParseResult = parse_code(SPANNING_SRC.to_string(), ".rs".to_string());
+    assert_eq!(result.highlight_data.len() % 12, 0, "data 长度必须是 12 的倍数");
+    assert_eq!(result.line_index.len() % 4, 0, "line_index 长度必须是 4 的倍数");
+
+    let total = result.highlight_data.len() / 12;
+    let line_count = (result.line_index.len() / 4).saturating_sub(1);
+    assert!(total > 0, "样本应至少产生一条 token");
+
+    assert_eq!(u32_at(&result.line_index, 0), 0, "第 0 行必须从 0 号 token 起");
+    assert_eq!(
+        u32_at(&result.line_index, line_count) as usize,
+        total,
+        "索引末元素必须等于 token 总数"
+    );
+
+    let mut prev = 0u32;
+    for line in 0..=line_count {
+        let cur = u32_at(&result.line_index, line);
+        assert!(cur >= prev, "行索引单调性被破坏：第 {line} 行由 {prev} 退到 {cur}");
+        prev = cur;
+    }
+
+    let rows = unpack_lines(&result);
+    assert_eq!(rows.len(), line_count);
+    for (line, row) in rows.iter().enumerate() {
+        for t in row {
+            assert!(t.0 <= t.1, "第 {line} 行出现 start > end：{t:?}");
+        }
+        for w in row.windows(2) {
+            assert!(
+                w[0].0 <= w[1].0,
+                "第 {line} 行未按 start 升序：{:?} 出现在 {:?} 之后",
+                w[1],
+                w[0]
+            );
+        }
+    }
+    // 跨行的字符串必须被拆进它覆盖的每一行
+    let lines_with_string = rows
+        .iter()
+        .filter(|r| r.iter().any(|t| t.2 == "string"))
+        .count();
+    assert!(
+        lines_with_string >= 2,
+        "跨行字符串应至少落在两行，实际落在 {lines_with_string} 行"
+    );
+}
+
+#[test]
+fn packed_layout_handles_degenerate_inputs() {
+    // 空
+    let empty = parse_code(String::new(), ".rs".to_string());
+    assert!(empty.highlight_data.is_empty(), "空源码不应产出 token");
+    assert!(unpack_lines(&empty).iter().all(|r| r.is_empty()));
+
+    let unsupported = parse_code("let x = 1;".to_string(), ".nosuchlang".to_string());
+    assert!(unsupported.highlight_data.is_empty());
+    assert!(unsupported.kinds.is_empty());
+    assert!(unsupported.outline.is_empty());
+    assert!(unpack_lines(&unsupported).is_empty());
 }

@@ -1,4 +1,4 @@
-// 性能基线测 parse_code 全链路
+// 性能基线测parse_code全链路
 // 必须显式指定profile：
 //   cargo test --test perf -- --ignored --nocapture
 //   cargo test --release --test perf -- --ignored --nocapture

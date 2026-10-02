@@ -1,48 +1,49 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 20,
-                kind: "comment",
-            },
+            (
+                0,
+                20,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 1,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 1,
-                end_byte: 2,
-                kind: "tag",
-            },
-            HighlightToken {
-                start_byte: 2,
-                end_byte: 3,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 8,
-                end_byte: 10,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 10,
-                end_byte: 11,
-                kind: "tag",
-            },
-            HighlightToken {
-                start_byte: 11,
-                end_byte: 12,
-                kind: "punctuation.bracket",
-            },
+            (
+                0,
+                1,
+                "punctuation.bracket",
+            ),
+            (
+                1,
+                2,
+                "tag",
+            ),
+            (
+                2,
+                3,
+                "punctuation.bracket",
+            ),
+            (
+                8,
+                10,
+                "punctuation.bracket",
+            ),
+            (
+                10,
+                11,
+                "tag",
+            ),
+            (
+                11,
+                12,
+                "punctuation.bracket",
+            ),
         ],
+        [],
     ],
     outline: [],
 }

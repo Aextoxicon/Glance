@@ -1,53 +1,55 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 7,
-                kind: "keyword",
-            },
+            (
+                0,
+                7,
+                "keyword",
+            ),
         ],
         [],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 13,
-                kind: "comment",
-            },
+            (
+                0,
+                13,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 4,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 5,
-                end_byte: 9,
-                kind: "function",
-            },
+            (
+                0,
+                4,
+                "keyword",
+            ),
+            (
+                5,
+                9,
+                "function",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 1,
-                end_byte: 4,
-                kind: "variable",
-            },
-            HighlightToken {
-                start_byte: 5,
-                end_byte: 12,
-                kind: "function.method",
-            },
-            HighlightToken {
-                start_byte: 13,
-                end_byte: 17,
-                kind: "string",
-            },
+            (
+                1,
+                4,
+                "variable",
+            ),
+            (
+                5,
+                12,
+                "function.method",
+            ),
+            (
+                13,
+                17,
+                "string",
+            ),
         ],
+        [],
+        [],
     ],
     outline: [
         OutlineNode {

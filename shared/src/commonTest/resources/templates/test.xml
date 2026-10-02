@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Glance XML 示例 -->
+<!-- Glance XML示例 -->
 <catalog>
   <book id="bk101" edition="1st">
     <author>Gambardella, Matthew</author>

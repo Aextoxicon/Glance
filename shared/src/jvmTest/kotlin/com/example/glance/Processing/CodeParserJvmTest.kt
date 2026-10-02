@@ -22,8 +22,8 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.isNotEmpty(), "Expected highlights")
-            val tokens = result.highlightsByLine.flatten()
+            assertTrue(result.highlights.totalTokenCount > 0, "Expected highlights")
+            val tokens = result.highlights.allTokens()
             assertTrue(tokens.isNotEmpty(), "Expected highlight tokens")
 
             val kinds = tokens.map { it.kind }.toSet()
@@ -80,7 +80,7 @@ class CodeParserJvmTest {
         val result = parseCode("just some text", ".unknown")
         assertTrue(result is CodeParseResult.Code, "Expected Code, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.all { it.isEmpty() }, "Expected empty highlights for unknown extension")
+            assertTrue(result.highlights.totalTokenCount == 0, "Expected empty highlights for unknown extension")
         }
     }
 
@@ -100,8 +100,8 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.isNotEmpty(), "Expected highlights for Go")
-            val tokens = result.highlightsByLine.flatten()
+            assertTrue(result.highlights.totalTokenCount > 0, "Expected highlights for Go")
+            val tokens = result.highlights.allTokens()
 
             val kinds = tokens.map { it.kind }.toSet()
             assertTrue(kinds.isNotEmpty(), "Expected kinds for Go")
@@ -125,8 +125,8 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.isNotEmpty(), "Expected highlights for JavaScript")
-            val kinds = result.highlightsByLine.flatten().map { it.kind }.toSet()
+            assertTrue(result.highlights.totalTokenCount > 0, "Expected highlights for JavaScript")
+            val kinds = result.highlights.allTokens().map { it.kind }.toSet()
             assertTrue(kinds.isNotEmpty(), "Expected kinds for JavaScript")
             assertFalse(kinds.any { it.contains("_") && it == it.uppercase() }, "Found unmapped kinds: $kinds")
         }
@@ -145,8 +145,8 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.isNotEmpty(), "Expected highlights for Rust")
-            val kinds = result.highlightsByLine.flatten().map { it.kind }.toSet()
+            assertTrue(result.highlights.totalTokenCount > 0, "Expected highlights for Rust")
+            val kinds = result.highlights.allTokens().map { it.kind }.toSet()
             assertTrue(kinds.isNotEmpty(), "Expected kinds for Rust")
             assertFalse(kinds.any { it.contains("_") && it == it.uppercase() }, "Found unmapped kinds: $kinds")
         }
@@ -167,8 +167,8 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.isNotEmpty(), "Expected highlights for C")
-            val kinds = result.highlightsByLine.flatten().map { it.kind }.toSet()
+            assertTrue(result.highlights.totalTokenCount > 0, "Expected highlights for C")
+            val kinds = result.highlights.allTokens().map { it.kind }.toSet()
             assertTrue(kinds.isNotEmpty(), "Expected kinds for C")
             assertFalse(kinds.any { it.contains("_") && it == it.uppercase() }, "Found unmapped kinds: $kinds")
         }
@@ -188,8 +188,8 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.isNotEmpty(), "Expected highlights for Java")
-            val kinds = result.highlightsByLine.flatten().map { it.kind }.toSet()
+            assertTrue(result.highlights.totalTokenCount > 0, "Expected highlights for Java")
+            val kinds = result.highlights.allTokens().map { it.kind }.toSet()
             assertTrue(kinds.isNotEmpty(), "Expected kinds for Java")
             assertFalse(kinds.any { it.contains("_") && it == it.uppercase() }, "Found unmapped kinds: $kinds")
         }
@@ -207,8 +207,8 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.isNotEmpty(), "Expected highlights for TypeScript")
-            val kinds = result.highlightsByLine.flatten().map { it.kind }.toSet()
+            assertTrue(result.highlights.totalTokenCount > 0, "Expected highlights for TypeScript")
+            val kinds = result.highlights.allTokens().map { it.kind }.toSet()
             assertTrue(kinds.isNotEmpty(), "Expected kinds for TypeScript")
             assertFalse(kinds.any { it.contains("_") && it == it.uppercase() }, "Found unmapped kinds: $kinds")
         }
@@ -221,7 +221,7 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.all { it.isEmpty() }, "Expected empty highlights for unsupported extension")
+            assertTrue(result.highlights.totalTokenCount == 0, "Expected empty highlights for unsupported extension")
         }
     }
 
@@ -239,7 +239,7 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            val kinds = result.highlightsByLine.flatten().map { it.kind }.toSet()
+            val kinds = result.highlights.allTokens().map { it.kind }.toSet()
             assertTrue(
                 "comment" in kinds,
                 "Expected comment tokens for // and /* */, got kinds: $kinds"
@@ -254,7 +254,7 @@ class CodeParserJvmTest {
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
             assertTrue(result.content.isEmpty(), "Expected empty content")
-            assertTrue(result.highlightsByLine.isEmpty(), "Expected empty highlights for empty source")
+            assertTrue(result.highlights.lineCount == 0, "Expected empty highlights for empty source")
             assertTrue(result.outline.isEmpty(), "Expected empty outline for empty source")
         }
     }
@@ -265,7 +265,7 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.all { it.isEmpty() }, "Expected empty highlights for whitespace only")
+            assertTrue(result.highlights.totalTokenCount == 0, "Expected empty highlights for whitespace only")
             assertTrue(result.outline.isEmpty(), "Expected empty outline for whitespace only")
         }
     }
@@ -276,8 +276,8 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.isNotEmpty(), "Expected highlights for single line")
-            val tokens = result.highlightsByLine.flatten()
+            assertTrue(result.highlights.totalTokenCount > 0, "Expected highlights for single line")
+            val tokens = result.highlights.allTokens()
             assertTrue(tokens.isNotEmpty(), "Expected tokens for single line")
         }
     }
@@ -295,7 +295,7 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.isNotEmpty(), "Expected highlights for special chars")
+            assertTrue(result.highlights.totalTokenCount > 0, "Expected highlights for special chars")
             assertTrue(result.content.contains("引号"), "Content should contain special characters")
         }
     }
@@ -388,7 +388,7 @@ class CodeParserJvmTest {
 
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
-            assertTrue(result.highlightsByLine.all { it.isEmpty() }, "Expected empty highlights for unknown extension")
+            assertTrue(result.highlights.totalTokenCount == 0, "Expected empty highlights for unknown extension")
         }
     }
 
@@ -399,7 +399,7 @@ class CodeParserJvmTest {
         assertTrue(result is CodeParseResult.Code, "Expected Code result, got $result")
         if (result is CodeParseResult.Code) {
             // Rust端不识别大写扩展名，返回空highlights
-            assertTrue(result.highlightsByLine.all { it.isEmpty() }, "Expected empty highlights for uppercase .PY extension")
+            assertTrue(result.highlights.totalTokenCount == 0, "Expected empty highlights for uppercase .PY extension")
         }
     }
 }

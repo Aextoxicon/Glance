@@ -9,15 +9,7 @@ actual fun parseCode(source: String, extension: String): CodeParseResult {
     return CodeParseResult.Code(
         language = language,
         content = source,
-        highlightsByLine = result.highlightsByLine.map { line ->
-            line.map { token ->
-                HighlightToken(
-                    startByte = token.startByte.toLong(),
-                    endByte = token.endByte.toLong(),
-                    kind = token.kind,
-                )
-            }
-        },
+        highlights = HighlightIndex(result.highlightData, result.lineIndex, result.kinds),
         outline = result.outline.map { it.toKt() },
     )
 }

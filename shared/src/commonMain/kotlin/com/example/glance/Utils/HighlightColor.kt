@@ -34,7 +34,7 @@ object HighlightColor {
     val plainText = Color(0xFF24292E)
 
     private val colorMap: Map<String, Color> = mapOf(
-        // 一级
+        // 基础token
         "keyword" to keyword,
         "string" to string,
         "comment" to comment,
@@ -66,7 +66,7 @@ object HighlightColor {
         "repeat" to keyword,
         "include" to keyword,
         "exception" to keyword,
-        // 细分
+        // 细分token
         "function.builtin" to functionBuiltin,
         "function.method" to functionMethod,
         "function_declaration" to function,
@@ -95,7 +95,6 @@ object HighlightColor {
         return plainText
     }
 
-    // 逐行构建
     fun buildLineAnnotatedString(
         line: String,
         tokens: List<HighlightToken>,

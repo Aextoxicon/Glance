@@ -1,28 +1,30 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 14,
-                kind: "comment",
-            },
+            (
+                0,
+                14,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 3,
-                kind: "constant.macro",
-            },
-            HighlightToken {
-                start_byte: 3,
-                end_byte: 4,
-                kind: "punctuation.delimiter",
-            },
+            (
+                0,
+                3,
+                "constant.macro",
+            ),
+            (
+                3,
+                4,
+                "punctuation.delimiter",
+            ),
         ],
+        [],
+        [],
     ],
     outline: [],
 }

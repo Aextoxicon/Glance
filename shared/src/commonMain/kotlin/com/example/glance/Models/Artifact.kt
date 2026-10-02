@@ -94,7 +94,7 @@ data class LocalArtifact(
     override val payload: IArtifactPayload get() = local
 }
 
-// 后端协作的payload，Backend*都是插桩，no！del！
+// 后端协作的payload，Backend*均为预留插桩
 data class BackendPayload(
     val messageId: String,
     val downloadUri: String,

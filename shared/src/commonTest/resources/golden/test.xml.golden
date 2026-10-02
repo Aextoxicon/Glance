@@ -1,9 +1,9 @@
 language=xml
-contentLen=362
-highlightLineCount=14
+contentLen=361
+highlightLineCount=15
 totalTokens=114
 line_0=[0-2:punctuation.delimiter,2-5:keyword,6-13:property,13-14:operator,14-15:punctuation.delimiter,15-18:number,18-19:punctuation.delimiter,20-28:property,28-29:operator,29-30:punctuation.delimiter,30-35:string.special,35-36:punctuation.delimiter,36-38:punctuation.delimiter]
-line_1=[0-22:comment]
+line_1=[0-21:comment]
 line_2=[0-1:punctuation.delimiter,1-8:tag,8-9:punctuation.delimiter,9-10:markup]
 line_3=[0-2:markup,2-3:punctuation.delimiter,3-7:tag,8-10:property,10-11:operator,11-12:punctuation.delimiter,12-17:string,17-18:punctuation.delimiter,19-26:property,26-27:operator,27-28:punctuation.delimiter,28-31:string,31-32:punctuation.delimiter,32-33:punctuation.delimiter,33-34:markup]
 line_4=[0-4:markup,4-5:punctuation.delimiter,5-11:tag,11-12:punctuation.delimiter,12-32:markup,32-34:punctuation.delimiter,34-40:tag,40-41:punctuation.delimiter,41-42:markup]

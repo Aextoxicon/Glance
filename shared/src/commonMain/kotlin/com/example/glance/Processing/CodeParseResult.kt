@@ -4,7 +4,7 @@ sealed class CodeParseResult {
     data class Code(
         val language: String,
         val content: String,
-        val highlightsByLine: List<List<HighlightToken>>,
+        val highlights: HighlightIndex,
         val outline: List<OutlineNode>,
     ) : CodeParseResult()
 

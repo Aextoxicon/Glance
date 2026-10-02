@@ -10,22 +10,14 @@ actual fun parseCode(source: String, extension: String): CodeParseResult {
         CodeParseResult.Code(
             language = language,
             content = source,
-            highlightsByLine = result.highlightsByLine.map { line ->
-                line.map { token ->
-                    HighlightToken(
-                        startByte = token.startByte,
-                        endByte = token.endByte,
-                        kind = token.kind,
-                    )
-                }
-            },
+            highlights = HighlightIndex(result.highlightData, result.lineIndex, result.kinds),
             outline = result.outline.map { it.toKt() },
         )
     } catch (e: UnsatisfiedLinkError) {
         CodeParseResult.Code(
             language = language,
             content = source,
-            highlightsByLine = emptyList(),
+            highlights = HighlightIndex.empty(),
             outline = emptyList(),
         )
     }

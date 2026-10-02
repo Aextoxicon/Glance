@@ -1,27 +1,29 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [],
         [
-            HighlightToken {
-                start_byte: 2,
-                end_byte: 7,
-                kind: "string.special.key",
-            },
-            HighlightToken {
-                start_byte: 9,
-                end_byte: 16,
-                kind: "string",
-            },
-            HighlightToken {
-                start_byte: 18,
-                end_byte: 45,
-                kind: "comment",
-            },
+            (
+                2,
+                7,
+                "string.special.key",
+            ),
+            (
+                9,
+                16,
+                "string",
+            ),
+            (
+                18,
+                45,
+                "comment",
+            ),
         ],
+        [],
+        [],
     ],
     outline: [],
 }

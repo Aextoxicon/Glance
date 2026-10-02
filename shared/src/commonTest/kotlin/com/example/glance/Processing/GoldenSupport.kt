@@ -9,12 +9,12 @@ fun serializeParseResult(result: CodeParseResult): String {
         is CodeParseResult.Code -> buildString {
             append("language=${result.language}\n")
             append("contentLen=${result.content.length}\n")
-            append("highlightLineCount=${result.highlightsByLine.size}\n")
-            val totalTokens = result.highlightsByLine.sumOf { it.size }
-            append("totalTokens=$totalTokens\n")
+            append("highlightLineCount=${result.highlights.lineCount}\n")
+            append("totalTokens=${result.highlights.totalTokenCount}\n")
 
-            result.highlightsByLine.forEachIndexed { lineIdx, tokens ->
-                if (tokens.isEmpty()) return@forEachIndexed
+            for (lineIdx in 0 until result.highlights.lineCount) {
+                val tokens = result.highlights.tokensOf(lineIdx)
+                if (tokens.isEmpty()) continue
                 append("line_$lineIdx=[")
                 tokens.forEachIndexed { idx, token ->
                     if (idx > 0) append(",")

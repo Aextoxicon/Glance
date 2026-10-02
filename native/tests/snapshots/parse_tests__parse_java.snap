@@ -1,68 +1,69 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 15,
-                kind: "comment",
-            },
+            (
+                0,
+                15,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 6,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 7,
-                end_byte: 12,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 13,
-                end_byte: 17,
-                kind: "type",
-            },
-            HighlightToken {
-                start_byte: 20,
-                end_byte: 26,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 27,
-                end_byte: 33,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 34,
-                end_byte: 38,
-                kind: "type.builtin",
-            },
-            HighlightToken {
-                start_byte: 39,
-                end_byte: 43,
-                kind: "function.method",
-            },
-            HighlightToken {
-                start_byte: 44,
-                end_byte: 50,
-                kind: "type",
-            },
-            HighlightToken {
-                start_byte: 53,
-                end_byte: 54,
-                kind: "variable",
-            },
-            HighlightToken {
-                start_byte: 58,
-                end_byte: 69,
-                kind: "comment",
-            },
+            (
+                0,
+                6,
+                "keyword",
+            ),
+            (
+                7,
+                12,
+                "keyword",
+            ),
+            (
+                13,
+                17,
+                "type",
+            ),
+            (
+                20,
+                26,
+                "keyword",
+            ),
+            (
+                27,
+                33,
+                "keyword",
+            ),
+            (
+                34,
+                38,
+                "type.builtin",
+            ),
+            (
+                39,
+                43,
+                "function.method",
+            ),
+            (
+                44,
+                50,
+                "type",
+            ),
+            (
+                53,
+                54,
+                "variable",
+            ),
+            (
+                58,
+                69,
+                "comment",
+            ),
         ],
+        [],
     ],
     outline: [
         OutlineNode {

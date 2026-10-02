@@ -90,11 +90,11 @@ class MainViewModel(
     var outlineOpen by mutableStateOf(false)
         private set
 
-    // 点击大纲条目后请求代码区滚动到该行；被消费后置回 null
+    // 点击大纲条目后请求代码区滚动到该行；被消费后置回null
     var outlineScrollTargetLine by mutableStateOf<Int?>(null)
         private set
 
-    // 当前文件的大纲（非代码 / 无大纲时为 null）
+    // 当前文件的大纲（非代码 / 无大纲时为null）
     val currentOutline: List<OutlineNode>?
         get() = (selectedParseResult as? CodeParseResult.Code)?.outline?.takeIf { it.isNotEmpty() }
 
@@ -132,7 +132,6 @@ class MainViewModel(
     }
 
     fun closeWorkspace() {
-        // 取消所有在途任务
         selectedTreeItem?.isSelected = false
         selectedTreeItem = null
         loadJob?.cancel()
@@ -165,7 +164,6 @@ class MainViewModel(
     }
 
     fun expandAll() {
-        // 分批展开
         scope.launch {
             val queue = ArrayDeque<TreeItemViewModel>()
             for (root in treeItems) {
@@ -211,7 +209,6 @@ class MainViewModel(
     }
 
     fun loadCore(path: String) {
-        // 切换目录时取消上一轮
         loadJob?.cancel()
         sizeJob?.cancel()
         selectJob?.cancel()
@@ -253,7 +250,6 @@ class MainViewModel(
     private data class LoadedFile(
         val parseResult: CodeParseResult?,
         val content: String,
-        // 预览被降级时给UI的提示
         val notice: String? = null,
     )
 
@@ -290,7 +286,6 @@ class MainViewModel(
             return null
         }
 
-        // 直接放弃预览
         if (artifact.size > PREVIEW_HARD_LIMIT_BYTES) {
             messageText = "文件过大（${FormatSize.readable(artifact.size)}），已跳过预览"
             return null

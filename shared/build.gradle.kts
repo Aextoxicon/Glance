@@ -18,7 +18,7 @@ val cargoBuildJvm by tasks.registering(Exec::class) {
     group = "uniffi"
     description = "Build Rust native library for JVM (release)"
     workingDir = nativeProjectDir
-    // release 必需：26 个 grammar 是 C 代码，debug 下 opt-level=0 会慢数倍
+    // release必需：26个grammar是C代码，debug下opt-level=0会慢数倍
     commandLine("cargo", "build", "--release")
     inputs.dir(nativeProjectDir.resolve("src"))
     inputs.file(nativeProjectDir.resolve("Cargo.toml"))
@@ -178,7 +178,7 @@ tasks.withType<Test>().configureEach {
     dependsOn(cargoBuildJvm)
     systemProperty("uniffi.component.$nativeLibName.libraryOverride", jvmNativeLib.absolutePath)
     systemProperty("java.library.path", jvmNativeLib.parentFile.absolutePath)
-    // 仅在显式传入 -PupdateGoldens=true（或 -DupdateGoldens=true）时，golden 测试才把新基线写入到资源目录，否则仅做比对
+    // 仅在显式传入 -PupdateGoldens=true（或 -DupdateGoldens=true）时，golden测试才把新基线写入到资源目录，否则仅做比对
     systemProperty(
         "updateGoldens",
         (project.findProperty("updateGoldens") ?: System.getProperty("updateGoldens") ?: "false").toString(),

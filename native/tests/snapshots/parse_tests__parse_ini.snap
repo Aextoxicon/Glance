@@ -1,45 +1,46 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 14,
-                kind: "comment",
-            },
+            (
+                0,
+                14,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 1,
-                kind: "punctuation.bracket",
-            },
-            HighlightToken {
-                start_byte: 1,
-                end_byte: 8,
-                kind: "type",
-            },
-            HighlightToken {
-                start_byte: 8,
-                end_byte: 9,
-                kind: "punctuation.bracket",
-            },
+            (
+                0,
+                1,
+                "punctuation.bracket",
+            ),
+            (
+                1,
+                8,
+                "type",
+            ),
+            (
+                8,
+                9,
+                "punctuation.bracket",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 3,
-                kind: "property",
-            },
-            HighlightToken {
-                start_byte: 4,
-                end_byte: 5,
-                kind: "operator",
-            },
+            (
+                0,
+                3,
+                "property",
+            ),
+            (
+                4,
+                5,
+                "operator",
+            ),
         ],
+        [],
     ],
     outline: [],
 }

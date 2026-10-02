@@ -1,80 +1,81 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(&result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 6,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 7,
-                end_byte: 9,
-                kind: "variable",
-            },
+            (
+                0,
+                6,
+                "keyword",
+            ),
+            (
+                7,
+                9,
+                "variable",
+            ),
         ],
         [],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 3,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 4,
-                end_byte: 9,
-                kind: "function",
-            },
+            (
+                0,
+                3,
+                "keyword",
+            ),
+            (
+                4,
+                9,
+                "function",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 4,
-                end_byte: 8,
-                kind: "variable",
-            },
-            HighlightToken {
-                start_byte: 9,
-                end_byte: 10,
-                kind: "operator",
-            },
-            HighlightToken {
-                start_byte: 11,
-                end_byte: 19,
-                kind: "string",
-            },
+            (
+                4,
+                8,
+                "variable",
+            ),
+            (
+                9,
+                10,
+                "operator",
+            ),
+            (
+                11,
+                19,
+                "string",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 4,
-                end_byte: 9,
-                kind: "function.builtin",
-            },
-            HighlightToken {
-                start_byte: 10,
-                end_byte: 14,
-                kind: "variable",
-            },
-            HighlightToken {
-                start_byte: 17,
-                end_byte: 23,
-                kind: "comment",
-            },
+            (
+                4,
+                9,
+                "function.builtin",
+            ),
+            (
+                10,
+                14,
+                "variable",
+            ),
+            (
+                17,
+                23,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 4,
-                end_byte: 10,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 11,
-                end_byte: 15,
-                kind: "variable",
-            },
+            (
+                4,
+                10,
+                "keyword",
+            ),
+            (
+                11,
+                15,
+                "variable",
+            ),
         ],
+        [],
     ],
     outline: [
         OutlineNode {

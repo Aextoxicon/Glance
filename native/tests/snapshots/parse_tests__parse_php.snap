@@ -1,87 +1,89 @@
 ---
 source: tests/parse_tests.rs
-expression: result
+expression: snapshot_of(& result)
 ---
-CodeParseResult {
-    highlights_by_line: [
+Snapshot {
+    highlights: [
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 5,
-                kind: "tag",
-            },
+            (
+                0,
+                5,
+                "tag",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 14,
-                kind: "comment",
-            },
+            (
+                0,
+                14,
+                "comment",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 0,
-                end_byte: 5,
-                kind: "keyword",
-            },
+            (
+                0,
+                5,
+                "keyword",
+            ),
         ],
         [
-            HighlightToken {
-                start_byte: 2,
-                end_byte: 8,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 9,
-                end_byte: 17,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 18,
-                end_byte: 19,
-                kind: "function.method",
-            },
-            HighlightToken {
-                start_byte: 20,
-                end_byte: 23,
-                kind: "type.builtin",
-            },
-            HighlightToken {
-                start_byte: 24,
-                end_byte: 25,
-                kind: "operator",
-            },
-            HighlightToken {
-                start_byte: 25,
-                end_byte: 26,
-                kind: "variable",
-            },
-            HighlightToken {
-                start_byte: 29,
-                end_byte: 32,
-                kind: "type.builtin",
-            },
-            HighlightToken {
-                start_byte: 35,
-                end_byte: 41,
-                kind: "keyword",
-            },
-            HighlightToken {
-                start_byte: 42,
-                end_byte: 43,
-                kind: "operator",
-            },
-            HighlightToken {
-                start_byte: 43,
-                end_byte: 44,
-                kind: "variable",
-            },
-            HighlightToken {
-                start_byte: 47,
-                end_byte: 48,
-                kind: "number",
-            },
+            (
+                2,
+                8,
+                "keyword",
+            ),
+            (
+                9,
+                17,
+                "keyword",
+            ),
+            (
+                18,
+                19,
+                "function.method",
+            ),
+            (
+                20,
+                23,
+                "type.builtin",
+            ),
+            (
+                24,
+                25,
+                "operator",
+            ),
+            (
+                25,
+                26,
+                "variable",
+            ),
+            (
+                29,
+                32,
+                "type.builtin",
+            ),
+            (
+                35,
+                41,
+                "keyword",
+            ),
+            (
+                42,
+                43,
+                "operator",
+            ),
+            (
+                43,
+                44,
+                "variable",
+            ),
+            (
+                47,
+                48,
+                "number",
+            ),
         ],
+        [],
+        [],
     ],
     outline: [
         OutlineNode {
