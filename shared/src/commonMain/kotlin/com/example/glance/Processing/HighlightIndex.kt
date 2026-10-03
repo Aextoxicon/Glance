@@ -1,6 +1,6 @@
 package com.example.glance.Processing
 
-/// 高亮的紧凑存储：token 打包成扁平 ByteArray，按行建索引，**惰性**解出，
+/// 高亮的紧凑存储：token 打包成扁平 ByteArray，按行建索引，惰性解出，
 class HighlightIndex(
     private val data: ByteArray,
     private val lineIndex: ByteArray,
@@ -40,7 +40,7 @@ class HighlightIndex(
         return out
     }
 
-    /// 展开成一维列表。**仅测试与诊断用** —— 大文件上这会重新制造出本类型要避免的对象
+    /// 展开成一维列表。仅测试与诊断用 —— 大文件上这会重新制造出本类型要避免的对象
     fun allTokens(): List<HighlightToken> = (0 until lineCount).flatMap { tokensOf(it) }
 
     companion object {

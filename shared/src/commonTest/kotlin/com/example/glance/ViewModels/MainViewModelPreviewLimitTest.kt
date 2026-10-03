@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 
 private const val MB = 1024L * 1024L
 private const val HARD_LIMIT = 10L * MB
-private const val PLAIN_LIMIT = 1L * MB
+private const val PLAIN_LIMIT = 2L * MB
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelPreviewLimitTest {
@@ -97,10 +97,10 @@ class MainViewModelPreviewLimitTest {
     fun `file above the plain limit is not cached so reselect re-reads it`() = runTest {
         val (repo, vm) = selected()
 
-        selectOnce(vm, 2 * MB, name = "mid.txt")
-        selectOnce(vm, 2 * MB, name = "mid.txt")
+        selectOnce(vm, 3 * MB, name = "mid.txt")
+        selectOnce(vm, 3 * MB, name = "mid.txt")
 
-        assertEquals(2, repo.readCalls["/root/mid.txt"] ?: 0, "1MB-10MB 区间不进缓存，重选应重新读取")
+        assertEquals(2, repo.readCalls["/root/mid.txt"] ?: 0, "2MB-10MB 区间不进缓存，重选应重新读取")
     }
 
     @Test

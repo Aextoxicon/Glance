@@ -7,7 +7,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 // 渲染层单测：golden只钉token列表，钉不住「token怎么拼成一行带色文本」
-// 当年TOML的 `a = 1` 显示成 `aa = 1` 就是漏在这里
 class HighlightColorTest {
 
     private fun AnnotatedString.colorPerChar(): List<Color> {

@@ -304,7 +304,7 @@ fn extract_name(node: tree_sitter::Node, source: &[u8]) -> String {
 }
 
 // 只有这些节点类型会生成OutlineNode
-const OUTLINE_STRUCTURAL_KINDS: &[&str] = &[
+pub const OUTLINE_STRUCTURAL_KINDS: &[&str] = &[
 
     "function_definition",
     "function_declaration",

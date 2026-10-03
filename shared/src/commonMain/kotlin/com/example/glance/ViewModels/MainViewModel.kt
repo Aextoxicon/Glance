@@ -28,7 +28,7 @@ class MainViewModel(
         private const val WIDE_MODE_THRESHOLD = 640
         private const val PARSE_CACHE_MAX = 32
         private const val PREVIEW_HARD_LIMIT_BYTES = 10L * 1024 * 1024
-        private const val PREVIEW_PLAIN_LIMIT_BYTES = 1L * 1024 * 1024
+        private const val PREVIEW_PLAIN_LIMIT_BYTES = 2L * 1024 * 1024
 
         private const val SIZE_SCAN_CONCURRENCY = 8
         private const val EXPAND_CONCURRENCY = 8
