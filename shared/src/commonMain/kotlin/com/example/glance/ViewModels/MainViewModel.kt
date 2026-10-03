@@ -43,11 +43,16 @@ class MainViewModel(
     private var loadJob: Job? = null
     private var selectJob: Job? = null
     private var sizeJob: Job? = null
+    private var treeRefreshJob: Job? = null
     // 每轮工作区的树加载句柄：closeWorkspace取消它可级联中止所有已展开的子目录加载，
     // 防止任务回写已清空的树状态
     private var treeOwnerJob: Job? = null
     // 选中行的item引用：isSelected下沉到行，切换选中只重组旧/新两行
     private var selectedTreeItem: TreeItemViewModel? = null
+
+    // 回调均在主线程触发
+    var onWorkspaceOpened: (() -> Unit)? = null
+    var onTreeDirsChanged: (() -> Unit)? = null
 
     // 文件浏览状态
     var currentPath by mutableStateOf("")
@@ -138,6 +143,7 @@ class MainViewModel(
         selectJob?.cancel()
         sizeJob?.cancel()
         treeOwnerJob?.cancel()
+        treeRefreshJob?.cancel()
         isComputingSize = false
         currentPath = ""
         hasWorkspace = false
@@ -149,6 +155,7 @@ class MainViewModel(
         hasSelection = false
         messageText = null
         previewNotice = null
+        onTreeDirsChanged?.invoke()
     }
 
     fun selectItem(item: TreeItemViewModel?) {
@@ -192,6 +199,111 @@ class MainViewModel(
         }
     }
 
+    // 重读根目录与所有已展开目录，保留展开结构与选中行
+    fun refreshTree() {
+        if (!hasWorkspace) return
+        treeRefreshJob?.cancel()
+        treeRefreshJob = scope.launch {
+            val path = currentPath
+            val oldRoots = treeItems.toList()
+            var newRoots: List<TreeItemViewModel> = emptyList()
+            try {
+                val listResult = withContext(ioDispatcher) { repo.listAsync(path) }
+                if (!isActive) return@launch
+                val items = listResult.getOrNull() ?: return@launch
+                newRoots = filterIgnoredDirs(items).map {
+                    TreeItemViewModel(it, repo, dispatcher, ioDispatcher, owner = treeOwnerJob, onDirsChanged = { onTreeDirsChanged?.invoke() })
+                }
+            } catch (ex: Exception) {
+                if (isActive) messageText = "刷新失败: ${ex.message}"
+                return@launch
+            }
+            treeItems = newRoots
+            refreshExpandedSubtree(oldRoots, newRoots)
+            if (!isActive) return@launch
+            reattachSelection()
+            onTreeDirsChanged?.invoke()
+        }
+    }
+
+    // 供桌面端WatchService注册
+    fun currentExpandedDirPaths(): List<String> {
+        val result = mutableListOf<String>()
+        val queue = ArrayDeque<TreeItemViewModel>()
+        for (root in treeItems) {
+            if (root.isDir && root.isExpanded) queue.add(root)
+        }
+        while (queue.isNotEmpty()) {
+            val node = queue.removeFirst()
+            val payload = node.artifact.payload as? LocalPayload
+            result.add(payload?.absolutePath ?: node.artifact.id)
+            for (child in node.children) {
+                if (!child.isPlaceholder && child.isDir && child.isExpanded) queue.add(child)
+            }
+        }
+        return result
+    }
+
+    // 批并发重读所有已展开目录
+    private suspend fun refreshExpandedSubtree(
+        oldRoots: List<TreeItemViewModel>,
+        newRoots: List<TreeItemViewModel>,
+    ) {
+        val queue = ArrayDeque<Pair<TreeItemViewModel, TreeItemViewModel>>()
+        for (newRoot in newRoots) {
+            val oldRoot = oldRoots.firstOrNull { it.isDir && it.isExpanded && it.artifact.name == newRoot.artifact.name }
+            if (oldRoot != null) {
+                newRoot.isExpanded = true
+                queue.add(newRoot to oldRoot)
+            }
+        }
+        while (queue.isNotEmpty()) {
+            val batch = ArrayDeque<Pair<TreeItemViewModel, TreeItemViewModel>>()
+            while (batch.size < EXPAND_CONCURRENCY && queue.isNotEmpty()) {
+                batch.add(queue.removeFirst())
+            }
+            coroutineScope {
+                batch.map { (node, old) -> async { node.refreshFrom(old) } }.awaitAll()
+            }
+            if (currentCoroutineContext()[Job]?.isActive == false) return
+            for ((node, old) in batch) {
+                for (child in node.children) {
+                    if (!child.isPlaceholder && child.isDir && child.isExpanded) {
+                        val oldChild = old.children.firstOrNull { it.artifact.name == child.artifact.name }
+                        if (oldChild != null) queue.add(child to oldChild)
+                    }
+                }
+            }
+            if (currentCoroutineContext()[Job]?.isActive == false) return
+        }
+    }
+
+    // 刷新重建后把选中行重新挂到新节点上
+    private fun reattachSelection() {
+        val id = selectedArtifact?.id ?: return
+        val found = findNodeById(treeItems, id)
+        if (found != null && found !== selectedTreeItem) {
+            selectedTreeItem?.isSelected = false
+            selectedTreeItem = found
+            found.isSelected = true
+        } else if (found == null) {
+            selectedTreeItem?.isSelected = false
+            selectedTreeItem = null
+        }
+    }
+
+    private fun findNodeById(items: List<TreeItemViewModel>, id: String): TreeItemViewModel? {
+        for (item in items) {
+            if (item.isPlaceholder) continue
+            if (item.artifact.id == id) return item
+            if (item.isDir && item.isExpanded) {
+                val found = findNodeById(item.children, id)
+                if (found != null) return found
+            }
+        }
+        return null
+    }
+
     fun clearSelection() {
         selectedTreeItem?.isSelected = false
         selectedTreeItem = null
@@ -213,6 +325,7 @@ class MainViewModel(
         sizeJob?.cancel()
         selectJob?.cancel()
         treeOwnerJob?.cancel()
+        treeRefreshJob?.cancel()
         selectedTreeItem?.isSelected = false
         selectedTreeItem = null
         treeOwnerJob = SupervisorJob()
@@ -229,7 +342,10 @@ class MainViewModel(
                 val listResult = withContext(ioDispatcher) { repo.listAsync(path) }
                 val items = listResult.getOrNull() ?: emptyList()
                 if (!isActive) return@launch
-                treeItems = filterIgnoredDirs(items).map { TreeItemViewModel(it, repo, dispatcher, ioDispatcher, owner = treeOwnerJob) }
+                treeItems = filterIgnoredDirs(items).map {
+                    TreeItemViewModel(it, repo, dispatcher, ioDispatcher, owner = treeOwnerJob, onDirsChanged = { onTreeDirsChanged?.invoke() })
+                }
+                onWorkspaceOpened?.invoke()
             } catch (ex: Exception) {
                 if (isActive) messageText = "加载失败: ${ex.message}"
             }

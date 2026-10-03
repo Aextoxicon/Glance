@@ -34,6 +34,8 @@ class TreeItemViewModel(
     private val uiDispatcher: CoroutineDispatcher? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     owner: Job? = null,
+    // 仅在MainViewModel接线
+    private val onDirsChanged: (() -> Unit)? = null,
 ) {
     // SupervisorJob保证兄弟任务之间互不影响
     private val scope = CoroutineScope(
@@ -43,7 +45,7 @@ class TreeItemViewModel(
     val isDir: Boolean = artifact.payload is LocalPayload && (artifact.payload as LocalPayload).isDir
 
     var isExpanded by mutableStateOf(false)
-        private set
+        internal set
 
     var isLoading by mutableStateOf(false)
         private set
@@ -95,6 +97,7 @@ class TreeItemViewModel(
     fun expand() {
         if (!isDir) return
         isExpanded = true
+        onDirsChanged?.invoke()
         // 仅在展开时 + 尚未加载子节点时加载
         if (children.isNotEmpty() && children[0].isPlaceholder) {
             scope.launch {
@@ -105,6 +108,7 @@ class TreeItemViewModel(
 
     fun collapse() {
         isExpanded = false
+        onDirsChanged?.invoke()
     }
 
     suspend fun loadChildren() {
@@ -123,7 +127,7 @@ class TreeItemViewModel(
             childCount = sorted.count()
             children.clear()
             for (child in sorted) {
-                children.add(TreeItemViewModel(child, r, uiDispatcher, ioDispatcher, owner = scope.coroutineContext.get(Job)))
+                children.add(TreeItemViewModel(child, r, uiDispatcher, ioDispatcher, owner = scope.coroutineContext.get(Job), onDirsChanged = onDirsChanged))
             }
             // 空目录：保留占位符，保证箭头始终显示
             if (children.isEmpty()) {
@@ -141,10 +145,47 @@ class TreeItemViewModel(
         }
     }
 
+    suspend fun refreshFrom(oldNode: TreeItemViewModel) {
+        if (!isDir) return
+        val r = repo ?: return
+        isLoading = true
+        try {
+            val payload = artifact.payload as LocalPayload
+            val expandedChildNames = oldNode.children
+                .asSequence()
+                .filter { it.isDir && it.isExpanded }
+                .map { it.artifact.name }
+                .toSet()
+            // 放io线程，children的写入留在ui线程
+            val items = withContext(ioDispatcher) {
+                val listResult = r.listAsync(payload.absolutePath)
+                listResult.getOrNull() ?: emptyList()
+            }
+            val sorted = filterIgnoredDirs(items)
+                .sortedWith(compareBy({ !((it.payload as? LocalPayload)?.isDir ?: false) }, { it.name.lowercase() }))
+            childCount = sorted.count()
+            children.clear()
+            for (child in sorted) {
+                val newChild = TreeItemViewModel(child, r, uiDispatcher, ioDispatcher, owner = scope.coroutineContext.get(Job), onDirsChanged = onDirsChanged)
+                if (newChild.isDir && child.name in expandedChildNames) {
+                    newChild.isExpanded = true
+                }
+                children.add(newChild)
+            }
+            // 空目录：保留占位符，保证箭头始终显示
+            if (children.isEmpty()) {
+                children.add(TreeItemViewModel())
+            }
+        } finally {
+            isLoading = false
+        }
+    }
+
     // 展开并等待子节点加载完成由MainViewModel.expandAll分批调用
     suspend fun ensureLoaded() {
         if (!isDir) return
         isExpanded = true
+        onDirsChanged?.invoke()
         if (children.isNotEmpty() && children[0].isPlaceholder) {
             loadChildren()
         }
@@ -183,7 +224,7 @@ internal val IGNORED_DIR_NAMES: Set<String> = setOf(
     "DerivedData",
 )
 
-/** 过滤掉 [IGNORED_DIR_NAMES]中的目录项，文件不受影响 */
+// 过滤掉 [IGNORED_DIR_NAMES]中的目录项，文件不受影响
 internal fun filterIgnoredDirs(items: List<IArtifact>): List<IArtifact> {
     if (IGNORED_DIR_NAMES.isEmpty()) return items
     return items.filterNot { item ->

@@ -10,6 +10,8 @@ import com.example.glance.Views.MainView
 @Composable
 fun App(
     pickFolderAction: (suspend () -> String?)? = null,
+    // jvm绑定DirectoryWatcher用；回调仅在该ViewMode创建后执行一次
+    onViewModelCreated: (MainViewModel) -> Unit = {},
 ) {
     val viewModel = remember {
         val fs = LocalFileSystem()
@@ -17,6 +19,9 @@ fun App(
         val vm = MainViewModel(fs, repo)
         vm.pickFolderAction = pickFolderAction
         vm
+    }
+    LaunchedEffect(viewModel) {
+        onViewModelCreated(viewModel)
     }
     MaterialTheme {
         MainView(viewModel)

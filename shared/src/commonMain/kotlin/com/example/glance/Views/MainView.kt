@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -199,6 +200,9 @@ private fun WorkspaceHeader(viewModel: MainViewModel) {
             Spacer(Modifier.weight(1f))
             TextButton(onClick = { viewModel.expandAll() }, modifier = Modifier.height(28.dp), contentPadding = PaddingValues(horizontal = 4.dp)) { Text("展开全部", fontSize = 12.sp) }
             TextButton(onClick = { viewModel.collapseAll() }, modifier = Modifier.height(28.dp), contentPadding = PaddingValues(horizontal = 4.dp)) { Text("折叠", fontSize = 12.sp) }
+            IconButton(onClick = { viewModel.refreshTree() }, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.Filled.Refresh, contentDescription = "刷新", modifier = Modifier.size(14.dp))
+            }
             TextButton(onClick = { viewModel.closeWorkspace() }, modifier = Modifier.height(28.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
                 Icon(Icons.Filled.Close, contentDescription = "关闭", modifier = Modifier.size(14.dp))
             }
