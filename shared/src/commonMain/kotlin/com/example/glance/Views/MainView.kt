@@ -1,11 +1,7 @@
 package com.example.glance.Views
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -42,7 +38,6 @@ import kotlin.math.abs
 import kotlinx.coroutines.launch
 
 private val OUTLINE_DRAWER_WIDTH = 300.dp
-private const val OUTLINE_SCRIM_FADE_MS = 500
 
 @Composable
 fun MainView(viewModel: MainViewModel) {
@@ -69,20 +64,6 @@ fun MainView(viewModel: MainViewModel) {
         } else {
             NarrowLayout(viewModel)
         }
-        AnimatedVisibility(
-            visible = viewModel.outlineOpen,
-            enter = fadeIn(
-                animationSpec = tween(durationMillis = OUTLINE_SCRIM_FADE_MS, easing = LinearOutSlowInEasing),
-                initialAlpha = 0f,
-            ),
-            exit = fadeOut(
-                animationSpec = tween(durationMillis = OUTLINE_SCRIM_FADE_MS, easing = FastOutLinearInEasing),
-                targetAlpha = 0f,
-            ),
-        ) {
-            OutlineScrim(onDismiss = { viewModel.closeOutline() })
-        }
-
         val panelWidthPx = with(LocalDensity.current) { OUTLINE_DRAWER_WIDTH.roundToPx() }
         AnimatedVisibility(
             visible = viewModel.outlineOpen,
@@ -358,7 +339,7 @@ private fun OutlineDrawer(
                     modifier = Modifier.height(28.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp),
                 ) {
-                    Icon(Icons.Filled.Close, contentDescription = "关闭大纲", modifier = Modifier.size(14.dp))
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "收起大纲", modifier = Modifier.size(14.dp))
                 }
             }
             HorizontalDivider()
@@ -387,20 +368,6 @@ private fun OutlineDrawer(
             }
         }
     }
-}
-
-@Composable
-private fun OutlineScrim(onDismiss: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.32f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onDismiss,
-            ),
-    )
 }
 
 @Composable
