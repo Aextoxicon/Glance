@@ -3,10 +3,10 @@ use tree_sitter::{Language, Parser, QueryCursor};
 pub mod lang;
 uniffi::setup_scaffolding!();
 
-// 调试日志宏,release下cfg!为常量false,分支被优化掉
+// 调试日志宏,未开trace时cfg!为常量false,分支被优化掉,release零输出
 macro_rules! debug_log {
     ($($arg:tt)*) => {
-        if cfg!(debug_assertions) {
+        if cfg!(feature = "trace") {
             eprintln!($($arg)*);
         }
     };

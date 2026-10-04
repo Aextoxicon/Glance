@@ -14,16 +14,22 @@ val jvmNativeLib = when {
 
 val uniffiKotlinOutDir = layout.buildDirectory.dir("generated/uniffi/kotlin")
 
+// -PglanceTrace=true 时给cargo带 --features trace，打开native侧的debug_log!
+val cargoTraceArgs =
+    if (project.findProperty("glanceTrace") == "true") listOf("--features", "trace") else emptyList()
+
 val cargoBuildJvm by tasks.registering(Exec::class) {
     group = "uniffi"
     description = "Build Rust native library for JVM (release)"
     workingDir = nativeProjectDir
     // release必需：26个grammar是C代码，debug下opt-level=0会慢数倍
-    commandLine("cargo", "build", "--release")
+    // trace默认不带：release下native完全静默，需要排查时加 -PglanceTrace=true
+    commandLine(listOf("cargo", "build", "--release") + cargoTraceArgs)
     inputs.dir(nativeProjectDir.resolve("src"))
     inputs.file(nativeProjectDir.resolve("Cargo.toml"))
     inputs.file(nativeProjectDir.resolve("Cargo.lock"))
     inputs.file(nativeProjectDir.resolve("build.rs"))
+    inputs.property("trace", cargoTraceArgs.isNotEmpty())
     outputs.file(jvmNativeLib)
 }
 
