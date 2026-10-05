@@ -27,7 +27,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class TreeItemViewModel(
+class TreeItemViewModel internal constructor(
     val artifact: IArtifact,
     private val repo: IArtifactRepo? = null,
     // 状态线程：所有Compose状态写入统一在这里
