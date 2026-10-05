@@ -1,12 +1,12 @@
 package com.example.glance.Processing
 
-/// 高亮的紧凑存储：token 打包成扁平 ByteArray，按行建索引，惰性解出，
+/// 高亮的紧凑存储：token打包成扁平ByteArray，按行建索引，惰性解出，
 class HighlightIndex(
     private val data: ByteArray,
     private val lineIndex: ByteArray,
     private val kinds: List<String>,
 ) {
-    /// 行索引的 u32 个数减一；行索引末元素是 token 总数构成的哨兵
+    /// 行索引的u32个数减一；行索引末元素是token总数构成的哨兵
     val lineCount: Int
         get() = (lineIndex.size / INT_BYTES - 1).coerceAtLeast(0)
 

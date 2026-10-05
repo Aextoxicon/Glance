@@ -5,8 +5,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * 覆盖 [HighlightIndex] 的打包布局解读，这里只测 Kotlin 侧，
- * 与 Rust 打包端的对齐由 golden 快照（LanguageGoldenTest）保证
+ * 覆盖 [HighlightIndex]的打包布局解读，这里只测Kotlin侧，
+ * 与Rust打包端的对齐由golden快照（LanguageGoldenTest）保证
  */
 class HighlightIndexTest {
 
@@ -14,7 +14,7 @@ class HighlightIndexTest {
     fun `按行解出 token`() {
         val index = buildIndex(
             rows = listOf(
-                listOf(), // 第 0 行是空行
+                listOf(), // 第0行是空行
                 listOf(triple(0, 3, 0), triple(4, 9, 1)),
                 listOf(triple(0, 1, 2)),
             ),

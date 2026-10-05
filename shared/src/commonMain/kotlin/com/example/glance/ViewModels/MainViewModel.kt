@@ -211,8 +211,9 @@ class MainViewModel(
                 val listResult = withContext(ioDispatcher) { repo.listAsync(path) }
                 if (!isActive) return@launch
                 val items = listResult.getOrNull() ?: return@launch
-                newRoots = filterIgnoredDirs(items).map {
-                    TreeItemViewModel(it, repo, dispatcher, ioDispatcher, owner = treeOwnerJob, onDirsChanged = { onTreeDirsChanged?.invoke() })
+                val ignored = withContext(ioDispatcher) { gitIgnoredDirs(path) }
+                newRoots = filterIgnoredDirs(items, ignored).map {
+                    TreeItemViewModel(it, repo, dispatcher, ioDispatcher, owner = treeOwnerJob, onDirsChanged = { onTreeDirsChanged?.invoke() }, gitIgnoredDirs = ignored)
                 }
             } catch (ex: Exception) {
                 if (isActive) messageText = "刷新失败: ${ex.message}"
@@ -224,6 +225,13 @@ class MainViewModel(
             reattachSelection()
             onTreeDirsChanged?.invoke()
         }
+    }
+
+    // 读工作区根.gitignore的忽略名单；无文件/读失败返回空
+    private suspend fun gitIgnoredDirs(path: String): GitIgnoreDirs {
+        val contentResult = repo.tryReadTextAsync("$path/.gitignore")
+        val content = contentResult.getOrNull() ?: return GitIgnoreDirs(emptySet(), emptySet())
+        return parseGitIgnoreNames(content)
     }
 
     // 供桌面端WatchService注册
@@ -342,8 +350,9 @@ class MainViewModel(
                 val listResult = withContext(ioDispatcher) { repo.listAsync(path) }
                 val items = listResult.getOrNull() ?: emptyList()
                 if (!isActive) return@launch
-                treeItems = filterIgnoredDirs(items).map {
-                    TreeItemViewModel(it, repo, dispatcher, ioDispatcher, owner = treeOwnerJob, onDirsChanged = { onTreeDirsChanged?.invoke() })
+                val ignored = withContext(ioDispatcher) { gitIgnoredDirs(path) }
+                treeItems = filterIgnoredDirs(items, ignored).map {
+                    TreeItemViewModel(it, repo, dispatcher, ioDispatcher, owner = treeOwnerJob, onDirsChanged = { onTreeDirsChanged?.invoke() }, gitIgnoredDirs = ignored)
                 }
                 onWorkspaceOpened?.invoke()
             } catch (ex: Exception) {

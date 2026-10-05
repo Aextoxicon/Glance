@@ -36,6 +36,8 @@ class TreeItemViewModel(
     owner: Job? = null,
     // 仅在MainViewModel接线
     private val onDirsChanged: (() -> Unit)? = null,
+
+    private val gitIgnoredDirs: GitIgnoreDirs = GitIgnoreDirs(emptySet(), emptySet()),
 ) {
     // SupervisorJob保证兄弟任务之间互不影响
     private val scope = CoroutineScope(
@@ -122,12 +124,12 @@ class TreeItemViewModel(
                 val listResult = r.listAsync(payload.absolutePath)
                 listResult.getOrNull() ?: emptyList()
             }
-            val sorted = filterIgnoredDirs(items)
+            val sorted = filterIgnoredDirs(items, gitIgnoredDirs)
                 .sortedWith(compareBy({ !((it.payload as? LocalPayload)?.isDir ?: false) }, { it.name.lowercase() }))
             childCount = sorted.count()
             children.clear()
             for (child in sorted) {
-                children.add(TreeItemViewModel(child, r, uiDispatcher, ioDispatcher, owner = scope.coroutineContext.get(Job), onDirsChanged = onDirsChanged))
+                children.add(TreeItemViewModel(child, r, uiDispatcher, ioDispatcher, owner = scope.coroutineContext.get(Job), onDirsChanged = onDirsChanged, gitIgnoredDirs = gitIgnoredDirs))
             }
             // 空目录：保留占位符，保证箭头始终显示
             if (children.isEmpty()) {
@@ -161,12 +163,12 @@ class TreeItemViewModel(
                 val listResult = r.listAsync(payload.absolutePath)
                 listResult.getOrNull() ?: emptyList()
             }
-            val sorted = filterIgnoredDirs(items)
+            val sorted = filterIgnoredDirs(items, gitIgnoredDirs)
                 .sortedWith(compareBy({ !((it.payload as? LocalPayload)?.isDir ?: false) }, { it.name.lowercase() }))
             childCount = sorted.count()
             children.clear()
             for (child in sorted) {
-                val newChild = TreeItemViewModel(child, r, uiDispatcher, ioDispatcher, owner = scope.coroutineContext.get(Job), onDirsChanged = onDirsChanged)
+                val newChild = TreeItemViewModel(child, r, uiDispatcher, ioDispatcher, owner = scope.coroutineContext.get(Job), onDirsChanged = onDirsChanged, gitIgnoredDirs = gitIgnoredDirs)
                 if (newChild.isDir && child.name in expandedChildNames) {
                     newChild.isExpanded = true
                 }
@@ -205,33 +207,38 @@ private class PlaceholderArtifact : IArtifact {
     override val payload: com.example.glance.Models.IArtifactPayload = LocalPayload("", "", false)
 }
 
-// 忽略目录（待清理）
-internal val IGNORED_DIR_NAMES: Set<String> = setOf(
-    ".git",
-    "node_modules",
-    ".gradle",
-    ".idea",
-    ".dart_tool",
-    "__pycache__",
-    ".venv",
-    "venv",
-    ".next",
-    ".cache",
-    ".pytest_cache",
-    ".mypy_cache",
-    "coverage",
-    "Pods",
-    "DerivedData",
+internal data class GitIgnoreDirs(
+    val dirOnly: Set<String>,
+    val dirOrFile: Set<String>,
 )
 
-// 过滤掉 [IGNORED_DIR_NAMES]中的目录项，文件不受影响
-internal fun filterIgnoredDirs(items: List<IArtifact>): List<IArtifact> {
-    if (IGNORED_DIR_NAMES.isEmpty()) return items
+internal fun filterIgnoredDirs(items: List<IArtifact>, ignored: GitIgnoreDirs): List<IArtifact> {
     return items.filterNot { item ->
         val payload = item.payload as? LocalPayload
-        payload != null && payload.isDir && item.name in IGNORED_DIR_NAMES
+        if (payload == null) return@filterNot false
+        if (item.name.startsWith(".")) return@filterNot true
+        if (item.name in ignored.dirOrFile) return@filterNot true
+        payload.isDir && item.name in ignored.dirOnly
     }
 }
+
+internal fun parseGitIgnoreNames(content: String): GitIgnoreDirs {
+    val dirOnly = linkedSetOf<String>()
+    val dirOrFile = linkedSetOf<String>()
+    for (rawLine in content.lineSequence()) {
+        val line = rawLine.trimEnd('\r').trim()
+        if (line.isEmpty() || line.startsWith("#")) continue
+        if (line.startsWith("!")) continue
+        if (line.contains("*") || line.contains("?") || line.contains("[") || line.contains("]")) continue
+        if (line.startsWith("/")) continue
+        val name = line.removeSuffix("/")
+        if (name.isEmpty() || name.startsWith(".")) continue
+        if (name.contains("/")) continue
+        if (line.endsWith("/")) dirOnly.add(name) else dirOrFile.add(name)
+    }
+    return GitIgnoreDirs(dirOnly, dirOrFile)
+}
+
 
 // 文件类型图标：extension不变，结果在TreeItemViewModel构造时算一次缓存
 internal fun fileIconFor(extension: String): ImageVector {
