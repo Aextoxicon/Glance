@@ -9,10 +9,21 @@ plugins {
 }
 
 val nativeLibDir = layout.buildDirectory.dir("nativeLibs/jvm")
+
+val hostResourceSubDir = when {
+    System.getProperty("os.name").lowercase().contains("win") -> "windows-x64"
+    System.getProperty("os.name").lowercase().contains("mac") ->
+        if (System.getProperty("os.arch").lowercase().contains("aarch64") ||
+            System.getProperty("os.arch").lowercase().contains("arm64")) "macos-arm64"
+        else "macos-x64"
+    else -> "linux-x64"
+}
+val nativeLibResourceDir = nativeLibDir.map { it.dir(hostResourceSubDir) }
+
 val copyDesktopNativeLib by tasks.registering(Copy::class) {
     dependsOn(":shared:copyJvmNativeLib")
     from(project(":shared").layout.buildDirectory.dir("nativeLibs/jvm"))
-    into(nativeLibDir)
+    into(nativeLibResourceDir)
 }
 
 dependencies {
@@ -50,7 +61,7 @@ tasks.matching {
 
 tasks.withType<JavaExec>().configureEach {
     dependsOn(copyDesktopNativeLib)
-    val nativeLibPath = nativeLibDir.get().asFile.absolutePath
+    val nativeLibPath = nativeLibResourceDir.get().asFile.absolutePath
     systemProperty("jna.library.path", nativeLibPath)
     systemProperty("java.library.path", nativeLibPath)
     environment("DYLD_LIBRARY_PATH", nativeLibPath)
@@ -73,7 +84,7 @@ val generateAppCdsArchive by tasks.registering {
     val classListPath = layout.buildDirectory.get().asFile.resolve("cds/classes.lst").absolutePath
     val javaBin = file(System.getProperty("java.home")).resolve("bin/java.exe").toString()
     val scriptPath = layout.projectDirectory.dir("scripts").file("generate-app-cds.ps1").asFile.absolutePath
-    val nativeLibPath = nativeLibDir.get().asFile.absolutePath
+    val nativeLibPath = nativeLibResourceDir.get().asFile.absolutePath
     doLast {
         val appDir = appDirProvider.get().asFile
 

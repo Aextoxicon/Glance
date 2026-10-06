@@ -13,9 +13,14 @@ import com.example.glance.Repositories.TextFileDetector
 import com.example.glance.Utils.FormatSize
 import com.example.glance.Utils.HighlightColor
 import com.example.glance.Utils.PathUtil
+import com.example.glance.Utils.Trace
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+
+enum class ThemeMode {
+    Light, Dark, System,
+}
 
 class MainViewModel(
     private val fs: TextFileDetector,
@@ -32,6 +37,9 @@ class MainViewModel(
 
         private const val SIZE_SCAN_CONCURRENCY = 8
         private const val EXPAND_CONCURRENCY = 8
+
+        const val DEFAULT_CODE_FONT_SIZE = 13
+        val CODE_FONT_SIZES = intArrayOf(10, 12, 13, 14, 16, 18, 20, 24, 28)
     }
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
@@ -90,6 +98,20 @@ class MainViewModel(
 
     var isWide by mutableStateOf(true)
         private set
+
+    var themeMode by mutableStateOf(ThemeMode.System)
+        private set
+
+    var codeFontSize by mutableStateOf(DEFAULT_CODE_FONT_SIZE)
+        private set
+
+    fun selectThemeMode(mode: ThemeMode) {
+        themeMode = mode
+    }
+
+    fun selectCodeFontSize(size: Int) {
+        codeFontSize = size
+    }
 
     // 右侧大纲抽屉：默认关闭
     var outlineOpen by mutableStateOf(false)
@@ -383,6 +405,7 @@ class MainViewModel(
 
     private fun selectFile(artifact: IArtifact) {
         selectJob?.cancel() // 快速连续点击时，丢前一次尚未完成的读取
+        Trace.mark("select.start", "name=${artifact.name} size=${artifact.size}")
         selectJob = scope.launch {
             messageText = null
             selectedContent = null
@@ -397,6 +420,7 @@ class MainViewModel(
             selectedParseResult = loaded.parseResult
             selectedContent = loaded.content
             previewNotice = loaded.notice
+            Trace.mark("select.end", "name=${artifact.name}")
         }
     }
 
@@ -419,19 +443,28 @@ class MainViewModel(
         // io块内不写Compose状态，错误信息经返回值带回主线程再写messageText
         val loaded = withContext(ioDispatcher) {
             if (!fs.isTextFile(path)) {
+                Trace.mark("istext", "binary=true")
                 null to "[二进制文件] ${artifact.name} 无法预览"
             } else {
+                Trace.mark("istext", "binary=false")
                 val cacheKey = cacheKey(artifact)
                 val cached = parseCacheMutex.withLock { parseCache[cacheKey] }
                 if (cached != null) {
+                    Trace.mark("cache.hit", "bytes=${artifact.size}")
                     cached to null
                 } else {
+                    Trace.mark("cache.miss", "bytes=${artifact.size}")
                     val contentResult = repo.tryReadTextAsync(path)
                     val content = contentResult.getOrNull()
                     if (content == null) {
+                        Trace.mark("io.read", "failed=true")
                         null to "无法读取文件: ${artifact.name}"
                     } else {
-                        val built = buildPreview(content.replace("\t", "    "), artifact)
+                        Trace.mark("io.read", "chars=${content.length}")
+                        val normalized = content.replace("\t", "    ")
+                        Trace.mark("tabs.replace", "chars=${normalized.length}")
+                        val built = buildPreview(normalized, artifact)
+                        Trace.mark("build.done", "highlight=${built.parseResult != null}")
                         if (artifact.size <= PREVIEW_PLAIN_LIMIT_BYTES) {
                             parseCacheMutex.withLock {
                                 if (parseCache.size >= PARSE_CACHE_MAX) parseCache.remove(parseCache.keys.first())

@@ -10,6 +10,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.example.glance.Utils.DirectoryWatcher
+import com.example.glance.Utils.Trace
 import com.example.glance.ViewModels.MainViewModel
 
 import kotlinx.coroutines.CoroutineScope
@@ -22,6 +23,7 @@ import javax.swing.JFileChooser
 import javax.swing.UIManager
 
 fun main() = application {
+    Trace.enabled = System.getProperty("glance.trace") == "1"
     configureNativeLib()
     val windowState = rememberWindowState(size = DpSize(1280.dp, 800.dp))
     val fsWatcher = remember { mutableStateOf<DirectoryWatcher?>(null) }

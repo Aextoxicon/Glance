@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import com.example.glance.Processing.CodeParseResult
 import com.example.glance.Processing.OutlineNode
 import com.example.glance.ViewModels.MainViewModel
+import com.example.glance.ViewModels.ThemeMode
 import com.example.glance.ViewModels.TreeItemViewModel
 import com.example.glance.Utils.HighlightColor
 import kotlin.math.abs
@@ -42,6 +44,7 @@ private val OUTLINE_DRAWER_WIDTH = 300.dp
 @Composable
 fun MainView(viewModel: MainViewModel) {
     var windowWidth by remember { mutableStateOf(0f) }
+    var showSettings by remember { mutableStateOf(false) }
     LaunchedEffect(windowWidth) {
         if (windowWidth > 0f) {
             viewModel.onWindowResized(windowWidth.toDouble())
@@ -60,10 +63,11 @@ fun MainView(viewModel: MainViewModel) {
         if (!viewModel.hasWorkspace) {
             WelcomeScreen(onOpenFolder = { viewModel.pickFolder() })
         } else if (viewModel.isWide) {
-            WideLayout(viewModel)
+            WideLayout(viewModel) { showSettings = true }
         } else {
-            NarrowLayout(viewModel)
+            NarrowLayout(viewModel) { showSettings = true }
         }
+        if (showSettings) SettingsDialog(viewModel) { showSettings = false }
         val panelWidthPx = with(LocalDensity.current) { OUTLINE_DRAWER_WIDTH.roundToPx() }
         AnimatedVisibility(
             visible = viewModel.outlineOpen,
@@ -100,7 +104,7 @@ private fun WelcomeScreen(onOpenFolder: () -> Unit) {
 }
 
 @Composable
-private fun WideLayout(viewModel: MainViewModel) {
+private fun WideLayout(viewModel: MainViewModel, onOpenSettings: () -> Unit) {
     Row(modifier = Modifier.fillMaxSize()) {
         Surface(
             modifier = Modifier.width(300.dp).fillMaxHeight(),
@@ -108,7 +112,7 @@ private fun WideLayout(viewModel: MainViewModel) {
             tonalElevation = 1.dp,
         ) {
             Column {
-                WorkspaceHeader(viewModel)
+                WorkspaceHeader(viewModel, onOpenSettings)
                 FileTreePanel(viewModel, Modifier.weight(1f))
             }
         }
@@ -118,7 +122,7 @@ private fun WideLayout(viewModel: MainViewModel) {
 }
 
 @Composable
-private fun NarrowLayout(viewModel: MainViewModel) {
+private fun NarrowLayout(viewModel: MainViewModel, onOpenSettings: () -> Unit) {
     // 抽屉状态只保留drawerState一份真源，变宽切走WideLayout时随组合丢弃
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -127,7 +131,7 @@ private fun NarrowLayout(viewModel: MainViewModel) {
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
-                WorkspaceHeader(viewModel)
+                WorkspaceHeader(viewModel, onOpenSettings)
                 FileTreePanel(viewModel, Modifier.weight(1f))
             }
         },
@@ -167,30 +171,89 @@ private fun NarrowLayout(viewModel: MainViewModel) {
 }
 
 @Composable
-private fun WorkspaceHeader(viewModel: MainViewModel) {
+private fun WorkspaceHeader(viewModel: MainViewModel, onOpenSettings: () -> Unit) {
     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(viewModel.currentFolderName.ifBlank { "工作区" }, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             if (viewModel.isComputingSize) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
             }
+            IconButton(onClick = { viewModel.closeWorkspace() }, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.Filled.Close, contentDescription = "关闭", modifier = Modifier.size(14.dp))
+            }
         }
         Spacer(Modifier.height(4.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(viewModel.totalSizeReadable, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = { viewModel.expandAll() }, modifier = Modifier.height(28.dp), contentPadding = PaddingValues(horizontal = 4.dp)) { Text("展开全部", fontSize = 12.sp) }
+            TextButton(onClick = { viewModel.expandAll() }, modifier = Modifier.height(28.dp), contentPadding = PaddingValues(horizontal = 4.dp)) { Text("展开", fontSize = 12.sp) }
             TextButton(onClick = { viewModel.collapseAll() }, modifier = Modifier.height(28.dp), contentPadding = PaddingValues(horizontal = 4.dp)) { Text("折叠", fontSize = 12.sp) }
             IconButton(onClick = { viewModel.refreshTree() }, modifier = Modifier.size(28.dp)) {
                 Icon(Icons.Filled.Refresh, contentDescription = "刷新", modifier = Modifier.size(14.dp))
             }
-            TextButton(onClick = { viewModel.closeWorkspace() }, modifier = Modifier.height(28.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
-                Icon(Icons.Filled.Close, contentDescription = "关闭", modifier = Modifier.size(14.dp))
+            IconButton(onClick = onOpenSettings, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.Filled.Settings, contentDescription = "设置", modifier = Modifier.size(14.dp))
             }
         }
     }
     HorizontalDivider()
 }
+
+@Composable
+private fun SettingsDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
+    var fontSizeMenuExpanded by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("设置") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("主题", style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    THEME_OPTIONS.forEach { (label, mode) ->
+                        FilterChip(
+                            selected = viewModel.themeMode == mode,
+                            onClick = { viewModel.selectThemeMode(mode) },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+                HorizontalDivider()
+                Text("字号", style = MaterialTheme.typography.labelLarge)
+                Box {
+                    OutlinedButton(onClick = { fontSizeMenuExpanded = true }) {
+                        Text(fontSizeLabel(viewModel.codeFontSize))
+                    }
+                    DropdownMenu(
+                        expanded = fontSizeMenuExpanded,
+                        onDismissRequest = { fontSizeMenuExpanded = false },
+                    ) {
+                        MainViewModel.CODE_FONT_SIZES.forEach { size ->
+                            DropdownMenuItem(
+                                text = { Text(fontSizeLabel(size)) },
+                                onClick = {
+                                    viewModel.selectCodeFontSize(size)
+                                    fontSizeMenuExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("完成") }
+        },
+    )
+}
+
+private val THEME_OPTIONS = listOf(
+    "浅色" to ThemeMode.Light,
+    "深色" to ThemeMode.Dark,
+    "跟随系统" to ThemeMode.System,
+)
+
+private fun fontSizeLabel(size: Int): String =
+    "$size" + if (size == MainViewModel.DEFAULT_CODE_FONT_SIZE) "(默认)" else ""
 
 private fun flattenTree(items: List<TreeItemViewModel>, depth: Int = 0): List<Pair<Int, TreeItemViewModel>> {
     val snapshot = items.toList() // 快照，避免ConcurrentModificationException
@@ -429,6 +492,7 @@ private fun CodePreviewPanel(viewModel: MainViewModel, modifier: Modifier = Modi
                     CodeContentView(
                         parseResult = viewModel.selectedParseResult,
                         content = viewModel.selectedContent ?: "",
+                        fontSize = viewModel.codeFontSize,
                         scrollTargetLine = viewModel.outlineScrollTargetLine,
                         onScrolled = { viewModel.consumeScrollTargetLine() },
                     )
@@ -479,7 +543,8 @@ private fun CodePreviewToolbar(viewModel: MainViewModel) {
     }
 }
 
-private val CodeLineHeight = 20.sp
+// 行高与字号的比值，13sp时行高恰为20sp
+private val CodeLineHeightRatio = 20f / 13f
 private val LineSeparator = AnnotatedString("\n")
 private const val OUTLINE_SCROLL_CONTEXT_LINES = 3
 private const val OUTLINE_SCROLL_PRE_JUMP_LINES = 30
@@ -488,12 +553,15 @@ private const val OUTLINE_SCROLL_PRE_JUMP_LINES = 30
 private fun CodeContentView(
     parseResult: CodeParseResult?,
     content: String,
+    fontSize: Int,
     scrollTargetLine: Int?,
     onScrolled: () -> Unit,
 ) {
     val horizontalScrollState = rememberScrollState()
     val lazyListState = rememberLazyListState()
-    val lineHeight = with(LocalDensity.current) { CodeLineHeight.toDp() }
+    val codeFontSizeSp = fontSize.sp
+    val lineHeightSp = codeFontSizeSp * CodeLineHeightRatio
+    val lineHeight = with(LocalDensity.current) { lineHeightSp.toDp() }
     val lines = remember(content) { content.split("\n") }
     val highlights = (parseResult as? CodeParseResult.Code)?.highlights
 
@@ -536,8 +604,8 @@ private fun CodeContentView(
                         Text(
                             text = text,
                             fontFamily = FontFamily.Monospace,
-                            fontSize = 13.sp,
-                            lineHeight = CodeLineHeight,
+                            fontSize = codeFontSizeSp,
+                            lineHeight = lineHeightSp,
                             maxLines = 1,
                             softWrap = false,
                             modifier = Modifier

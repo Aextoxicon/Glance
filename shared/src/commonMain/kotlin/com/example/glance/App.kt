@@ -1,10 +1,14 @@
 package com.example.glance
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
 import com.example.glance.Repositories.LocalArtifactRepo
 import com.example.glance.Repositories.LocalFileSystem
 import com.example.glance.ViewModels.MainViewModel
+import com.example.glance.ViewModels.ThemeMode
 import com.example.glance.Views.MainView
 
 @Composable
@@ -23,7 +27,12 @@ fun App(
     LaunchedEffect(viewModel) {
         onViewModelCreated(viewModel)
     }
-    MaterialTheme {
+    val isDarkTheme = when (viewModel.themeMode) {
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+        ThemeMode.System -> isSystemInDarkTheme()
+    }
+    MaterialTheme(colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()) {
         MainView(viewModel)
     }
 
