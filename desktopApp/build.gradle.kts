@@ -128,3 +128,7 @@ val generateAppCdsArchive by tasks.registering {
         File(jsaOut).copyTo(File(nativeLibPath, "app.jsa"), overwrite = true)
     }
 }
+
+tasks.matching { it.name == "createDistributable" }.configureEach {
+    finalizedBy(generateAppCdsArchive)
+}
