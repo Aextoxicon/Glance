@@ -47,6 +47,8 @@ compose.desktop {
             packageName = "com.example.glance"
             packageVersion = "1.0.0"
             appResourcesRootDir.set(nativeLibDir)
+
+            modules("jdk.jfr", "jdk.management.jfr")
         }
     }
 }

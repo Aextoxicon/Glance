@@ -18,7 +18,7 @@ if (-not (Test-Path $jfrTool)) {
 
 # 设置profile含CPU flame/wall/classload/GC/alloc/safepoint，开销CPU +2-5%
 New-Item -ItemType Directory -Path (Split-Path $JfrOut) -Force | Out-Null
-$env:JAVA_TOOL_OPTIONS = "-XX:StartFlightRecording=settings=profile,filename=$JfrOut,duration=$DurationSeconds"
+$env:JAVA_TOOL_OPTIONS = "-XX:StartFlightRecording=settings=profile,filename=$JfrOut,duration=${DurationSeconds}s"
 
 Write-Host "JAVA_TOOL_OPTIONS = $env:JAVA_TOOL_OPTIONS"
 Write-Host "launcher          = $launcher"
