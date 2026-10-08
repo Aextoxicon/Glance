@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Glance.Models;
@@ -22,9 +23,9 @@ public sealed class LocalArtifactRepo : IArtifactRepo
                 .ToList<IArtifact>();
             return Task.FromResult(Result<IReadOnlyList<IArtifact>>.Success(artifacts));
         }
-        catch (Exception e)
+        catch (Exception e) when (IsFileSystemException(e))
         {
-            return Task.FromResult(Result<IReadOnlyList<IArtifact>>.Failure(new Exception($"无法列出文件: {e.Message}")));
+            return Failure<IReadOnlyList<IArtifact>>("无法列出文件", e);
         }
     }
 
@@ -35,9 +36,9 @@ public sealed class LocalArtifactRepo : IArtifactRepo
             var info = _fs.FileInfo(id);
             return Task.FromResult(Result<IArtifact>.Success(info.ToArtifact()));
         }
-        catch (Exception e)
+        catch (Exception e) when (IsFileSystemException(e))
         {
-            return Task.FromResult(Result<IArtifact>.Failure(new Exception($"无法获取文件信息: {e.Message}")));
+            return Failure<IArtifact>("无法获取文件信息", e);
         }
     }
 
@@ -51,9 +52,9 @@ public sealed class LocalArtifactRepo : IArtifactRepo
             var ok = _fs.Delete(id);
             return Task.FromResult(Result<bool>.Success(ok));
         }
-        catch (Exception e)
+        catch (Exception e) when (IsFileSystemException(e))
         {
-            return Task.FromResult(Result<bool>.Failure(new Exception($"无法删除文件: {e.Message}")));
+            return Failure<bool>("无法删除文件", e);
         }
     }
 
@@ -64,19 +65,32 @@ public sealed class LocalArtifactRepo : IArtifactRepo
             var uri = _fs.ToUri(id);
             return Task.FromResult(Result<string>.Success(uri));
         }
-        catch (Exception e)
+        catch (Exception e) when (IsFileSystemException(e))
         {
-            return Task.FromResult(Result<string>.Failure(new Exception($"无法获取文件URI: {e.Message}")));
+            return Failure<string>("无法获取文件URI", e);
         }
     }
 
     public Task<Result<string>> TryReadTextAsync(string id)
     {
-        var content = _fs.TryReadText(id);
-        return content != null
-            ? Task.FromResult(Result<string>.Success(content))
-            : Task.FromResult(Result<string>.Failure(new Exception("无法读取文件内容或文件不是文本")));
+        try
+        {
+            var content = _fs.TryReadText(id);
+            return content != null
+                ? Task.FromResult(Result<string>.Success(content))
+                : Task.FromResult(Result<string>.Failure(new IOException("无法读取文件内容或文件不是文本")));
+        }
+        catch (Exception e) when (IsFileSystemException(e))
+        {
+            return Failure<string>("无法读取文件内容", e);
+        }
     }
+
+    private static bool IsFileSystemException(Exception exception) =>
+        exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException;
+
+    private static Task<Result<T>> Failure<T>(string message, Exception innerException) =>
+        Task.FromResult(Result<T>.Failure(new IOException($"{message}: {innerException.Message}", innerException)));
 }
 
 internal static class LocalFileInfoExtensions

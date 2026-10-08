@@ -22,20 +22,20 @@ public sealed class HighlightIndex
     public int TokenCountOf(int line)
     {
         if (line < 0 || line >= LineCount) return 0;
-        return U32At(_lineIndex, (line + 1) * IntBytes) - U32At(_lineIndex, line * IntBytes);
+        return ReadInt32LittleEndian(_lineIndex, (line + 1) * IntBytes) - ReadInt32LittleEndian(_lineIndex, line * IntBytes);
     }
 
     public IReadOnlyList<HighlightToken> TokensOf(int line)
     {
         var count = TokenCountOf(line);
         if (count == 0) return System.Array.Empty<HighlightToken>();
-        var off = U32At(_lineIndex, line * IntBytes) * TokenBytes;
+        var off = ReadInt32LittleEndian(_lineIndex, line * IntBytes) * TokenBytes;
         var result = new List<HighlightToken>(count);
         for (var i = 0; i < count; i++)
         {
-            var start = U32At(_data, off);
-            var end = U32At(_data, off + IntBytes);
-            var kindIndex = U32At(_data, off + 2 * IntBytes);
+            var start = ReadInt32LittleEndian(_data, off);
+            var end = ReadInt32LittleEndian(_data, off + IntBytes);
+            var kindIndex = ReadInt32LittleEndian(_data, off + 2 * IntBytes);
             result.Add(new HighlightToken(
                 start,
                 end,
@@ -59,11 +59,11 @@ public sealed class HighlightIndex
     private const int TokenBytes = 12;
     private const int IntBytes = 4;
 
-    private static int U32At(byte[] src, int off)
+    private static int ReadInt32LittleEndian(byte[] src, int offset)
     {
-        return (src[off] & 0xFF)
-             | ((src[off + 1] & 0xFF) << 8)
-             | ((src[off + 2] & 0xFF) << 16)
-             | ((src[off + 3] & 0xFF) << 24);
+        return (src[offset] & 0xFF)
+             | ((src[offset + 1] & 0xFF) << 8)
+             | ((src[offset + 2] & 0xFF) << 16)
+             | ((src[offset + 3] & 0xFF) << 24);
     }
 }
