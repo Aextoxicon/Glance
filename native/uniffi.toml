@@ -1,3 +1,6 @@
 [bindings.kotlin]
 package_name = "uniffi.uniffi_code_parser"
 cdylib_name = "uniffi_code_parser"
+
+[bindings.csharp]
+namespace = "Glance.Native"
