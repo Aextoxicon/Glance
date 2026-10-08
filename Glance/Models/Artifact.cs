@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace Glance.Models;
 
 public enum ArtifactKind
@@ -89,6 +92,7 @@ public record BackendArtifact(
 ) : IArtifact
 {
     public ArtifactSource Source => ArtifactSource.BackendChat;
+    IArtifactPayload IArtifact.Payload => Payload;
 }
 
 public static class ArtifactKindExt

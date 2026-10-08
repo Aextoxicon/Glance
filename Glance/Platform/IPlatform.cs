@@ -1,3 +1,5 @@
+using System;
+
 namespace Glance.Platform;
 
 public interface IPlatform

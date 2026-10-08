@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Glance.Models;
 
 public record LoginReq(
@@ -71,9 +73,9 @@ public record Msg(
 
 public record FriendReq(
     long RequestId,
+    string Status,
     string? FromUser = null,
     string? ToUser = null,
-    string Status,
     long? CreatedAt = null
 );
 

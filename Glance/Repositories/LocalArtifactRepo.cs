@@ -82,12 +82,12 @@ public sealed class LocalArtifactRepo : IArtifactRepo
 internal static class LocalFileInfoExtensions
 {
     public static LocalArtifact ToArtifact(this LocalFileInfo info) => new(
-        id: info.Path,
-        name: info.Name,
-        size: info.Size,
-        lastMod: info.LastMod,
-        extension: info.Extension,
-        kind: ArtifactKindExt.FromExtension(info.Extension),
-        local: new LocalPayload(info.Path, info.ParentPath, info.IsDir)
+        Id: info.Path,
+        Name: info.Name,
+        Size: info.Size,
+        LastMod: info.LastMod,
+        Extension: info.Extension,
+        Kind: ArtifactKindExt.FromExtension(info.Extension),
+        Local: new LocalPayload(info.Path, info.ParentPath, info.IsDir)
     );
 }

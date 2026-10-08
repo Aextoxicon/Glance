@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Glance.Repositories;
@@ -46,7 +47,7 @@ public sealed class LocalFileSystem : ILocalFileSystem
         var name = LastSegmentAfter(path, '/', '\\');
         if (TextExt.Contains(ext)) return true;
         if (TextFileNames.Contains(name)) return true;
-        // TODO: 二进制嗅探（读前 16KB 查 NUL）——Desktop/Android 可共用，平台逻辑留待实现
+        // TODO: 二进制嗅探（读前 16KB 查 NUL）平台逻辑留待实现
         return false;
     }
 

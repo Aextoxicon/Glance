@@ -15,14 +15,11 @@ public abstract record Result<T>
     };
 
     public T? GetOrNull() => this is Success<T> s ? s.Value : default;
+
+    public static Result<T> Success(T value) => new Success<T>(value);
+    public static Result<T> Failure(Exception error) => new Failure<T>(error);
 }
 
 public sealed record Success<T>(T Value) : Result<T>;
 
 public sealed record Failure<T>(Exception Error) : Result<T>;
-
-public static class Result
-{
-    public static Result<T> Success<T>(T value) => new Success<T>(value);
-    public static Result<T> Failure<T>(Exception error) => new Failure<T>(error);
-}

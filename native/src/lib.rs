@@ -502,13 +502,13 @@ fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<Token> {
 
 //exported
 #[uniffi::export]
-pub fn parse_code(source: String, extension: String) -> CodeParseResult {
+pub fn parse_code(source: String, filename: String) -> CodeParseResult {
     let source_bytes = source.as_bytes();
-    // 找grammar
-    let grammar = match lang::get_grammar(&extension) {
+    // 先按文件名，再按扩展名路由
+    let grammar = match lang::resolve_grammar(&filename) {
         Some(g) => g,
         None => {
-            debug_log!("[RUST] unsupported extension: {}", extension);
+            debug_log!("[RUST] unsupported file: {}", filename);
             return CodeParseResult {
                 highlight_data: Vec::new(),
                 line_index: Vec::new(),
@@ -521,7 +521,7 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
 
     let mut parser = Parser::new();
     if parser.set_language(&language).is_err() {
-        debug_log!("[RUST] failed to set language for extension: {}", extension);
+        debug_log!("[RUST] failed to set language for file: {}", filename);
         return CodeParseResult {
             highlight_data: Vec::new(),
             line_index: Vec::new(),
@@ -533,7 +533,7 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
     let tree = match parser.parse(source_bytes, None) {
         Some(t) => t,
         None => {
-            debug_log!("[RUST] failed to parse source for extension: {}", extension);
+            debug_log!("[RUST] failed to parse source for file: {}", filename);
             return CodeParseResult {
                 highlight_data: Vec::new(),
                 line_index: Vec::new(),
@@ -547,9 +547,9 @@ pub fn parse_code(source: String, extension: String) -> CodeParseResult {
     let names: &[&str] = query.capture_names();
 
     debug_log!(
-        "[RUST] parse_code called, source length={}, extension={}",
+        "[RUST] parse_code called, source length={}, filename={}",
         source.len(),
-        extension
+        filename
     );
     debug_log!("[RUST] query capture names: {:?}", query.capture_names());
 

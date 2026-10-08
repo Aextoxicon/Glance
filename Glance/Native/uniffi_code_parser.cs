@@ -5,6 +5,9 @@
 
 #nullable enable
 
+
+
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,6 +15,12 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 namespace Glance.Native;
+
+
+
+// This is a helper for safely working with byte buffers returned from the Rust code.
+// A rust-owned buffer is represented by its capacity, its current length, and a
+// pointer to the underlying data.
 
 [StructLayout(LayoutKind.Sequential)]
 internal struct RustBuffer {
@@ -747,7 +756,7 @@ static class _UniFFILib {
     [DllImport("uniffi_code_parser", CallingConvention = CallingConvention.Cdecl)]
     public static extern
 #endif
-     RustBuffer uniffi_uniffi_code_parser_fn_func_parse_code(RustBuffer @source,RustBuffer @extension,ref UniffiRustCallStatus _uniffi_out_err
+     RustBuffer uniffi_uniffi_code_parser_fn_func_parse_code(RustBuffer @source,RustBuffer @filename,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     #if NET8_0_OR_GREATER
@@ -1355,8 +1364,8 @@ static class _UniFFILib {
     static void uniffiCheckApiChecksums() {
         {
             var checksum = _UniFFILib.uniffi_uniffi_code_parser_checksum_func_parse_code();
-            if (checksum != 32115) {
-                throw new UniffiContractChecksumException($"Glance.Native: uniffi bindings expected function `uniffi_uniffi_code_parser_checksum_func_parse_code` checksum `32115`, library returned `{checksum}`");
+            if (checksum != 33798) {
+                throw new UniffiContractChecksumException($"Glance.Native: uniffi bindings expected function `uniffi_uniffi_code_parser_checksum_func_parse_code` checksum `33798`, library returned `{checksum}`");
             }
         }
     }
@@ -1650,10 +1659,10 @@ class FfiConverterSequenceTypeOutlineNode: FfiConverterRustBuffer<OutlineNode[]>
 }
 #pragma warning restore 8625
 internal static class UniffiCodeParserMethods {
-    public static CodeParseResult ParseCode(string @source, string @extension) {
+    public static CodeParseResult ParseCode(string @source, string @filename) {
         return FfiConverterTypeCodeParseResult.INSTANCE.Lift(
     _UniffiHelpers.RustCall( (ref UniffiRustCallStatus _status) =>
-    _UniFFILib.uniffi_uniffi_code_parser_fn_func_parse_code(FfiConverterString.INSTANCE.Lower(@source), FfiConverterString.INSTANCE.Lower(@extension), ref _status)
+    _UniFFILib.uniffi_uniffi_code_parser_fn_func_parse_code(FfiConverterString.INSTANCE.Lower(@source), FfiConverterString.INSTANCE.Lower(@filename), ref _status)
 ));
     }
 

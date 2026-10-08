@@ -1,24 +1,12 @@
-using System.Collections.Generic;
-
 namespace Glance.Processing;
 
 public static class FileProcessor
 {
-    private static readonly Dictionary<string, string> FilenameToExt = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["dockerfile"] = "dockerfile",
-        ["containerfile"] = "dockerfile",
-        ["makefile"] = "makefile",
-        ["gnumakefile"] = "makefile",
-    };
+    // 文件名→grammar 的路由已在 Rust 侧（resolve_grammar：文件名优先、扩展名兜底），
+    // 这里只承接处理层策略（阈值、缓存等）。
 
-    public static ParsedCode Process(string content, string extension, string? filename, ICodeParser parser)
+    public static ParsedCode Process(string content, string filename, ICodeParser parser)
     {
-        var cleanExt = extension.ToLowerInvariant().TrimStart('.');
-        var resolvedExt = string.IsNullOrEmpty(cleanExt) && filename != null
-            ? (FilenameToExt.TryGetValue(filename.ToLowerInvariant().TrimStart('.'), out var mapped) ? mapped : cleanExt)
-            : cleanExt;
-
-        return parser.ParseCode(content, "." + resolvedExt);
+        return parser.ParseCode(content, filename);
     }
 }
