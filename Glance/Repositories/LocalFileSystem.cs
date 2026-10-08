@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Glance.Repositories;
 
@@ -14,26 +15,10 @@ public interface ILocalFileSystem : IFileDetector
 
 public sealed class LocalFileSystem : ILocalFileSystem
 {
-    private static readonly HashSet<string> TextExt = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "txt", "md", "markdown", "json", "xml", "yaml", "yml",
-        "cs", "js", "ts", "jsx", "tsx", "py", "java", "kt",
-        "kts", "swift", "c", "cpp", "h", "hpp", "css", "scss",
-        "less", "html", "htm", "sh", "bash", "zsh", "ps1",
-        "bat", "cmd", "sql", "r", "go", "rs", "toml", "ini",
-        "cfg", "conf", "env", "gitignore", "gradle", "sln",
-        "csproj", "props", "targets", "razor",
-        "fs", "fsx", "dart", "lua", "pl", "pm", "rb", "php",
-        "scala", "clj", "cljs", "edn", "coffee", "vue", "svelte",
-        "astro", "svg", "graphql", "proto", "cmake", "m", "mm",
-    };
-
-    private static readonly HashSet<string> TextFileNames = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "dockerfile", "makefile", "gnumakefile", "cmakelists",
-        "readme", "license", "changelog", "contributing",
-        "authors", "todo", "notes", "help",
-    };
+    // 文本/二进制闸门改为嗅探优先：读前 16KB 查 NUL。
+    // 不再维护扩展名/文件名白名单而丢给Rust（resolve_grammar 按文件名+扩展名判定），
+    // TODO: Android 需改用 SAF 的 head 读取替换 SniffBinary 的 System.IO 实现。
+    private const int SniffBytes = 16384;
 
     public IReadOnlyList<LocalFileInfo> ListFiles(string path) => throw new System.NotImplementedException("TODO: 平台实现（Desktop=System.IO；Android=SAF）");
     public LocalFileInfo FileInfo(string path) => throw new System.NotImplementedException("TODO: 平台实现");
@@ -43,17 +28,25 @@ public sealed class LocalFileSystem : ILocalFileSystem
 
     public bool IsTextFile(string path)
     {
-        var ext = LastSegmentAfter(path, '.');
-        var name = LastSegmentAfter(path, '/', '\\');
-        if (TextExt.Contains(ext)) return true;
-        if (TextFileNames.Contains(name)) return true;
-        // TODO: 二进制嗅探（读前 16KB 查 NUL）平台逻辑留待实现
-        return false;
+        var head = SniffHead(path, SniffBytes);
+        if (head is null) return false;
+        return Array.IndexOf(head, (byte)0) < 0;
     }
 
-    private static string LastSegmentAfter(string s, params char[] seps)
+    private static byte[]? SniffHead(string path, int maxBytes)
     {
-        var idx = s.LastIndexOfAny(seps);
-        return idx < 0 ? s : s.Substring(idx + 1);
+        try
+        {
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var len = (int)Math.Min(maxBytes, fs.Length);
+            if (len <= 0) return Array.Empty<byte>();
+            var buf = new byte[len];
+            var read = fs.Read(buf, 0, len);
+            if (read == len) return buf;
+            var trimmed = new byte[read];
+            Array.Copy(buf, trimmed, read);
+            return trimmed;
+        }
+        catch (Exception) { return null; }
     }
 }
