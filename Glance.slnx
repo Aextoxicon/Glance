@@ -1,0 +1,11 @@
+﻿<Solution>
+  <Project Path="Glance.Android/Glance.Android.csproj">
+    <Deploy />
+  </Project>
+  <Project Path="Glance.Browser/Glance.Browser.csproj" />
+  <Project Path="Glance.Desktop/Glance.Desktop.csproj" />
+  <Project Path="Glance.iOS/Glance.iOS.csproj">
+    <Deploy />
+  </Project>
+  <Project Path="Glance/Glance.csproj" />
+</Solution>

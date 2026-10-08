@@ -1,6 +1,6 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 
-namespace AvaloniaApplication;
+namespace Glance.Views;
 
 public partial class MainWindow : Window
 {
