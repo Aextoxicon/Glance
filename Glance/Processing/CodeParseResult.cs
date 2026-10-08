@@ -1,15 +1,11 @@
+using System.Collections.Generic;
+using Glance.Native;
+
 namespace Glance.Processing;
 
-public abstract record CodeParseResult;
-
-public sealed record Code(
+public record ParsedCode(
     string Language,
     string Content,
     HighlightIndex Highlights,
     IReadOnlyList<OutlineNode> Outline
-) : CodeParseResult;
-
-public sealed record PlainText(
-    string Language,
-    string Content
-) : CodeParseResult;
+);

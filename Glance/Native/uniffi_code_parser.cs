@@ -1469,7 +1469,7 @@ class FfiConverterByteArray: FfiConverterRustBuffer<byte[]> {
 /// <param name="Kinds">
 /// 下标即token的kind
 /// </param>
-internal record CodeParseResult (
+public record CodeParseResult (
     /// <summary>
     /// 每12字节一条：[start:u32][end:u32][kind:u32]
     /// </summary>
@@ -1513,7 +1513,7 @@ class FfiConverterTypeCodeParseResult: FfiConverterRustBuffer<CodeParseResult> {
 
 
 
-internal record OutlineNode (
+public record OutlineNode (
     string Kind, 
     string Name, 
     string Detail, 
