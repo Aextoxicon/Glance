@@ -20,11 +20,11 @@ public sealed class LocalFileSystem : ILocalFileSystem
     // TODO: Android 需改用 SAF 的 head 读取替换 SniffBinary 的 System.IO 实现。
     private const int SniffBytes = 16384;
 
-    public IReadOnlyList<LocalFileInfo> ListFiles(string path) => throw new System.NotImplementedException("TODO: 平台实现（Desktop=System.IO；Android=SAF）");
-    public LocalFileInfo FileInfo(string path) => throw new System.NotImplementedException("TODO: 平台实现");
-    public string? TryReadText(string path) => throw new System.NotImplementedException("TODO: 平台实现");
-    public bool Delete(string path) => throw new System.NotImplementedException("TODO: 平台实现");
-    public string ToUri(string path) => throw new System.NotImplementedException("TODO: 平台实现");
+    public IReadOnlyList<LocalFileInfo> ListFiles(string path) => throw new NotImplementedException("TODO: 平台实现（Desktop=System.IO；Android=SAF）");
+    public LocalFileInfo FileInfo(string path) => throw new NotImplementedException("TODO: 平台实现");
+    public string? TryReadText(string path) => throw new NotImplementedException("TODO: 平台实现");
+    public bool Delete(string path) => throw new NotImplementedException("TODO: 平台实现");
+    public string ToUri(string path) => throw new NotImplementedException("TODO: 平台实现");
 
     public bool IsTextFile(string path)
     {
