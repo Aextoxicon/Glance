@@ -11,6 +11,7 @@ public interface ILocalFileSystem
     string? TryReadText(string path);
     bool Delete(string path);
     string ToUri(string path);
+    bool IsTextFile(string path);
 }
 
 public sealed class LocalFileSystem : ILocalFileSystem
