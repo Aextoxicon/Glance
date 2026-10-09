@@ -1,14 +1,17 @@
+using System.Globalization;
+
 namespace Glance.Utils;
 
 public static class FormatSize
 {
+    private static readonly string[] Suffixes = { "B", "KB", "MB", "GB", "TB" };
+
     public static string Readable(long bytes)
     {
-        var suffixes = new[] { "B", "KB", "MB", "GB", "TB" };
-        var order = 0;
         var size = (double)bytes;
+        var order = 0;
 
-        while (size >= 1024 && order < suffixes.Length - 1)
+        while (size >= 1024 && order < Suffixes.Length - 1)
         {
             order++;
             size /= 1024;
@@ -16,12 +19,12 @@ public static class FormatSize
 
         if (order == 0)
         {
-            return $"{bytes} B";
+            return bytes.ToString(CultureInfo.InvariantCulture) + " B";
         }
 
         var formatted = size >= 100
-            ? ((int)size).ToString()
-            : (System.Math.Round(size * 100) / 100).ToString().TrimEnd('0').TrimEnd('.');
-        return $"{formatted} {suffixes[order]}";
+            ? ((int)size).ToString(CultureInfo.InvariantCulture)
+            : size.ToString("0.##", CultureInfo.InvariantCulture);
+        return formatted + " " + Suffixes[order];
     }
 }

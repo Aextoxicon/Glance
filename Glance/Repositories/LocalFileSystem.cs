@@ -47,6 +47,7 @@ public sealed class LocalFileSystem : ILocalFileSystem
             Array.Copy(buf, trimmed, read);
             return trimmed;
         }
-        catch (Exception) { return null; }
+        catch (IOException) { return null; }
+        catch (UnauthorizedAccessException) { return null; }
     }
 }
