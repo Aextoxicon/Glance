@@ -4,7 +4,7 @@ using System.IO;
 
 namespace Glance.Repositories;
 
-public interface ILocalFileSystem : IFileDetector
+public interface ILocalFileSystem
 {
     IReadOnlyList<LocalFileInfo> ListFiles(string path);
     LocalFileInfo FileInfo(string path);

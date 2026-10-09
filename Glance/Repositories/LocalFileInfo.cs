@@ -1,10 +1,5 @@
 namespace Glance.Repositories;
 
-public interface IFileDetector
-{
-    bool IsTextFile(string path);
-}
-
 public record LocalFileInfo(
     string Path,
     string Name,
