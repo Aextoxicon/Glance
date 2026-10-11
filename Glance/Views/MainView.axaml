@@ -3,16 +3,83 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:Glance.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             xmlns:conv="clr-namespace:Avalonia.Controls.Converters;assembly=Avalonia.Controls"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
              x:Class="Glance.Views.MainView"
              x:DataType="vm:MainViewModel">
-    <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainViewModel />
-    </Design.DataContext>
+  <Design.DataContext>
+    <vm:MainViewModel />
+  </Design.DataContext>
 
-    <TextBox Text="{Binding Greeting}"
-             HorizontalAlignment="Center"
-             VerticalAlignment="Center" />
+  <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="260,*,220">
+    <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="6" Margin="6">
+      <Button Content="打开文件夹" Click="OnOpenFolder" />
+      <Button Content="全展开" Click="OnExpandAll" />
+      <Button Content="全折叠" Click="OnCollapseAll" />
+      <Button Content="刷新" Click="OnRefresh" />
+      <Button Content="浅色" Click="OnThemeLight" />
+      <Button Content="深色" Click="OnThemeDark" />
+      <Button Content="跟随系统" Click="OnThemeSystem" />
+      <ComboBox MinWidth="64"
+                ItemsSource="{x:Static vm:MainViewModel.CodeFontSizes}"
+                SelectedItem="{Binding CodeFontSize, Mode=TwoWay}" />
+      <TextBlock Text="{Binding CurrentFolderName}" VerticalAlignment="Center" Margin="8,0,0,0" />
+      <TextBlock Text="{Binding TotalSizeReadable}" VerticalAlignment="Center" />
+    </StackPanel>
+
+    <TreeView Grid.Row="1" Grid.Column="0" x:Name="FileTree"
+              ItemsSource="{Binding TreeItems}"
+              SelectionChanged="OnTreeSelectionChanged">
+      <TreeView.Styles>
+        <Style Selector="TreeViewItem">
+          <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+        </Style>
+      </TreeView.Styles>
+      <TreeView.ItemTemplate>
+        <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="{Binding Info.Name}" />
+            <TextBlock Text="{Binding SizeDisplay}" FontSize="11"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+          </StackPanel>
+        </HierarchicalDataTemplate>
+      </TreeView.ItemTemplate>
+    </TreeView>
+
+    <Grid Grid.Row="1" Grid.Column="1">
+      <ae:TextEditor x:Name="PreviewEditor"
+                     ShowLineNumbers="True"
+                     IsReadOnly="True"
+                     FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                     FontSize="{Binding CodeFontSize}"
+                     HorizontalScrollBarVisibility="Auto"
+                     VerticalScrollBarVisibility="Auto" />
+      <Border IsVisible="{Binding PreviewNotice, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+              Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+              Padding="8" VerticalAlignment="Bottom">
+        <TextBlock Text="{Binding PreviewNotice}" />
+      </Border>
+    </Grid>
+
+    <ListBox Grid.Row="1" Grid.Column="2" x:Name="OutlineList"
+             ItemsSource="{Binding CurrentOutline}"
+             SelectionChanged="OnOutlineSelectionChanged">
+      <ListBox.ItemTemplate>
+        <DataTemplate>
+          <StackPanel>
+            <TextBlock Text="{Binding Name}" />
+            <TextBlock Text="{Binding Detail}" FontSize="11"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <Border Grid.Row="2" Grid.ColumnSpan="3" Padding="6"
+            Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+      <TextBlock Text="{Binding MessageText}"
+                 Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" />
+    </Border>
+  </Grid>
 </UserControl>

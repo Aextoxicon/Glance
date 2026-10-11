@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using Glance.ViewModels;
 using Glance.Views;
 
@@ -20,9 +21,13 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
+            var vm = new MainViewModel();
+            var window = new MainWindow { DataContext = vm };
+            desktop.MainWindow = window;
+            vm.PickFolderAction = async () =>
             {
-                DataContext = new MainViewModel()
+                var folders = await window.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions());
+                return folders.Count > 0 ? folders[0].Path.LocalPath : null;
             };
         }
         else if (ApplicationLifetime is IActivityApplicationLifetime singleViewFactoryApplicationLifetime)
