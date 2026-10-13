@@ -17,6 +17,7 @@ public partial class MainView : UserControl
 {
     private MainViewModel? _vm;
     private TreeItemViewModel? _lastSelected;
+    private HighlightTransformer? _transformer;
 
     public MainView()
     {
@@ -38,6 +39,7 @@ public partial class MainView : UserControl
         _vm = vm;
         _vm.PropertyChanged += OnVmPropertyChanged;
         UpdateDocument(_vm.SelectedContent);
+        UpdateHighlighter(_vm.SelectedParseResult);
         PreviewEditor.FontSize = _vm.CodeFontSize;
     }
 
@@ -46,6 +48,8 @@ public partial class MainView : UserControl
         if (_vm is null) return;
         if (e.PropertyName == nameof(MainViewModel.SelectedContent))
             UpdateDocument(_vm.SelectedContent);
+        else if (e.PropertyName == nameof(MainViewModel.SelectedParseResult))
+            UpdateHighlighter(_vm.SelectedParseResult);
         else if (e.PropertyName == nameof(MainViewModel.CodeFontSize))
             PreviewEditor.FontSize = _vm.CodeFontSize;
         else if (e.PropertyName == nameof(MainViewModel.OutlineScrollTargetLine) && _vm.OutlineScrollTargetLine is { } line)
@@ -60,6 +64,15 @@ public partial class MainView : UserControl
         var doc = PreviewEditor.Document;
         if (doc is null || doc.Text != (text ?? ""))
             PreviewEditor.Document = new TextDocument(text ?? "");
+    }
+
+    private void UpdateHighlighter(ParsedCode? parsed)
+    {
+        var view = PreviewEditor.TextArea.TextView;
+        if (_transformer is not null) view.LineTransformers.Remove(_transformer);
+        _transformer = parsed is not null ? new HighlightTransformer(parsed.Highlights) : null;
+        if (_transformer is not null) view.LineTransformers.Add(_transformer);
+        view.Redraw();
     }
 
     private void OnTreeItemExpanded(object? sender, RoutedEventArgs e)
@@ -86,12 +99,12 @@ public partial class MainView : UserControl
 
     private int LineOf(ulong startByte)
     {
-        if (_vm?.SelectedContent is null) return 1;
-        var bytes = System.Text.Encoding.UTF8.GetBytes(_vm.SelectedContent);
-        var limit = (int)Math.Min(startByte, (ulong)bytes.Length);
+        var text = _vm?.SelectedContent;
+        if (text is null) return 1;
+        var limit = (int)Math.Min(startByte, (ulong)text.Length);
         var line = 1;
         for (var i = 0; i < limit; i++)
-            if (bytes[i] == (byte)'\n') line++;
+            if (text[i] == '\n') line++;
         return line;
     }
 

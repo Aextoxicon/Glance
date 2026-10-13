@@ -1,19 +1,24 @@
-// 性能基线测parse_code全链路
+// 性能基线测parse_code全链路（黑盒）。
 // 必须显式指定profile：
-//   cargo test --test perf -- --ignored --nocapture
 //   cargo test --release --test perf -- --ignored --nocapture
-// debug下26个grammar的C代码是opt-level=0，数字只作对照
+//   cargo test --test perf -- --ignored --nocapture   # debug对照（C代码opt-level=0，只作参照）
+// 样本自包含（内联基片段重复生成），不再依赖已移除的 shared/ 目录。
 use std::time::Instant;
 use uniffi_code_parser::parse_code;
 
-const TEMPLATE_DIR: &str = "../shared/src/commonTest/resources/templates";
+// 各语言最小合法基片段，重复到目标字节构成固定输入
+const BASES: &[(&str, &str, &str)] = &[
+    (".rs", "rust", "// comment\nfn main() {\n    let x: i32 = 1;\n    println!(\"{}\", x);\n}\n"),
+    (".py", "python", "# comment\ndef main():\n    x = 1\n    print(x)\n"),
+    (".kt", "kotlin", "// comment\nfun main() {\n    val x = 1\n    println(x)\n}\n"),
+    (".html", "html", "<!-- comment -->\n<div class=\"a\">hi</div>\n"),
+    (".json", "json", "{\n  \"key\": \"value\",\n  \"n\": 1\n}\n"),
+];
 
-fn synth(file: &str, target_bytes: usize) -> String {
-    let base = std::fs::read_to_string(format!("{TEMPLATE_DIR}/{file}")).unwrap();
-    let mut out = String::new();
+fn synth(base: &str, target_bytes: usize) -> String {
+    let mut out = String::with_capacity(target_bytes + base.len());
     while out.len() < target_bytes {
-        out.push_str(&base);
-        out.push('\n');
+        out.push_str(base);
     }
     out
 }
@@ -46,26 +51,11 @@ fn measure(label: &str, ext: &str, source: &str) {
 #[test]
 #[ignore = "性能基线，不在常规测试里跑"]
 fn parse_code_blackbox() {
-    let cases: &[(&str, &str)] = &[
-        ("rust", ".rs"),
-        ("python", ".py"),
-        ("kotlin", ".kt"),
-        ("html", ".html"),
-        ("json", ".json"),
-    ];
     let sizes = [1024usize, 32 * 1024, 256 * 1024];
-    for (name, ext) in cases {
-        let file = match *ext {
-            ".kt" => "App.kt",
-            ".html" => "index.html",
-            ".json" => "config.json",
-            ".rs" => "lib.rs",
-            ".py" => "hello.py",
-            _ => unreachable!(),
-        };
+    for (ext, _name, base) in BASES {
         for size in sizes {
-            let src = synth(file, size);
-            measure(name, ext, &src);
+            let src = synth(base, size);
+            measure(_name, ext, &src);
         }
     }
 }
