@@ -132,6 +132,11 @@ public partial class MainViewModel : ViewModelBase
     }
 
     public void SelectThemeMode(ThemeMode mode) => ThemeMode = mode;
+
+    partial void OnPreviewNoticeChanged(string? value) =>
+        OnPropertyChanged(nameof(HasPreviewNotice));
+
+    public bool HasPreviewNotice => PreviewNotice is not null;
     public void SelectCodeFontSize(int size) => CodeFontSize = size;
 
     public void OnWindowResized(double width) => IsWide = width > WideModeThreshold;

@@ -3,8 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:Glance.ViewModels"
+             xmlns:native="using:Glance.Native"
              xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
-             xmlns:conv="clr-namespace:Avalonia.Controls.Converters;assembly=Avalonia.Controls"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
              x:Class="Glance.Views.MainView"
              x:DataType="vm:MainViewModel">
@@ -32,18 +32,18 @@
               ItemsSource="{Binding TreeItems}"
               SelectionChanged="OnTreeSelectionChanged">
       <TreeView.Styles>
-        <Style Selector="TreeViewItem">
+        <Style Selector="TreeViewItem" x:DataType="vm:TreeItemViewModel">
           <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
         </Style>
       </TreeView.Styles>
       <TreeView.ItemTemplate>
-        <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+        <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="vm:TreeItemViewModel">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <TextBlock Text="{Binding Info.Name}" />
             <TextBlock Text="{Binding SizeDisplay}" FontSize="11"
                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
           </StackPanel>
-        </HierarchicalDataTemplate>
+        </TreeDataTemplate>
       </TreeView.ItemTemplate>
     </TreeView>
 
@@ -55,7 +55,7 @@
                      FontSize="{Binding CodeFontSize}"
                      HorizontalScrollBarVisibility="Auto"
                      VerticalScrollBarVisibility="Auto" />
-      <Border IsVisible="{Binding PreviewNotice, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+      <Border IsVisible="{Binding HasPreviewNotice}"
               Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
               Padding="8" VerticalAlignment="Bottom">
         <TextBlock Text="{Binding PreviewNotice}" />
@@ -66,7 +66,7 @@
              ItemsSource="{Binding CurrentOutline}"
              SelectionChanged="OnOutlineSelectionChanged">
       <ListBox.ItemTemplate>
-        <DataTemplate>
+        <DataTemplate x:DataType="native:OutlineNode">
           <StackPanel>
             <TextBlock Text="{Binding Name}" />
             <TextBlock Text="{Binding Detail}" FontSize="11"
