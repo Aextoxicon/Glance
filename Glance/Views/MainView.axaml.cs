@@ -52,6 +52,11 @@ public partial class MainView : UserControl
             UpdateHighlighter(_vm.SelectedParseResult);
         else if (e.PropertyName == nameof(MainViewModel.CodeFontSize))
             PreviewEditor.FontSize = _vm.CodeFontSize;
+        else if (e.PropertyName == nameof(MainViewModel.IsDark) && _transformer is not null)
+        {
+            _transformer.IsDark = _vm.IsDark;
+            PreviewEditor.TextArea.TextView.Redraw();
+        }
         else if (e.PropertyName == nameof(MainViewModel.OutlineScrollTargetLine) && _vm.OutlineScrollTargetLine is { } line)
         {
             PreviewEditor.ScrollToLine(line);
@@ -70,7 +75,7 @@ public partial class MainView : UserControl
     {
         var view = PreviewEditor.TextArea.TextView;
         if (_transformer is not null) view.LineTransformers.Remove(_transformer);
-        _transformer = parsed is not null ? new HighlightTransformer(parsed.Highlights) : null;
+        _transformer = parsed is not null ? new HighlightTransformer(parsed.Highlights, _vm?.IsDark ?? false) : null;
         if (_transformer is not null) view.LineTransformers.Add(_transformer);
         view.Redraw();
     }

@@ -58,6 +58,9 @@ public partial class MainViewModel : ViewModelBase
     private ThemeMode _themeMode = ThemeMode.System;
 
     [ObservableProperty]
+    private bool _isDark;
+
+    [ObservableProperty]
     private string _currentPath = "";
 
     [ObservableProperty]
@@ -116,6 +119,7 @@ public partial class MainViewModel : ViewModelBase
         _fs = fs;
         _parser = parser;
         _parseCache = new LruCache(ParseCacheMax);
+        IsDark = ResolveDark();
     }
 
     partial void OnThemeModeChanged(ThemeMode value)
@@ -129,6 +133,15 @@ public partial class MainViewModel : ViewModelBase
                 _ => ThemeVariant.Default,
             };
         }
+        IsDark = ResolveDark();
+    }
+
+    private bool ResolveDark()
+    {
+        if (ThemeMode == ThemeMode.Light) return false;
+        if (ThemeMode == ThemeMode.Dark) return true;
+        var variant = Application.Current?.ActualThemeVariant ?? ThemeVariant.Light;
+        return variant == ThemeVariant.Dark;
     }
 
     public void SelectThemeMode(ThemeMode mode) => ThemeMode = mode;

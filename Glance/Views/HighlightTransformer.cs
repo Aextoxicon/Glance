@@ -12,9 +12,12 @@ public sealed class HighlightTransformer : DocumentColorizingTransformer
 {
     private readonly HighlightIndex? _index;
 
-    public HighlightTransformer(HighlightIndex? index)
+    public bool IsDark { get; set; }
+
+    public HighlightTransformer(HighlightIndex? index, bool isDark = false)
     {
         _index = index;
+        IsDark = isDark;
     }
 
     protected override void ColorizeLine(DocumentLine line)
@@ -31,7 +34,7 @@ public sealed class HighlightTransformer : DocumentColorizingTransformer
             start = Math.Max(start, line.Offset);
             end = Math.Min(end, line.Offset + line.Length);
             if (end <= start) continue;
-            var brush = new SolidColorBrush(HighlightColor.ColorFor(tok.Kind));
+            var brush = new SolidColorBrush(HighlightColor.ColorFor(tok.Kind, IsDark));
             ChangeLinePart(start, end, e => e.TextRunProperties.SetForegroundBrush(brush));
         }
     }
