@@ -120,4 +120,11 @@ public partial class MainView : UserControl
     private void OnThemeLight(object? sender, RoutedEventArgs e) => _vm?.SelectThemeMode(ThemeMode.Light);
     private void OnThemeDark(object? sender, RoutedEventArgs e) => _vm?.SelectThemeMode(ThemeMode.Dark);
     private void OnThemeSystem(object? sender, RoutedEventArgs e) => _vm?.SelectThemeMode(ThemeMode.System);
+    private void OnOpenSettings(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is null) return;
+        var dlg = new SettingsDialog(_vm);
+        if (VisualRoot is Window owner) dlg.ShowDialog(owner);
+        else dlg.Show();
+    }
 }

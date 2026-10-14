@@ -9,6 +9,7 @@ using Avalonia;
 // VM 顶层操作刻意吞掉具体异常、转成 MessageText 展示给用户纯属有意设计，屏蔽 CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）。
 #pragma warning disable CA1031
 using Avalonia.Styling;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Glance.Native;
 using Glance.Processing;
@@ -46,6 +47,10 @@ public partial class MainViewModel : ViewModelBase
     private CancellationTokenSource? _treeOwnerCts;
     private TreeItemViewModel? _selectedTreeItem;
 
+#if !ANDROID
+    private readonly DirectoryWatcher? _dirWatcher;
+#endif
+
     public Action? OnWorkspaceOpened { get; set; }
     public Action? OnTreeDirsChanged { get; set; }
 
@@ -59,6 +64,12 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isDark;
+
+    [ObservableProperty]
+    private bool _rememberLastDir;
+
+    [ObservableProperty]
+    private string? _lastDirectory;
 
     [ObservableProperty]
     private string _currentPath = "";
@@ -119,7 +130,22 @@ public partial class MainViewModel : ViewModelBase
         _fs = fs;
         _parser = parser;
         _parseCache = new LruCache(ParseCacheMax);
+#if !ANDROID
+        _dirWatcher = new DirectoryWatcher(OnDirChanged);
+        OnTreeDirsChanged += SyncWatcher;
+#endif
+        var saved = SettingsStore.Load();
+        _themeMode = saved.ThemeMode;
+        _codeFontSize = saved.CodeFontSize > 0 ? saved.CodeFontSize : DefaultCodeFontSize;
+        _rememberLastDir = saved.RememberLastDir;
+        _lastDirectory = saved.LastDirectory;
         IsDark = ResolveDark();
+    }
+
+    public void TryRestoreLastDirectory()
+    {
+        if (RememberLastDir && !string.IsNullOrEmpty(LastDirectory))
+            _ = LoadCore(LastDirectory!);
     }
 
     partial void OnThemeModeChanged(ThemeMode value)
@@ -134,6 +160,26 @@ public partial class MainViewModel : ViewModelBase
             };
         }
         IsDark = ResolveDark();
+        PersistSettings();
+    }
+
+    partial void OnCodeFontSizeChanged(int value) => PersistSettings();
+
+    partial void OnRememberLastDirChanged(bool value)
+    {
+        if (!value) LastDirectory = null;
+        PersistSettings();
+    }
+
+    private void PersistSettings()
+    {
+        SettingsStore.Save(new AppSettings
+        {
+            ThemeMode = ThemeMode,
+            CodeFontSize = CodeFontSize,
+            RememberLastDir = RememberLastDir,
+            LastDirectory = RememberLastDir ? LastDirectory : null,
+        });
     }
 
     private bool ResolveDark()
@@ -192,6 +238,7 @@ public partial class MainViewModel : ViewModelBase
         _selectedTreeItem = null;
         _treeOwnerCts = new CancellationTokenSource();
         CurrentPath = path;
+        LastDirectory = path;
         HasWorkspace = true;
         lock (_cacheLock) _parseCache.Clear();
         TotalSize = 0;
@@ -206,6 +253,10 @@ public partial class MainViewModel : ViewModelBase
                 GitIgnore.Filter(items, ignored).Select(info =>
                     new TreeItemViewModel(info, _fs, _treeOwnerCts.Token, () => OnTreeDirsChanged?.Invoke(), ignored)));
             OnWorkspaceOpened?.Invoke();
+            PersistSettings();
+#if !ANDROID
+            SyncWatcher();
+#endif
         }
         catch (OperationCanceledException) { return; }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -539,6 +590,17 @@ public partial class MainViewModel : ViewModelBase
         return result;
     }
 
+#if !ANDROID
+    /// <summary>DirectoryWatcher 回调：FileSystemWatcher 事件在 thread-pool 线程触发，刷新树须回到 UI 线程。</summary>
+    private void OnDirChanged()
+    {
+        Dispatcher.UIThread.Post(() => _ = RefreshTree(), DispatcherPriority.Background);
+    }
+
+    /// <summary>按当前根目录 + 已展开目录重算监听集合（diff 增删，等价于 KMP watcher.syncRoot）。</summary>
+    private void SyncWatcher() => _dirWatcher?.SyncRoot(CurrentPath, CurrentExpandedDirPaths());
+#endif
+
     private void CancelLoadJobs()
     {
         CancelAndDispose(ref _loadCts);
@@ -558,6 +620,9 @@ public partial class MainViewModel : ViewModelBase
     public void Dispose()
     {
         CancelLoadJobs();
+#if !ANDROID
+        _dirWatcher?.Dispose();
+#endif
         _scopeCts.Cancel();
         _scopeCts.Dispose();
     }

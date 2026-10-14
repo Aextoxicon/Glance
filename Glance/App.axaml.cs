@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
+using Avalonia.Styling;
 using Glance.ViewModels;
 using Glance.Views;
 
@@ -12,6 +13,10 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+#if !ANDROID
+        // AvaloniaEdit ships no Android TFM, so its theme is only wired on desktop builds.
+        this.Styles.Add(new StyleInclude(new Uri("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml", UriKind.Absolute)));
+#endif
 #if DEBUG
         this.AttachDeveloperTools();
 #endif
@@ -19,15 +24,18 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+#if !ANDROID
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var vm = new MainViewModel();
             var window = new MainWindow { DataContext = vm };
             desktop.MainWindow = window;
+            vm.TryRestoreLastDirectory();
             vm.PickFolderAction = async () =>
             {
                 var folders = await window.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions());
-                return folders.Count > 0 ? folders[0].Path.LocalPath : null;
+                if (folders.Count == 0) return null;
+                return folders[0].Path?.LocalPath;
             };
         }
         else if (ApplicationLifetime is IActivityApplicationLifetime singleViewFactoryApplicationLifetime)
@@ -36,12 +44,14 @@ public partial class App : Application
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            singleViewPlatform.MainView = new MainView
-            {
-                DataContext = new MainViewModel()
-            };
+            singleViewPlatform.MainView = new MainView { DataContext = new MainViewModel() };
         }
-
+#else
+        if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
+        {
+            singleViewPlatform.MainView = new AndroidPlaceholderView { DataContext = new MainViewModel() };
+        }
+#endif
         base.OnFrameworkInitializationCompleted();
     }
 }

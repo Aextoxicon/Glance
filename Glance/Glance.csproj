@@ -1,7 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <OutputType>WinExe</OutputType>
+    <TargetFrameworks>net10.0;net10.0-android</TargetFrameworks>
+    <!-- Desktop is a WinExe app; the Android TFM is a library consumed by Glance.Android. -->
+    <OutputType Condition="'$(TargetFramework)' == 'net10.0'">WinExe</OutputType>
+    <OutputType Condition="'$(TargetFramework)' == 'net10.0-android'">Library</OutputType>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -23,18 +25,35 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
-    <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
-    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="Avalonia.AvaloniaEdit" />
   </ItemGroup>
 
-  <Target Name="CopyNativeLib" AfterTargets="Build;Publish">
+  <!-- Desktop-only packages: AvaloniaEdit / Desktop / Inter font do not ship an Android TFM,
+       and their net10.0 assemblies reference desktop-only APIs that fail to compile on Android. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+  </ItemGroup>
+
+  <!-- Editor / desktop shell files are excluded from the Android TFM (AvaloniaEdit is desktop-only).
+       The Android surface is provided by AndroidPlaceholderView until the editor is ported. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android'">
+    <Compile Remove="Program.cs" />
+    <Compile Remove="Views\HighlightTransformer.cs" />
+    <Compile Remove="Views\MainView.axaml.cs" />
+    <AvaloniaXaml Remove="Views\MainView.axaml" />
+    <Compile Remove="Views\MainWindow.axaml.cs" />
+    <AvaloniaXaml Remove="Views\MainWindow.axaml" />
+    <Compile Remove="Views\AndroidPlaceholderView.cs" />
+  </ItemGroup>
+
+  <Target Name="CopyNativeLib" AfterTargets="Build;Publish" Condition="'$(TargetFramework)' == 'net10.0'">
     <Message Text="Glance: copying native lib $(NativeLibSource) -> $(OutDir)" Importance="high" Condition="Exists('$(NativeLibSource)')" />
     <Copy SourceFiles="$(NativeLibSource)" DestinationFiles="$(OutDir)$(NativeLibFileName)" Condition="Exists('$(NativeLibSource)')" />
     <Warning Text="Glance: native lib not found at $(NativeLibSource). Run 'cargo build --release' in native/ first." Condition="!Exists('$(NativeLibSource)')" />
