@@ -26,10 +26,10 @@ Android 后续补（`LocalFileSystem` 走 SAF），iOS 暂不考虑
 ```sh
 # 先构建 Rust 原生库（生成 cdylib；CopyNativeLib 会在 dotnet build 时拷到输出目录）
 cd native && cargo build --release
-# 运行 Glance（首次构建会自动把原生库拷到 bin 输出目录）
-cd ../Glance && dotnet run -c Debug
+# 运行 Glance
+cd Glance.Desktop && dotnet run -c Debug
 # 发布
-dotnet publish -c Release
+cd Glance.Desktop && dotnet publish -c Release
 ```
 
 ### Android App（计划中 / Planned）

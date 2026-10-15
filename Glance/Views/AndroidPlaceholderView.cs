@@ -1,15 +1,10 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 
 namespace Glance.Views;
 
-/// <summary>
-/// Minimal Android surface. The code preview editor (AvaloniaEdit) has no Android TFM yet,
-/// so the Android build ships this placeholder until the editor is ported to a cross-platform
-/// control. File-tree, parsing, and outline logic in the shared ViewModels already compile and
-/// run on Android — only the editor presentation is missing.
-/// </summary>
 public class AndroidPlaceholderView : UserControl
 {
     public AndroidPlaceholderView()

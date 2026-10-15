@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
-using Avalonia.Styling;
 using Glance.ViewModels;
 using Glance.Views;
 
@@ -13,10 +12,6 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
-#if !ANDROID
-        // AvaloniaEdit ships no Android TFM, so its theme is only wired on desktop builds.
-        this.Styles.Add(new StyleInclude(new Uri("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml", UriKind.Absolute)));
-#endif
 #if DEBUG
         this.AttachDeveloperTools();
 #endif

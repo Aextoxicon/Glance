@@ -12,6 +12,10 @@
     <vm:MainViewModel />
   </Design.DataContext>
 
+  <UserControl.Styles>
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+  </UserControl.Styles>
+
   <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="260,*,220">
     <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="6" Margin="6">
       <Button Content="打开文件夹" Click="OnOpenFolder" />
