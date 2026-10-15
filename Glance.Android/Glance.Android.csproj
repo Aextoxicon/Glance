@@ -25,4 +25,31 @@
   <ItemGroup>
     <ProjectReference Include="..\Glance\Glance.csproj" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <_NativeAndroidRoot>$(MSBuildThisFileDirectory)..\native\target</_NativeAndroidRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AndroidNativeLibrary Include="$(_NativeAndroidRoot)\aarch64-linux-android\release\libuniffi_code_parser.so" Condition="Exists('$(_NativeAndroidRoot)\aarch64-linux-android\release\libuniffi_code_parser.so')">
+      <Abi>arm64-v8a</Abi>
+    </AndroidNativeLibrary>
+    <AndroidNativeLibrary Include="$(_NativeAndroidRoot)\armv7-linux-androideabi\release\libuniffi_code_parser.so" Condition="Exists('$(_NativeAndroidRoot)\armv7-linux-androideabi\release\libuniffi_code_parser.so')">
+      <Abi>armeabi-v7a</Abi>
+    </AndroidNativeLibrary>
+    <AndroidNativeLibrary Include="$(_NativeAndroidRoot)\x86_64-linux-android\release\libuniffi_code_parser.so" Condition="Exists('$(_NativeAndroidRoot)\x86_64-linux-android\release\libuniffi_code_parser.so')">
+      <Abi>x86_64</Abi>
+    </AndroidNativeLibrary>
+    <AndroidNativeLibrary Include="$(_NativeAndroidRoot)\i686-linux-android\release\libuniffi_code_parser.so" Condition="Exists('$(_NativeAndroidRoot)\i686-linux-android\release\libuniffi_code_parser.so')">
+      <Abi>x86</Abi>
+    </AndroidNativeLibrary>
+  </ItemGroup>
+
+  <Target Name="WarnIfNoNativeLib" BeforeTargets="Build" Condition="'$(TargetFramework)' == 'net10.0-android'">
+    <PropertyGroup>
+      <_NativeSoCount>@(AndroidNativeLibrary->Count())</_NativeSoCount>
+    </PropertyGroup>
+    <Warning Text="Glance.Android: no cross-compiled libuniffi_code_parser.so under $(_NativeAndroidRoot). Run 'cargo ndk' with the release profile and the ABI linux-android rust target in native/ (Android NDK + rust target required). Parser will be unavailable on device."
+             Condition="'$(_NativeSoCount)' == '0'" />
+  </Target>
 </Project>

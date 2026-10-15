@@ -19,4 +19,19 @@
   <ItemGroup>
     <ProjectReference Include="..\Glance\Glance.csproj" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <_IsWindows>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))</_IsWindows>
+    <_IsMac>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))</_IsMac>
+    <NativeLibFileName Condition="'$(_IsWindows)' == 'true'">uniffi_code_parser.dll</NativeLibFileName>
+    <NativeLibFileName Condition="'$(_IsWindows)' != 'true' AND '$(_IsMac)' != 'true'">libuniffi_code_parser.so</NativeLibFileName>
+    <NativeLibFileName Condition="'$(_IsMac)' == 'true'">libuniffi_code_parser.dylib</NativeLibFileName>
+    <NativeLibSource>$(MSBuildThisFileDirectory)..\native\target\release\$(NativeLibFileName)</NativeLibSource>
+  </PropertyGroup>
+
+  <Target Name="CopyNativeLib" AfterTargets="Build;Publish">
+    <Message Text="Glance.Desktop: copying native lib $(NativeLibSource) -> $(OutDir)" Importance="high" Condition="Exists('$(NativeLibSource)')" />
+    <Copy SourceFiles="$(NativeLibSource)" DestinationFiles="$(OutDir)$(NativeLibFileName)" Condition="Exists('$(NativeLibSource)')" />
+    <Warning Text="Glance.Desktop: native lib not found at $(NativeLibSource). Run 'cargo build --release' in native/ first." Condition="!Exists('$(NativeLibSource)')" />
+  </Target>
 </Project>

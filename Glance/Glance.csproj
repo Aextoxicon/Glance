@@ -6,16 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- Resolve the freshly-built uniffi cdylib per OS so P/Invoke ("uniffi_code_parser") finds it in the output dir. -->
-    <_IsWindows>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))</_IsWindows>
-    <_IsMac>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))</_IsMac>
-    <NativeLibFileName Condition="'$(_IsWindows)' == 'true'">uniffi_code_parser.dll</NativeLibFileName>
-    <NativeLibFileName Condition="'$(_IsWindows)' != 'true' AND '$(_IsMac)' != 'true'">libuniffi_code_parser.so</NativeLibFileName>
-    <NativeLibFileName Condition="'$(_IsMac)' == 'true'">libuniffi_code_parser.dylib</NativeLibFileName>
-    <NativeLibSource>$(MSBuildThisFileDirectory)..\native\target\release\$(NativeLibFileName)</NativeLibSource>
-  </PropertyGroup>
-
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
@@ -39,10 +29,4 @@
     <Compile Remove="Views\MainWindow.axaml.cs" />
     <AvaloniaXaml Remove="Views\MainWindow.axaml" />
   </ItemGroup>
-
-  <Target Name="CopyNativeLib" AfterTargets="Build;Publish" Condition="'$(TargetFramework)' == 'net10.0'">
-    <Message Text="Glance: copying native lib $(NativeLibSource) -> $(OutDir)" Importance="high" Condition="Exists('$(NativeLibSource)')" />
-    <Copy SourceFiles="$(NativeLibSource)" DestinationFiles="$(OutDir)$(NativeLibFileName)" Condition="Exists('$(NativeLibSource)')" />
-    <Warning Text="Glance: native lib not found at $(NativeLibSource). Run 'cargo build --release' in native/ first." Condition="!Exists('$(NativeLibSource)')" />
-  </Target>
 </Project>

@@ -1,0 +1,48 @@
+<Project>
+
+  <!-- Custom build workflow.
+       Invoke:  dotnet build Glance.Desktop/Glance.Desktop.csproj /t:BuildAll
+       Builds Glance.Desktop + Glance.Android (Release) and copies the distributable
+       artifacts to the Desktop/Glance folder.
+       Override defaults:
+         /p:BuildAllConfig=Debug
+         /p:BuildAllDest=D:\tmp\Glance
+         /p:BuildAllJdk=C:\path\to\jdk21
+       JAVA_HOME for the Android build defaults to the Gradle-managed JDK 21. -->
+
+  <PropertyGroup>
+    <BuildAllConfig Condition="'$(BuildAllConfig)' == ''">Release</BuildAllConfig>
+    <BuildAllDest Condition="'$(BuildAllDest)' == ''">$([System.Environment]::GetEnvironmentVariable('USERPROFILE'))\Desktop\Glance</BuildAllDest>
+    <BuildAllJdk Condition="'$(BuildAllJdk)' == ''">C:\Users\Lwh20\.gradle\jdks\microsoft-21-amd64-windows.2</BuildAllJdk>
+  </PropertyGroup>
+
+  <Target Name="BuildAll">
+    <Message Text="BuildAll: config=$(BuildAllConfig) dest=$(BuildAllDest) jdk=$(BuildAllJdk)" Importance="high" />
+
+    <Exec Command="dotnet build Glance.Desktop\Glance.Desktop.csproj -c $(BuildAllConfig) --nologo"
+          WorkingDirectory="$(MSBuildThisFileDirectory)" />
+
+    <Exec Command="dotnet build Glance.Android\Glance.Android.csproj -c $(BuildAllConfig) --nologo"
+          WorkingDirectory="$(MSBuildThisFileDirectory)"
+          EnvironmentVariables="JAVA_HOME=$(BuildAllJdk)" />
+
+    <ItemGroup>
+      <_DesktopBin Include="$(MSBuildThisFileDirectory)Glance.Desktop\bin\$(BuildAllConfig)\net10.0\**\*" />
+    </ItemGroup>
+    <MakeDir Directories="$(BuildAllDest)\Desktop" />
+    <Copy SourceFiles="@(_DesktopBin)"
+          DestinationFiles="$(BuildAllDest)\Desktop\%(RecursiveDir)%(Filename)%(Extension)"
+          SkipUnchangedFiles="true" />
+
+    <ItemGroup>
+      <_AndroidApk Include="$(MSBuildThisFileDirectory)Glance.Android\bin\$(BuildAllConfig)\net10.0-android\*.apk" />
+    </ItemGroup>
+    <MakeDir Directories="$(BuildAllDest)\Android" />
+    <Copy SourceFiles="@(_AndroidApk)"
+          DestinationFolder="$(BuildAllDest)\Android"
+          SkipUnchangedFiles="true" />
+
+    <Message Text="BuildAll complete -> $(BuildAllDest)" Importance="high" />
+  </Target>
+
+</Project>
