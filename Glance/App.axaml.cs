@@ -44,7 +44,7 @@ public partial class App : Application
 #else
         if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            singleViewPlatform.MainView = new AndroidPlaceholderView { DataContext = new MainViewModel() };
+            singleViewPlatform.MainView = new MainView { DataContext = new MainViewModel() };
         }
 #endif
         base.OnFrameworkInitializationCompleted();

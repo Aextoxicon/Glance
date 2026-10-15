@@ -13,19 +13,14 @@
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
-    <PackageReference Include="Avalonia.AvaloniaEdit" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android'">
-    <Compile Remove="Views\HighlightTransformer.cs" />
-    <Compile Remove="Views\MainView.axaml.cs" />
-    <AvaloniaXaml Remove="Views\MainView.axaml" />
     <Compile Remove="Views\MainWindow.axaml.cs" />
     <AvaloniaXaml Remove="Views\MainWindow.axaml" />
   </ItemGroup>
