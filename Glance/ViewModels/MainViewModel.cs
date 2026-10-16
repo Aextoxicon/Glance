@@ -190,8 +190,6 @@ public partial class MainViewModel : ViewModelBase
         return variant == ThemeVariant.Dark;
     }
 
-    public void SelectThemeMode(ThemeMode mode) => ThemeMode = mode;
-
     partial void OnPreviewNoticeChanged(string? value) =>
         OnPropertyChanged(nameof(HasPreviewNotice));
 

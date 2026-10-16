@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -5,18 +6,22 @@ using Glance.ViewModels;
 
 namespace Glance.Views;
 
-public partial class SettingsDialog : Window
+public partial class SettingsDialog : UserControl
 {
-    public SettingsDialog() : this(null) { }
+    public event EventHandler? CloseRequested;
 
-    public SettingsDialog(MainViewModel? vm)
+    public SettingsDialog()
     {
         InitializeComponent();
-        DataContext = vm;
         Loaded += OnLoaded;
     }
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel vm) SyncTheme(vm.ThemeMode);
+    }
+
+    public void SyncFromViewModel()
     {
         if (DataContext is MainViewModel vm) SyncTheme(vm.ThemeMode);
     }
@@ -36,5 +41,5 @@ public partial class SettingsDialog : Window
         else if (RbSystem.IsChecked == true) vm.ThemeMode = ThemeMode.System;
     }
 
-    private void OnClose(object? sender, RoutedEventArgs e) => Close();
+    private void OnClose(object? sender, RoutedEventArgs e) => CloseRequested?.Invoke(this, EventArgs.Empty);
 }

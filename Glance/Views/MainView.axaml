@@ -5,6 +5,7 @@
              xmlns:vm="using:Glance.ViewModels"
              xmlns:native="using:Glance.Native"
              xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             xmlns:views="using:Glance.Views"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
              x:Class="Glance.Views.MainView"
              x:DataType="vm:MainViewModel">
@@ -22,13 +23,7 @@
       <Button Content="全展开" Click="OnExpandAll" />
       <Button Content="全折叠" Click="OnCollapseAll" />
       <Button Content="刷新" Click="OnRefresh" />
-      <Button Content="浅色" Click="OnThemeLight" />
-      <Button Content="深色" Click="OnThemeDark" />
-      <Button Content="跟随系统" Click="OnThemeSystem" />
       <Button Content="设置" Click="OnOpenSettings" />
-      <ComboBox MinWidth="64"
-                ItemsSource="{x:Static vm:MainViewModel.CodeFontSizes}"
-                SelectedItem="{Binding CodeFontSize, Mode=TwoWay}" />
       <TextBlock Text="{Binding CurrentFolderName}" VerticalAlignment="Center" Margin="8,0,0,0" />
       <TextBlock Text="{Binding TotalSizeReadable}" VerticalAlignment="Center" />
     </StackPanel>
@@ -86,5 +81,18 @@
       <TextBlock Text="{Binding MessageText}"
                  Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" />
     </Border>
+
+    <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="3"
+          x:Name="SettingsOverlay" IsVisible="False"
+          Background="#80000000" ZIndex="100"
+          PointerPressed="OnSettingsOverlayPointerPressed">
+      <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+              BorderThickness="1" CornerRadius="8" Padding="16"
+              Width="340" MaxWidth="380"
+              HorizontalAlignment="Center" VerticalAlignment="Center">
+        <views:SettingsDialog x:Name="SettingsPanel" CloseRequested="OnSettingsClose" />
+      </Border>
+    </Grid>
   </Grid>
 </UserControl>

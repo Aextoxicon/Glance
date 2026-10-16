@@ -1,15 +1,11 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:Glance.ViewModels"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d"
-        x:Class="Glance.Views.SettingsDialog"
-        x:DataType="vm:MainViewModel"
-        Title="设置"
-        Width="340" Height="260"
-        WindowStartupLocation="CenterOwner"
-        SizeToContent="Manual">
-  <StackPanel Margin="16" Spacing="14">
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Glance.ViewModels"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="Glance.Views.SettingsDialog"
+             x:DataType="vm:MainViewModel">
+  <StackPanel Spacing="14">
     <StackPanel Spacing="6">
       <TextBlock Text="主题" />
       <StackPanel Orientation="Horizontal" Spacing="16">
@@ -27,4 +23,4 @@
     <CheckBox Content="记住上次打开的目录" IsChecked="{Binding RememberLastDir}" />
     <Button Content="关闭" HorizontalAlignment="Right" Click="OnClose" />
   </StackPanel>
-</Window>
+</UserControl>

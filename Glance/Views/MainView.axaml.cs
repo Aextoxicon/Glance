@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
@@ -117,14 +118,14 @@ public partial class MainView : UserControl
     private void OnExpandAll(object? sender, RoutedEventArgs e) => _ = _vm?.ExpandAll() ?? Task.CompletedTask;
     private void OnCollapseAll(object? sender, RoutedEventArgs e) => _vm?.CollapseAll();
     private void OnRefresh(object? sender, RoutedEventArgs e) => _ = _vm?.RefreshTree() ?? Task.CompletedTask;
-    private void OnThemeLight(object? sender, RoutedEventArgs e) => _vm?.SelectThemeMode(ThemeMode.Light);
-    private void OnThemeDark(object? sender, RoutedEventArgs e) => _vm?.SelectThemeMode(ThemeMode.Dark);
-    private void OnThemeSystem(object? sender, RoutedEventArgs e) => _vm?.SelectThemeMode(ThemeMode.System);
     private void OnOpenSettings(object? sender, RoutedEventArgs e)
     {
-        if (_vm is null) return;
-        var dlg = new SettingsDialog(_vm);
-        if (VisualRoot is Window owner) dlg.ShowDialog(owner);
-        else dlg.Show();
+        SettingsOverlay.IsVisible = true;
+        SettingsPanel.SyncFromViewModel();
+    }
+    private void OnSettingsClose(object? sender, EventArgs e) => SettingsOverlay.IsVisible = false;
+    private void OnSettingsOverlayPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (ReferenceEquals(e.Source, SettingsOverlay)) SettingsOverlay.IsVisible = false;
     }
 }
