@@ -164,6 +164,8 @@ public partial class MainViewModel : ViewModelBase
         _rememberLastDir = saved.RememberLastDir;
         _lastDirectory = saved.LastDirectory;
         IsDark = ResolveDark();
+        if (Application.Current is { } app)
+            app.ActualThemeVariantChanged += OnAppThemeVariantChanged;
     }
 
     public void TryRestoreLastDirectory()
@@ -213,6 +215,8 @@ public partial class MainViewModel : ViewModelBase
         var variant = Application.Current?.ActualThemeVariant ?? ThemeVariant.Light;
         return variant == ThemeVariant.Dark;
     }
+
+    private void OnAppThemeVariantChanged(object? sender, EventArgs e) => IsDark = ResolveDark();
 
     partial void OnPreviewNoticeChanged(string? value) =>
         OnPropertyChanged(nameof(HasPreviewNotice));
