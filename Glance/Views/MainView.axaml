@@ -105,6 +105,23 @@
     </Border>
 
     <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="3"
+          x:Name="WelcomePanel" IsVisible="{Binding !HasWorkspace}"
+          Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+          ZIndex="50">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+        <Path Width="96" Height="96" Stretch="Uniform"
+              Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+              Data="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+        <TextBlock Text="Glance" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" />
+        <TextBlock Text="选择一个文件夹开始预览代码"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+        <Button Content="打开文件夹" Click="OnOpenFolder"
+                HorizontalAlignment="Center" Padding="24,10" FontSize="15" />
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="3"
           x:Name="SettingsOverlay" IsVisible="False"
           Background="#80000000" ZIndex="100"
           PointerPressed="OnSettingsOverlayPointerPressed">
