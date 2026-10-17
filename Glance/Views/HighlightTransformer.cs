@@ -7,7 +7,7 @@ using Glance.Utils;
 
 namespace Glance.Views;
 
-// token 偏移是相对行首的 UTF-16 字符索引
+// token偏移是相对行首的UTF-16字符索引
 public sealed class HighlightTransformer : DocumentColorizingTransformer
 {
     private readonly HighlightIndex? _index;

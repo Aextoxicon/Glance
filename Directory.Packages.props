@@ -20,5 +20,6 @@
         <PackageVersion Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
 
         <PackageVersion Include="Xamarin.AndroidX.Core.SplashScreen" Version="1.0.1.15" />
+        <PackageVersion Include="Xamarin.AndroidX.DocumentFile" Version="1.1.0.3" />
     </ItemGroup>
 </Project>

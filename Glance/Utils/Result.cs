@@ -11,7 +11,7 @@ public abstract record Result<T>
     {
         Success<T> s => onSuccess(s.Value),
         Failure<T> f => onFailure(f.Error),
-        _ => throw new InvalidOperationException("未识别的 Result 分支"),
+        _ => throw new InvalidOperationException("未识别的Result分支"),
     };
 
     public T? GetOrNull() => this is Success<T> s ? s.Value : default;

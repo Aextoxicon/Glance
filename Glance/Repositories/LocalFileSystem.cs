@@ -16,9 +16,9 @@ public interface ILocalFileSystem
 
 public sealed class LocalFileSystem : ILocalFileSystem
 {
-    // 文本/二进制闸门改为嗅探优先：读前 16KB 查 NUL。
-    // 不再维护扩展名/文件名白名单而丢给Rust（resolve_grammar 按文件名+扩展名判定），
-    // TODO: Android 需改用 SAF 的 head 读取替换 SniffBinary 的 System.IO 实现。
+    // 文本/二进制闸门改为嗅探优先：读前16KB查NUL
+    // 不再维护扩展名/文件名白名单而丢给Rust的resolve_grammar按文件名+扩展名判定
+    // Android端由Glance.Android的AndroidLocalFileSystem改用SAF的DocumentFile+ContentResolver
     private const int SniffBytes = 16384;
 
     public IReadOnlyList<LocalFileInfo> ListFiles(string path)

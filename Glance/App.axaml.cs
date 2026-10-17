@@ -1,7 +1,9 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Platform.Storage;
+using Glance.Platform;
+using Glance.Processing;
+using Glance.Repositories;
 using Glance.ViewModels;
 using Glance.Views;
 
@@ -26,12 +28,6 @@ public partial class App : Application
             var window = new MainWindow { DataContext = vm };
             desktop.MainWindow = window;
             vm.TryRestoreLastDirectory();
-            vm.PickFolderAction = async () =>
-            {
-                var folders = await window.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions());
-                if (folders.Count == 0) return null;
-                return folders[0].Path?.LocalPath;
-            };
         }
         else if (ApplicationLifetime is IActivityApplicationLifetime singleViewFactoryApplicationLifetime)
         {
@@ -44,7 +40,8 @@ public partial class App : Application
 #else
         if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            singleViewPlatform.MainView = new MainView { DataContext = new MainViewModel() };
+            var fs = PlatformServices.FileSystem ?? new LocalFileSystem();
+            singleViewPlatform.MainView = new MainView { DataContext = new MainViewModel(fs, new UniffiCodeParser()) };
         }
 #endif
         base.OnFrameworkInitializationCompleted();

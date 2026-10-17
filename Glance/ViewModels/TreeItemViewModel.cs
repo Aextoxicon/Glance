@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-// 目录列表容错 catch 等价于 KMP 的 listResult.getOrNull() ?: emptyList()，属有意设计，屏蔽 CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）。
+// 目录列表容错catch等价于KMP的listResult.getOrNull() ?: emptyList()，属有意设计，屏蔽CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）。
 #pragma warning disable CA1031
 using CommunityToolkit.Mvvm.ComponentModel;
 using Glance.Repositories;
@@ -14,9 +14,9 @@ using Glance.Utils;
 namespace Glance.ViewModels;
 
 /// <summary>
-/// 文件树节点 VM。平移自 KMP TreeItemViewModel.kt。
+/// 文件树节点VM。平移自KMP TreeItemViewModel.kt。
 /// 集合用 <see href="https://learn.microsoft.com/dotnet/api/system.collections.objectmodel.observablecollection-1">ObservableCollection</see>
-/// 替代 Compose SnapshotStateList；异步用
+/// 替代Compose SnapshotStateList；异步用
 /// <see href="https://learn.microsoft.com/dotnet/csharp/asynchronous-programming/">Task + CancellationToken</see> 替代协程。
 /// </summary>
 public partial class TreeItemViewModel : ViewModelBase
@@ -51,7 +51,7 @@ public partial class TreeItemViewModel : ViewModelBase
 
     public ObservableCollection<TreeItemViewModel> Children { get; } = new();
 
-    /// <summary>目录显示「N 项」，文件显示可读大小。依赖ChildCount/Info.Size</summary>
+    /// <summary>目录显示「N项」，文件显示可读大小。依赖ChildCount/Info.Size</summary>
     public string SizeDisplay =>
         IsDir ? (ChildCount == 0 ? "" : $"{ChildCount} 项") : FormatSize.Readable(Info.Size);
 

@@ -26,7 +26,7 @@ public class AndroidPlaceholderView : UserControl
                 },
                 new TextBlock
                 {
-                    Text = "代码预览编辑器（AvaloniaEdit）暂不支持 Android，尚未接入。文件树与解析逻辑已就绪，待编辑器迁移。",
+                    Text = "代码预览编辑器AvaloniaEdit暂不支持Android，尚未接入。文件树与解析逻辑已就绪，待编辑器迁移。",
                     TextWrapping = TextWrapping.Wrap
                 }
             }

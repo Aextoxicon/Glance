@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
-// VM 顶层操作刻意吞掉具体异常、转成 MessageText 展示给用户纯属有意设计，屏蔽 CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）。
+// VM顶层操作刻意吞掉具体异常、转成MessageText展示给用户纯属有意设计，屏蔽CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）。
 #pragma warning disable CA1031
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -19,7 +19,7 @@ using Glance.Utils;
 namespace Glance.ViewModels;
 
 /// <summary>
-/// 平移自 KMP MainViewModel.kt；协程模型见
+/// 平移自KMP MainViewModel.kt；协程模型见
 /// "https://learn.microsoft.com/dotnet/csharp/asynchronous-programming/"
 /// </summary>
 public partial class MainViewModel : ViewModelBase
@@ -454,7 +454,7 @@ public partial class MainViewModel : ViewModelBase
 
     private string? ReadGitIgnore(string path) => _fs.TryReadText(Path.Combine(path, ".gitignore"));
 
-    // 总大小（BFS 批并发，避免对超大仓库发起同数量级并发系统调用）
+    // 总大小（BFS批并发，避免对超大仓库发起同数量级并发系统调用）
 
     private async Task<long> ComputeTotalSize(string path, CancellationToken ct)
     {
@@ -626,13 +626,13 @@ public partial class MainViewModel : ViewModelBase
     }
 
 #if !ANDROID
-    /// <summary>DirectoryWatcher 回调：FileSystemWatcher 事件在 thread-pool 线程触发，刷新树须回到 UI 线程。</summary>
+    /// <summary>DirectoryWatcher回调：FileSystemWatcher事件在thread-pool线程触发，刷新树须回到UI线程。</summary>
     private void OnDirChanged()
     {
         Dispatcher.UIThread.Post(() => _ = RefreshTree(), DispatcherPriority.Background);
     }
 
-    /// <summary>按当前根目录 + 已展开目录重算监听集合（diff 增删，等价于 KMP watcher.syncRoot）。</summary>
+    /// <summary>按当前根目录 + 已展开目录重算监听集合（diff增删，等价于KMP watcher.syncRoot）。</summary>
     private void SyncWatcher() => _dirWatcher?.SyncRoot(CurrentPath, CurrentExpandedDirPaths());
 #endif
 
@@ -664,7 +664,7 @@ public partial class MainViewModel : ViewModelBase
 
     private sealed record LoadedFile(ParsedCode? ParseResult, string Content, string? Notice = null);
 
-    /// <summary>访问序 LRU（容量上限 = 解析缓存上限），基于"https://learn.microsoft.com/dotnet/api/system.collections.generic.linkedlist-1"</summary>
+    /// <summary>访问序LRU（容量上限 = 解析缓存上限），基于"https://learn.microsoft.com/dotnet/api/system.collections.generic.linkedlist-1"</summary>
     private sealed class LruCache
     {
         private readonly int _capacity;

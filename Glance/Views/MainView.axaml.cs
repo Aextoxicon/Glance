@@ -6,6 +6,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using Glance.Native;
@@ -44,6 +45,15 @@ public partial class MainView : UserControl
         UpdateDocument(_vm.SelectedContent);
         UpdateHighlighter(_vm.SelectedParseResult);
         PreviewEditor.FontSize = _vm.CodeFontSize;
+        // 惰性解析TopLevel：构造时MainView可能尚未挂到视觉树，点击「打开文件夹」时再取StorageProvider
+        vm.PickFolderAction = async () =>
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel?.StorageProvider is not { } sp) return null;
+            var folders = await sp.OpenFolderPickerAsync(new FolderPickerOpenOptions());
+            if (folders.Count == 0) return null;
+            return folders[0].Path?.ToString();
+        };
         ApplyLayout();
     }
 

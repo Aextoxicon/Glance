@@ -4,13 +4,13 @@ using Glance.Repositories;
 
 namespace Glance.Utils;
 
-/// <summary>.gitignore 解析出的忽略名单（仅目录名维度）。平移自 KMP GitIgnoreDirs。</summary>
+/// <summary>.gitignore解析出的忽略名单（仅目录名维度）。平移自KMPGitIgnoreDirs</summary>
 public sealed record GitIgnoreDirs(HashSet<string> DirOnly, HashSet<string> DirOrFile)
 {
     public static readonly GitIgnoreDirs Empty = new(new HashSet<string>(), new HashSet<string>());
 }
 
-/// <summary>.gitignore 解析与目录过滤。仅整目录名忽略，忽略含通配符/路径/取反/注释的行。</summary>
+/// <summary>.gitignore解析与目录过滤。仅整目录名忽略，忽略含通配符/路径/取反/注释的行</summary>
 public static class GitIgnore
 {
     public static GitIgnoreDirs Parse(string? content)

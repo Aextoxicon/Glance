@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-// 监听容错 catch 等价于 KMP 的 register 返回 null / normalize 兜底（权限不足、路径非法、平台不支持），属有意设计，屏蔽 CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）。
+// 监听容错catch等价于KMP的register返回null / normalize兜底（权限不足、路径非法、平台不支持），属有意设计，屏蔽CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）。
 #pragma warning disable CA1031
 
 namespace Glance.Utils;
 
 /// <summary>
-/// 用 BCL https://learn.microsoft.com/dotnet/api/system.io.filesystemwatcher
-/// 实现（仅桌面/PC 可用；Android/iOS 不支持，调用方以 #if !ANDROID 排除本类）
+/// 用BCL https://learn.microsoft.com/dotnet/api/system.io.filesystemwatcher
+/// 实现（仅桌面/PC可用；Android/iOS不支持，调用方以 #if !ANDROID排除本类）
 /// </summary>
 public sealed class DirectoryWatcher : IDisposable
 {
