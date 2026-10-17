@@ -24,6 +24,7 @@
       <Button Content="全折叠" Click="OnCollapseAll" />
       <Button Content="刷新" Click="OnRefresh" />
       <Button Content="设置" Click="OnOpenSettings" />
+      <Button Content="大纲" Click="OnToggleOutline" IsVisible="{Binding HasOutline}" />
       <TextBlock Text="{Binding CurrentFolderName}" VerticalAlignment="Center" Margin="8,0,0,0" />
       <TextBlock Text="{Binding TotalSizeReadable}" VerticalAlignment="Center" />
     </StackPanel>
@@ -62,19 +63,40 @@
       </Border>
     </Grid>
 
-    <ListBox Grid.Row="1" Grid.Column="2" x:Name="OutlineList"
-             ItemsSource="{Binding CurrentOutline}"
-             SelectionChanged="OnOutlineSelectionChanged">
-      <ListBox.ItemTemplate>
-        <DataTemplate x:DataType="native:OutlineNode">
-          <StackPanel>
-            <TextBlock Text="{Binding Name}" />
-            <TextBlock Text="{Binding Detail}" FontSize="11"
-                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-          </StackPanel>
-        </DataTemplate>
-      </ListBox.ItemTemplate>
-    </ListBox>
+    <Grid Grid.Row="1" Grid.Column="2" IsVisible="{Binding OutlineOpen}" Margin="4">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+      <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,4">
+        <TextBlock Text="大纲" FontWeight="Bold" VerticalAlignment="Center" />
+        <Button Content="收起" Click="OnCloseOutline" FontSize="11" Padding="6,2" />
+      </StackPanel>
+      <ListBox Grid.Row="1" x:Name="OutlineList"
+               ItemsSource="{Binding OutlineRows}"
+               SelectionChanged="OnOutlineSelectionChanged"
+               IsVisible="{Binding HasOutline}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:OutlineRow">
+            <StackPanel Margin="{Binding Indent}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                        Padding="4,1" CornerRadius="3">
+                  <TextBlock Text="{Binding KindLabel}" FontSize="11" />
+                </Border>
+                <TextBlock Text="{Binding Node.Name}" />
+              </StackPanel>
+              <TextBlock Text="{Binding Node.Detail}" FontSize="11"
+                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <TextBlock Grid.Row="1" Text="该文件没有大纲"
+                 IsVisible="{Binding OutlineEmpty}"
+                 VerticalAlignment="Center" HorizontalAlignment="Center"
+                 Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+    </Grid>
 
     <Border Grid.Row="2" Grid.ColumnSpan="3" Padding="6"
             Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">

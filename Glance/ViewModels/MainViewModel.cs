@@ -111,7 +111,7 @@ public partial class MainViewModel : ViewModelBase
     private int _codeFontSize = DefaultCodeFontSize;
 
     [ObservableProperty]
-    private bool _outlineOpen;
+    private bool _outlineOpen = true;
 
     [ObservableProperty]
     private int? _outlineScrollTargetLine;
@@ -122,6 +122,30 @@ public partial class MainViewModel : ViewModelBase
 
     public IReadOnlyList<OutlineNode>? CurrentOutline =>
         SelectedParseResult?.Outline is { Count: > 0 } outline ? outline : null;
+
+    public bool HasOutline => CurrentOutline is not null;
+    public bool OutlineEmpty => !HasOutline;
+
+    public IReadOnlyList<OutlineRow> OutlineRows
+    {
+        get
+        {
+            var src = CurrentOutline;
+            if (src is null) return Array.Empty<OutlineRow>();
+            var rows = new List<OutlineRow>();
+            FlattenOutline(src, 0, rows);
+            return rows;
+        }
+    }
+
+    private static void FlattenOutline(IEnumerable<OutlineNode> nodes, int depth, List<OutlineRow> rows)
+    {
+        foreach (var node in nodes)
+        {
+            rows.Add(new OutlineRow(node, depth));
+            if (node.Children is { Length: > 0 }) FlattenOutline(node.Children, depth + 1, rows);
+        }
+    }
 
     public MainViewModel() : this(new LocalFileSystem(), new UniffiCodeParser()) { }
 
@@ -192,6 +216,13 @@ public partial class MainViewModel : ViewModelBase
 
     partial void OnPreviewNoticeChanged(string? value) =>
         OnPropertyChanged(nameof(HasPreviewNotice));
+
+    partial void OnSelectedParseResultChanged(ParsedCode? value)
+    {
+        OnPropertyChanged(nameof(HasOutline));
+        OnPropertyChanged(nameof(OutlineEmpty));
+        OnPropertyChanged(nameof(OutlineRows));
+    }
 
     public bool HasPreviewNotice => PreviewNotice is not null;
     public void SelectCodeFontSize(int size) => CodeFontSize = size;

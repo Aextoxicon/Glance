@@ -99,9 +99,12 @@ public partial class MainView : UserControl
     private void OnOutlineSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_vm is null) return;
-        var node = e.AddedItems.OfType<OutlineNode>().FirstOrDefault();
-        if (node is not null) _vm.RequestScrollToLine(LineOf(node.StartByte));
+        var row = e.AddedItems.OfType<OutlineRow>().FirstOrDefault();
+        if (row is not null) _vm.RequestScrollToLine(LineOf(row.Node.StartByte));
     }
+
+    private void OnToggleOutline(object? sender, RoutedEventArgs e) => _vm?.ToggleOutline();
+    private void OnCloseOutline(object? sender, RoutedEventArgs e) => _vm?.CloseOutline();
 
     private int LineOf(ulong startByte)
     {
