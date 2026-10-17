@@ -304,6 +304,7 @@ public partial class MainViewModel : ViewModelBase
         _selectedTreeItem?.IsSelected = false;
         item.IsSelected = true;
         _selectedTreeItem = item;
+        CancelAndDispose(ref _selectCts);
         _selectCts = new CancellationTokenSource();
         await SelectFile(item.Info, _selectCts.Token);
     }
