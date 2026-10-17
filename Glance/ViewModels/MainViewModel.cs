@@ -232,6 +232,7 @@ public partial class MainViewModel : ViewModelBase
     public async Task LoadCore(string path)
     {
         CancelLoadJobs();
+        _loadCts = new CancellationTokenSource();
         _selectedTreeItem?.IsSelected = false;
         _selectedTreeItem = null;
         _treeOwnerCts = new CancellationTokenSource();
@@ -244,9 +245,9 @@ public partial class MainViewModel : ViewModelBase
 
         try
         {
-            var items = await Task.Run(() => _fs.ListFiles(path), _scopeCts.Token);
-            var ignored = await Task.Run(() => GitIgnore.Parse(ReadGitIgnore(path)), _scopeCts.Token);
-            if (_scopeCts.IsCancellationRequested) return;
+            var items = await Task.Run(() => _fs.ListFiles(path), _loadCts.Token);
+            var ignored = await Task.Run(() => GitIgnore.Parse(ReadGitIgnore(path)), _loadCts.Token);
+            if (CurrentPath != path) return;
             TreeItems = new ObservableCollection<TreeItemViewModel>(
                 GitIgnore.Filter(items, ignored).Select(info =>
                     new TreeItemViewModel(info, _fs, _treeOwnerCts.Token, () => OnTreeDirsChanged?.Invoke(), ignored)));
