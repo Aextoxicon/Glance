@@ -19,11 +19,13 @@ public partial class MainView : UserControl
     private MainViewModel? _vm;
     private TreeItemViewModel? _lastSelected;
     private HighlightTransformer? _transformer;
+    private bool _treeDrawerOpen;
 
     public MainView()
     {
         InitializeComponent();
         FileTree.AddHandler(TreeViewItem.ExpandedEvent, OnTreeItemExpanded);
+        SizeChanged += OnSizeChanged;
         DataContextChanged += OnDataContextChanged;
         if (DataContext is MainViewModel vm) AttachVm(vm);
     }
@@ -42,6 +44,7 @@ public partial class MainView : UserControl
         UpdateDocument(_vm.SelectedContent);
         UpdateHighlighter(_vm.SelectedParseResult);
         PreviewEditor.FontSize = _vm.CodeFontSize;
+        ApplyLayout();
     }
 
     private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -63,6 +66,8 @@ public partial class MainView : UserControl
             PreviewEditor.ScrollToLine(line);
             _vm.ConsumeScrollTargetLine();
         }
+        else if (e.PropertyName == nameof(MainViewModel.IsWide) || e.PropertyName == nameof(MainViewModel.OutlineOpen))
+            ApplyLayout();
     }
 
     private void UpdateDocument(string? text)
@@ -105,6 +110,81 @@ public partial class MainView : UserControl
 
     private void OnToggleOutline(object? sender, RoutedEventArgs e) => _vm?.ToggleOutline();
     private void OnCloseOutline(object? sender, RoutedEventArgs e) => _vm?.CloseOutline();
+
+    private void OnToggleTreeDrawer(object? sender, RoutedEventArgs e)
+    {
+        _treeDrawerOpen = !_treeDrawerOpen;
+        ApplyLayout();
+    }
+    private void OnTreeDrawerScrimPressed(object? sender, PointerPressedEventArgs e) => CloseTreeDrawer();
+    private void OnOutlineDrawerScrimPressed(object? sender, PointerPressedEventArgs e) => _vm?.CloseOutline();
+
+    private void CloseTreeDrawer()
+    {
+        if (_treeDrawerOpen)
+        {
+            _treeDrawerOpen = false;
+            ApplyLayout();
+        }
+    }
+
+    private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (e.NewSize.Width > 0) _vm?.OnWindowResized(e.NewSize.Width);
+    }
+
+    private void ApplyLayout()
+    {
+        if (_vm is null) return;
+        var wide = _vm.IsWide;
+        RootGrid.ColumnDefinitions = wide
+            ? new ColumnDefinitions("260,*,220")
+            : new ColumnDefinitions("*,0,0");
+
+        // 文件树：宽屏进左列，窄屏进左抽屉
+        if (wide)
+        {
+            if (FileTree.Parent != TreeColumnHost)
+            {
+                TreeDrawerPanel.Child = null;
+                TreeColumnHost.Child = FileTree;
+            }
+            TreeColumnHost.IsVisible = true;
+            TreeDrawer.IsVisible = false;
+        }
+        else
+        {
+            if (FileTree.Parent != TreeDrawerPanel)
+            {
+                TreeColumnHost.Child = null;
+                TreeDrawerPanel.Child = FileTree;
+            }
+            TreeColumnHost.IsVisible = false;
+            TreeDrawer.IsVisible = _treeDrawerOpen;
+        }
+
+        // 大纲：宽屏进右列，窄屏进右抽屉
+        if (wide)
+        {
+            if (OutlineContent.Parent != OutlineColumnHost)
+            {
+                OutlineDrawerPanel.Child = null;
+                OutlineColumnHost.Child = OutlineContent;
+            }
+            OutlineColumnHost.IsVisible = _vm.OutlineOpen;
+            OutlineDrawer.IsVisible = false;
+        }
+        else
+        {
+            if (OutlineContent.Parent != OutlineDrawerPanel)
+            {
+                OutlineColumnHost.Child = null;
+                OutlineDrawerPanel.Child = OutlineContent;
+            }
+            OutlineColumnHost.IsVisible = false;
+            OutlineDrawer.IsVisible = _vm.OutlineOpen;
+        }
+    }
 
     private int LineOf(ulong startByte)
     {

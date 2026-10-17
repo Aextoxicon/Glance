@@ -17,8 +17,14 @@
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
   </UserControl.Styles>
 
-  <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="260,*,220">
+  <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="260,*,220" x:Name="RootGrid">
     <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="6" Margin="6">
+      <Button x:Name="DrawerToggle" Click="OnToggleTreeDrawer" IsVisible="{Binding !IsWide}"
+              ToolTip.Tip="文件树">
+        <Path Width="18" Height="18" Stretch="Uniform"
+              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+              StrokeThickness="2" Data="M3 6h18M3 12h18M3 18h18" />
+      </Button>
       <Button Content="打开文件夹" Click="OnOpenFolder" />
       <Button Content="全展开" Click="OnExpandAll" />
       <Button Content="全折叠" Click="OnCollapseAll" />
@@ -29,24 +35,26 @@
       <TextBlock Text="{Binding TotalSizeReadable}" VerticalAlignment="Center" />
     </StackPanel>
 
-    <TreeView Grid.Row="1" Grid.Column="0" x:Name="FileTree"
-              ItemsSource="{Binding TreeItems}"
-              SelectionChanged="OnTreeSelectionChanged">
-      <TreeView.Styles>
-        <Style Selector="TreeViewItem" x:DataType="vm:TreeItemViewModel">
-          <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-        </Style>
-      </TreeView.Styles>
-      <TreeView.ItemTemplate>
-        <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="vm:TreeItemViewModel">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <TextBlock Text="{Binding Info.Name}" />
-            <TextBlock Text="{Binding SizeDisplay}" FontSize="11"
-                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-          </StackPanel>
-        </TreeDataTemplate>
-      </TreeView.ItemTemplate>
-    </TreeView>
+    <Border Grid.Row="1" Grid.Column="0" x:Name="TreeColumnHost" Padding="2">
+      <TreeView x:Name="FileTree"
+                ItemsSource="{Binding TreeItems}"
+                SelectionChanged="OnTreeSelectionChanged">
+        <TreeView.Styles>
+          <Style Selector="TreeViewItem" x:DataType="vm:TreeItemViewModel">
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+          </Style>
+        </TreeView.Styles>
+        <TreeView.ItemTemplate>
+          <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="vm:TreeItemViewModel">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="{Binding Info.Name}" />
+              <TextBlock Text="{Binding SizeDisplay}" FontSize="11"
+                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            </StackPanel>
+          </TreeDataTemplate>
+        </TreeView.ItemTemplate>
+      </TreeView>
+    </Border>
 
     <Grid Grid.Row="1" Grid.Column="1">
       <ae:TextEditor x:Name="PreviewEditor"
@@ -63,46 +71,64 @@
       </Border>
     </Grid>
 
-    <Grid Grid.Row="1" Grid.Column="2" IsVisible="{Binding OutlineOpen}" Margin="4">
-      <Grid.RowDefinitions>
-        <RowDefinition Height="Auto" />
-        <RowDefinition Height="*" />
-      </Grid.RowDefinitions>
-      <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,4">
-        <TextBlock Text="大纲" FontWeight="Bold" VerticalAlignment="Center" />
-        <Button Content="收起" Click="OnCloseOutline" FontSize="11" Padding="6,2" />
-      </StackPanel>
-      <ListBox Grid.Row="1" x:Name="OutlineList"
-               ItemsSource="{Binding OutlineRows}"
-               SelectionChanged="OnOutlineSelectionChanged"
-               IsVisible="{Binding HasOutline}">
-        <ListBox.ItemTemplate>
-          <DataTemplate x:DataType="vm:OutlineRow">
-            <StackPanel Margin="{Binding Indent}">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
-                        Padding="4,1" CornerRadius="3">
-                  <TextBlock Text="{Binding KindLabel}" FontSize="11" />
-                </Border>
-                <TextBlock Text="{Binding Node.Name}" />
+    <Border Grid.Row="1" Grid.Column="2" x:Name="OutlineColumnHost" Margin="4">
+      <Grid x:Name="OutlineContent" RowDefinitions="Auto,*">
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,4">
+          <TextBlock Text="大纲" FontWeight="Bold" VerticalAlignment="Center" />
+          <Button Content="收起" Click="OnCloseOutline" FontSize="11" Padding="6,2" />
+        </StackPanel>
+        <ListBox Grid.Row="1" x:Name="OutlineList"
+                 ItemsSource="{Binding OutlineRows}"
+                 SelectionChanged="OnOutlineSelectionChanged"
+                 IsVisible="{Binding HasOutline}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:OutlineRow">
+              <StackPanel Margin="{Binding Indent}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                          Padding="4,1" CornerRadius="3">
+                    <TextBlock Text="{Binding KindLabel}" FontSize="11" />
+                  </Border>
+                  <TextBlock Text="{Binding Node.Name}" />
+                </StackPanel>
+                <TextBlock Text="{Binding Node.Detail}" FontSize="11"
+                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
               </StackPanel>
-              <TextBlock Text="{Binding Node.Detail}" FontSize="11"
-                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-            </StackPanel>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
-      <TextBlock Grid.Row="1" Text="该文件没有大纲"
-                 IsVisible="{Binding OutlineEmpty}"
-                 VerticalAlignment="Center" HorizontalAlignment="Center"
-                 Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-    </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock Grid.Row="1" Text="该文件没有大纲"
+                   IsVisible="{Binding OutlineEmpty}"
+                   VerticalAlignment="Center" HorizontalAlignment="Center"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+      </Grid>
+    </Border>
 
     <Border Grid.Row="2" Grid.ColumnSpan="3" Padding="6"
             Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
       <TextBlock Text="{Binding MessageText}"
                  Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" />
     </Border>
+
+    <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+          x:Name="TreeDrawer" IsVisible="False" ZIndex="40">
+      <Border x:Name="TreeDrawerScrim" Background="#80000000" PointerPressed="OnTreeDrawerScrimPressed" />
+      <Border x:Name="TreeDrawerPanel"
+              Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+              BorderThickness="0,0,1,0" Width="280"
+              HorizontalAlignment="Left" />
+    </Grid>
+
+    <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+          x:Name="OutlineDrawer" IsVisible="False" ZIndex="40">
+      <Border x:Name="OutlineDrawerScrim" Background="#80000000" PointerPressed="OnOutlineDrawerScrimPressed" />
+      <Border x:Name="OutlineDrawerPanel"
+              Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+              BorderThickness="1,0,0,0" Width="240"
+              HorizontalAlignment="Right" />
+    </Grid>
 
     <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="3"
           x:Name="WelcomePanel" IsVisible="{Binding !HasWorkspace}"
