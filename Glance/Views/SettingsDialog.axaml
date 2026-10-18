@@ -22,6 +22,11 @@
     </StackPanel>
     <CheckBox Content="记住上次打开的目录" IsChecked="{Binding RememberLastDir}" />
     <CheckBox Content="显示行号" IsChecked="{Binding ShowLineNumbers}" />
+    <StackPanel Spacing="6">
+      <TextBlock Text="诊断" />
+      <CheckBox Content="启用诊断追踪（环形缓冲，release 亦可产日志）" IsChecked="{Binding TraceEnabled}" />
+      <Button Content="导出日志" HorizontalAlignment="Left" Click="OnExportTrace" />
+    </StackPanel>
     <Button Content="关闭" HorizontalAlignment="Right" Click="OnClose" />
   </StackPanel>
 </UserControl>

@@ -42,4 +42,9 @@ public partial class SettingsDialog : UserControl
     }
 
     private void OnClose(object? sender, RoutedEventArgs e) => CloseRequested?.Invoke(this, EventArgs.Empty);
+
+    private void OnExportTrace(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel vm) vm.ExportTraceLog();
+    }
 }

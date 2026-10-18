@@ -116,6 +116,12 @@
                        FontSize="{Binding CodeFontSize}"
                        HorizontalScrollBarVisibility="Auto"
                        VerticalScrollBarVisibility="Auto" />
+        <ProgressBar IsIndeterminate="True"
+                     IsVisible="{Binding IsLoadingPreview}"
+                     Height="3"
+                     HorizontalAlignment="Stretch"
+                     VerticalAlignment="Top"
+                     ZIndex="20" />
         <Border IsVisible="{Binding !HasSelection}"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
@@ -178,22 +184,72 @@
 
     <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
           x:Name="TreeDrawer" IsVisible="False" ZIndex="40">
-      <Border x:Name="TreeDrawerScrim" Background="#80000000" PointerPressed="OnTreeDrawerScrimPressed" />
+      <Border x:Name="TreeDrawerScrim" Background="#80000000" PointerPressed="OnTreeDrawerScrimPressed">
+        <Border.Styles>
+          <Style Selector="Border">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.25" />
+              </Transitions>
+            </Setter>
+          </Style>
+        </Border.Styles>
+      </Border>
       <Border x:Name="TreeDrawerPanel"
               Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
               BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
               BorderThickness="0,0,1,0" Width="280"
-              HorizontalAlignment="Left" />
+              HorizontalAlignment="Left">
+        <Border.Styles>
+          <Style Selector="Border">
+            <Setter Property="RenderTransform" Value="translateX(-280px)" />
+            <Setter Property="Transitions">
+              <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" />
+              </Transitions>
+            </Setter>
+          </Style>
+          <Style Selector="Border.open">
+            <Setter Property="RenderTransform" Value="translateX(0px)" />
+          </Style>
+        </Border.Styles>
+      </Border>
     </Grid>
 
     <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
           x:Name="OutlineDrawer" IsVisible="False" ZIndex="40">
-      <Border x:Name="OutlineDrawerScrim" Background="#80000000" PointerPressed="OnOutlineDrawerScrimPressed" />
+      <Border x:Name="OutlineDrawerScrim" Background="#80000000" PointerPressed="OnOutlineDrawerScrimPressed">
+        <Border.Styles>
+          <Style Selector="Border">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.25" />
+              </Transitions>
+            </Setter>
+          </Style>
+        </Border.Styles>
+      </Border>
       <Border x:Name="OutlineDrawerPanel"
               Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
               BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
               BorderThickness="1,0,0,0" Width="240"
-              HorizontalAlignment="Right" />
+              HorizontalAlignment="Right">
+        <Border.Styles>
+          <Style Selector="Border">
+            <Setter Property="RenderTransform" Value="translateX(240px)" />
+            <Setter Property="Transitions">
+              <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" />
+              </Transitions>
+            </Setter>
+          </Style>
+          <Style Selector="Border.open">
+            <Setter Property="RenderTransform" Value="translateX(0px)" />
+          </Style>
+        </Border.Styles>
+      </Border>
     </Grid>
 
     <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="3"

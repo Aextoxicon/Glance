@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -30,6 +31,7 @@ public partial class MainViewModel : ViewModelBase
     private const long PreviewPlainLimitBytes = 2L * 1024 * 1024;
     private const int SizeScanConcurrency = 8;
     private const int ExpandConcurrency = 8;
+    private const string NativeUnavailableNotice = "本机解析库不可用，已降级为纯文本预览";
 
     public const int DefaultCodeFontSize = 13;
     public static readonly int[] CodeFontSizes = { 10, 12, 13, 14, 16, 18, 20, 24, 28 };
@@ -39,6 +41,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly CancellationTokenSource _scopeCts = new();
     private readonly object _cacheLock = new();
     private readonly LruCache _parseCache;
+    private bool _nativeAvailable = true;
 
     private CancellationTokenSource? _loadCts;
     private CancellationTokenSource? _selectCts;
@@ -105,6 +108,9 @@ public partial class MainViewModel : ViewModelBase
     private bool _hasSelection;
 
     [ObservableProperty]
+    private bool _isLoadingPreview;
+
+    [ObservableProperty]
     private bool _isTreeEmpty;
 
     [ObservableProperty]
@@ -118,6 +124,11 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _showLineNumbers = true;
+
+    [ObservableProperty]
+    private bool _traceEnabled;
+
+    partial void OnTraceEnabledChanged(bool value) => Trace.Enabled = value;
 
     [ObservableProperty]
     private bool _outlineOpen = true;
@@ -163,6 +174,7 @@ public partial class MainViewModel : ViewModelBase
         _fs = fs;
         _parser = parser;
         _parseCache = new LruCache(ParseCacheMax);
+        _nativeAvailable = ProbeNative();
 #if !ANDROID
         _dirWatcher = new DirectoryWatcher(OnDirChanged);
         OnTreeDirsChanged += SyncWatcher;
@@ -281,9 +293,32 @@ public partial class MainViewModel : ViewModelBase
         SelectedContent = null;
         SelectedParseResult = null;
         HasSelection = false;
+        IsLoadingPreview = false;
         MessageText = null;
         PreviewNotice = null;
         OnTreeDirsChanged?.Invoke();
+    }
+
+    public string? ExportTraceLog()
+    {
+        if (!Trace.Enabled)
+        {
+            MessageText = "诊断追踪未启用，无可导出日志";
+            return null;
+        }
+        try
+        {
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Glance");
+            var path = Trace.ExportTo(dir);
+            MessageText = path is null ? "暂无可导出日志" : $"日志已导出: {path}";
+            return path;
+        }
+        catch (Exception ex)
+        {
+            MessageText = $"导出日志失败: {ex.Message}";
+            return null;
+        }
     }
 
     public async Task LoadCore(string path)
@@ -347,6 +382,7 @@ public partial class MainViewModel : ViewModelBase
         HasSelection = false;
         SelectedContent = null;
         SelectedParseResult = null;
+        IsLoadingPreview = false;
         MessageText = null;
         PreviewNotice = null;
     }
@@ -375,10 +411,12 @@ public partial class MainViewModel : ViewModelBase
         SelectedContent = null;
         SelectedParseResult = null;
         PreviewNotice = null;
+        IsLoadingPreview = true;
 
         Trace.Mark("select.start", $"name={artifact.Name} size={artifact.Size}");
         var loaded = await LoadFile(artifact, ct);
         if (ct.IsCancellationRequested) return;
+        IsLoadingPreview = false;
         if (loaded is null) return;
         SelectedParseResult = loaded.ParseResult;
         SelectedContent = loaded.Content;
@@ -454,16 +492,31 @@ public partial class MainViewModel : ViewModelBase
 
     private LoadedFile BuildPreview(string normalizedContent, LocalFileInfo artifact)
     {
+        if (!_nativeAvailable)
+        {
+            return new LoadedFile(null, normalizedContent, NativeUnavailableNotice);
+        }
         if (artifact.Size > PreviewPlainLimitBytes)
         {
             return new LoadedFile(null, normalizedContent,
                 $"文件较大（{FormatSize.Readable(artifact.Size)}），已跳过语法高亮");
         }
+        if (FileProcessor.IsPlainText(artifact.Path))
+        {
+            return new LoadedFile(null, normalizedContent);
+        }
+        var parseName = FileProcessor.ResolveParseName(artifact.Path);
         try
         {
-            var parsed = _parser.ParseCode(normalizedContent, artifact.Path);
+            var parsed = _parser.ParseCode(normalizedContent, parseName);
             Trace.Mark("parse.ok", artifact.Name);
             return new LoadedFile(parsed, normalizedContent);
+        }
+        catch (Exception ex) when (IsNativeUnavailable(ex))
+        {
+            _nativeAvailable = false;
+            Trace.Mark("parse.native_unavailable", artifact.Name);
+            return new LoadedFile(null, normalizedContent, NativeUnavailableNotice);
         }
         catch (Exception ex)
         {
@@ -471,6 +524,20 @@ public partial class MainViewModel : ViewModelBase
             return new LoadedFile(null, normalizedContent);
         }
     }
+
+    // 避免Android无.so 时每个文件重复触发DllNotFoundException
+    private static bool ProbeNative()
+    {
+        if (NativeLibrary.TryLoad("uniffi_code_parser", out var handle))
+        {
+            NativeLibrary.Free(handle);
+            return true;
+        }
+        return false;
+    }
+
+    private static bool IsNativeUnavailable(Exception ex) =>
+        ex is DllNotFoundException or TypeLoadException or BadImageFormatException;
 
     private string CacheKey(LocalFileInfo artifact) => $"{artifact.Path}|{artifact.LastMod}|{artifact.Size}";
 

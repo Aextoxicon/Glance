@@ -10,7 +10,7 @@ public sealed class UniffiCodeParser : ICodeParser
     {
         var native = UniffiCodeParserMethods.ParseCode(source, filename);
         return new ParsedCode(
-            Path.GetExtension(filename),
+            Path.GetExtension(filename).TrimStart('.').ToLowerInvariant(),
             source,
             new HighlightIndex(native.HighlightData, native.LineIndex, native.Kinds),
             native.Outline

@@ -7,6 +7,8 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using Glance.Native;
@@ -21,6 +23,11 @@ public partial class MainView : UserControl
     private TreeItemViewModel? _lastSelected;
     private HighlightTransformer? _transformer;
     private bool _treeDrawerOpen;
+    private DispatcherTimer? _scrollTimer;
+
+    private const int OutlineScrollContextLines = 3;
+    private const int OutlineScrollPreJumpLines = 30;
+    private static readonly TimeSpan OutlineScrollDuration = TimeSpan.FromMilliseconds(250);
 
     public MainView()
     {
@@ -76,7 +83,7 @@ public partial class MainView : UserControl
         }
         else if (e.PropertyName == nameof(MainViewModel.OutlineScrollTargetLine) && _vm.OutlineScrollTargetLine is { } line)
         {
-            PreviewEditor.ScrollToLine(line);
+            ScrollOutlineToLine(line);
             _vm.ConsumeScrollTargetLine();
         }
         else if (e.PropertyName == nameof(MainViewModel.IsWide) || e.PropertyName == nameof(MainViewModel.OutlineOpen))
@@ -174,7 +181,10 @@ public partial class MainView : UserControl
                 TreeDrawerPanel.Child = FileTree;
             }
             TreeColumnHost.IsVisible = false;
-            TreeDrawer.IsVisible = _treeDrawerOpen;
+            TreeDrawer.IsVisible = true;
+            TreeDrawerPanel.Classes.Set("open", _treeDrawerOpen);
+            TreeDrawerScrim.Opacity = _treeDrawerOpen ? 1 : 0;
+            TreeDrawerScrim.IsHitTestVisible = _treeDrawerOpen;
         }
 
         // 大纲：宽屏进右列，窄屏进右抽屉
@@ -196,7 +206,10 @@ public partial class MainView : UserControl
                 OutlineDrawerPanel.Child = OutlineContent;
             }
             OutlineColumnHost.IsVisible = false;
-            OutlineDrawer.IsVisible = _vm.OutlineOpen;
+            OutlineDrawer.IsVisible = true;
+            OutlineDrawerPanel.Classes.Set("open", _vm.OutlineOpen);
+            OutlineDrawerScrim.Opacity = _vm.OutlineOpen ? 1 : 0;
+            OutlineDrawerScrim.IsHitTestVisible = _vm.OutlineOpen;
         }
     }
 
@@ -225,5 +238,45 @@ public partial class MainView : UserControl
     private void OnSettingsOverlayPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (ReferenceEquals(e.Source, SettingsOverlay)) SettingsOverlay.IsVisible = false;
+    }
+
+    // 3 行上下文 + 远距离先瞬跳再平滑滚动最后30行
+    private void ScrollOutlineToLine(int line)
+    {
+        var target = Math.Max(1, line - OutlineScrollContextLines);
+        var sv = PreviewEditor.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        var lineHeight = PreviewEditor.TextArea.TextView.DefaultLineHeight;
+        if (sv is null || lineHeight <= 0)
+        {
+            PreviewEditor.ScrollToLine(target);
+            return;
+        }
+        var currentFirst = (int)(sv.Offset.Y / lineHeight) + 1;
+        if (Math.Abs(target - currentFirst) > OutlineScrollPreJumpLines)
+            PreviewEditor.ScrollToLine(Math.Max(1, target - OutlineScrollPreJumpLines));
+        AnimateScrollToLine(sv, lineHeight, target);
+    }
+
+    private void AnimateScrollToLine(ScrollViewer sv, double lineHeight, int targetLine)
+    {
+        _scrollTimer?.Stop();
+        var startOffset = sv.Offset.Y;
+        var targetOffset = lineHeight * (targetLine - 1);
+        var startTime = DateTime.Now;
+        _scrollTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _scrollTimer.Tick += (_, _) =>
+        {
+            var t = (DateTime.Now - startTime).TotalMilliseconds / OutlineScrollDuration.TotalMilliseconds;
+            if (t >= 1)
+            {
+                sv.Offset = new Vector(sv.Offset.X, targetOffset);
+                _scrollTimer?.Stop();
+                _scrollTimer = null;
+                return;
+            }
+            var eased = t * t * (3 - 2 * t); // smoothstep
+            sv.Offset = new Vector(sv.Offset.X, startOffset + (targetOffset - startOffset) * eased);
+        };
+        _scrollTimer.Start();
     }
 }
