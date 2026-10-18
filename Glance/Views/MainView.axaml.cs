@@ -45,6 +45,7 @@ public partial class MainView : UserControl
         UpdateDocument(_vm.SelectedContent);
         UpdateHighlighter(_vm.SelectedParseResult);
         PreviewEditor.FontSize = _vm.CodeFontSize;
+        PreviewEditor.ShowLineNumbers = _vm.ShowLineNumbers;
         // 惰性解析TopLevel：构造时MainView可能尚未挂到视觉树，点击「打开文件夹」时再取StorageProvider
         vm.PickFolderAction = async () =>
         {
@@ -66,6 +67,8 @@ public partial class MainView : UserControl
             UpdateHighlighter(_vm.SelectedParseResult);
         else if (e.PropertyName == nameof(MainViewModel.CodeFontSize))
             PreviewEditor.FontSize = _vm.CodeFontSize;
+        else if (e.PropertyName == nameof(MainViewModel.ShowLineNumbers))
+            PreviewEditor.ShowLineNumbers = _vm.ShowLineNumbers;
         else if (e.PropertyName == nameof(MainViewModel.IsDark) && _transformer is not null)
         {
             _transformer.IsDark = _vm.IsDark;

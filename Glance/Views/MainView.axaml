@@ -58,7 +58,7 @@
 
     <Grid Grid.Row="1" Grid.Column="1">
       <ae:TextEditor x:Name="PreviewEditor"
-                     ShowLineNumbers="True"
+                     ShowLineNumbers="{Binding ShowLineNumbers}"
                      IsReadOnly="True"
                      FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
                      FontSize="{Binding CodeFontSize}"

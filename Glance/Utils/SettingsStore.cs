@@ -11,6 +11,7 @@ public sealed class AppSettings
 {
     public ThemeMode ThemeMode { get; set; } = ThemeMode.System;
     public int CodeFontSize { get; set; } = MainViewModel.DefaultCodeFontSize;
+    public bool ShowLineNumbers { get; set; } = true;
     public bool RememberLastDir { get; set; }
     public string? LastDirectory { get; set; }
 }

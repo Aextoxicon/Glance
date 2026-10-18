@@ -21,6 +21,7 @@
                 HorizontalAlignment="Left" MinWidth="100" />
     </StackPanel>
     <CheckBox Content="记住上次打开的目录" IsChecked="{Binding RememberLastDir}" />
+    <CheckBox Content="显示行号" IsChecked="{Binding ShowLineNumbers}" />
     <Button Content="关闭" HorizontalAlignment="Right" Click="OnClose" />
   </StackPanel>
 </UserControl>

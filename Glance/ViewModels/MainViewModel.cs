@@ -111,6 +111,9 @@ public partial class MainViewModel : ViewModelBase
     private int _codeFontSize = DefaultCodeFontSize;
 
     [ObservableProperty]
+    private bool _showLineNumbers = true;
+
+    [ObservableProperty]
     private bool _outlineOpen = true;
 
     [ObservableProperty]
@@ -163,6 +166,7 @@ public partial class MainViewModel : ViewModelBase
         _codeFontSize = saved.CodeFontSize > 0 ? saved.CodeFontSize : DefaultCodeFontSize;
         _rememberLastDir = saved.RememberLastDir;
         _lastDirectory = saved.LastDirectory;
+        _showLineNumbers = saved.ShowLineNumbers;
         IsDark = ResolveDark();
         if (Application.Current is { } app)
             app.ActualThemeVariantChanged += OnAppThemeVariantChanged;
@@ -191,6 +195,8 @@ public partial class MainViewModel : ViewModelBase
 
     partial void OnCodeFontSizeChanged(int value) => PersistSettings();
 
+    partial void OnShowLineNumbersChanged(bool value) => PersistSettings();
+
     partial void OnRememberLastDirChanged(bool value)
     {
         if (!value) LastDirectory = null;
@@ -203,6 +209,7 @@ public partial class MainViewModel : ViewModelBase
         {
             ThemeMode = ThemeMode,
             CodeFontSize = CodeFontSize,
+            ShowLineNumbers = ShowLineNumbers,
             RememberLastDir = RememberLastDir,
             LastDirectory = RememberLastDir ? LastDirectory : null,
         });
