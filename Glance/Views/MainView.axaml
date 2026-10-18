@@ -18,21 +18,27 @@
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="260,*,220" x:Name="RootGrid">
-    <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="6" Margin="6">
-      <Button x:Name="DrawerToggle" Click="OnToggleTreeDrawer" IsVisible="{Binding !IsWide}"
-              ToolTip.Tip="文件树">
-        <Path Width="18" Height="18" Stretch="Uniform"
-              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
-              StrokeThickness="2" Data="M3 6h18M3 12h18M3 18h18" />
-      </Button>
-      <Button Content="打开文件夹" Click="OnOpenFolder" />
-      <Button Content="全展开" Click="OnExpandAll" />
-      <Button Content="全折叠" Click="OnCollapseAll" />
-      <Button Content="刷新" Click="OnRefresh" />
-      <Button Content="设置" Click="OnOpenSettings" />
-      <Button Content="大纲" Click="OnToggleOutline" IsVisible="{Binding HasOutline}" />
-      <TextBlock Text="{Binding CurrentFolderName}" VerticalAlignment="Center" Margin="8,0,0,0" />
-      <TextBlock Text="{Binding TotalSizeReadable}" VerticalAlignment="Center" />
+    <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Margin="6" Spacing="4">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button x:Name="DrawerToggle" Click="OnToggleTreeDrawer" IsVisible="{Binding !IsWide}"
+                ToolTip.Tip="文件树">
+          <Path Width="18" Height="18" Stretch="Uniform"
+                Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                StrokeThickness="2" Data="M3 6h18M3 12h18M3 18h18" />
+        </Button>
+        <Button Content="打开文件夹" Click="OnOpenFolder" />
+        <Button Content="关闭工作区" Click="OnCloseWorkspace" IsVisible="{Binding HasWorkspace}" />
+        <Button Content="全展开" Click="OnExpandAll" />
+        <Button Content="全折叠" Click="OnCollapseAll" />
+        <Button Content="刷新" Click="OnRefresh" />
+        <Button Content="设置" Click="OnOpenSettings" />
+        <TextBlock Text="{Binding CurrentFolderName}" VerticalAlignment="Center" Margin="8,0,0,0" />
+        <TextBlock Text="{Binding TotalSizeReadable}" VerticalAlignment="Center" />
+      </StackPanel>
+      <ProgressBar IsIndeterminate="True"
+                   IsVisible="{Binding IsComputingSize}"
+                   Height="3"
+                   Margin="0,2,0,0" />
     </StackPanel>
 
     <Border Grid.Row="1" Grid.Column="0" x:Name="TreeColumnHost" Padding="2">
@@ -56,19 +62,41 @@
       </TreeView>
     </Border>
 
-    <Grid Grid.Row="1" Grid.Column="1">
-      <ae:TextEditor x:Name="PreviewEditor"
-                     ShowLineNumbers="{Binding ShowLineNumbers}"
-                     IsReadOnly="True"
-                     FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                     FontSize="{Binding CodeFontSize}"
-                     HorizontalScrollBarVisibility="Auto"
-                     VerticalScrollBarVisibility="Auto" />
-      <Border IsVisible="{Binding HasPreviewNotice}"
-              Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-              Padding="8" VerticalAlignment="Bottom">
-        <TextBlock Text="{Binding PreviewNotice}" />
+    <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="Auto,*">
+      <Border Grid.Row="0" IsVisible="{Binding HasSelection}"
+              Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+              BorderThickness="0,0,0,1" Padding="6">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+                     ToolTip.Tip="{Binding SelectedArtifact.Name}">
+            <TextBlock Text="{Binding SelectedArtifact.Name}" FontWeight="SemiBold"
+                       TextTrimming="CharacterEllipsis" MaxWidth="420" />
+            <TextBlock Text="{Binding SelectedSizeDisplay}"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+            <Button Content="大纲" Click="OnToggleOutline" IsVisible="{Binding HasOutline}"
+                    FontSize="11" Padding="6,2" />
+            <Button Content="关闭" Click="OnClosePreview" FontSize="11" Padding="6,2" />
+          </StackPanel>
+        </Grid>
       </Border>
+      <Grid Grid.Row="1">
+        <ae:TextEditor x:Name="PreviewEditor"
+                       ShowLineNumbers="{Binding ShowLineNumbers}"
+                       IsReadOnly="True"
+                       FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                       FontSize="{Binding CodeFontSize}"
+                       HorizontalScrollBarVisibility="Auto"
+                       VerticalScrollBarVisibility="Auto" />
+        <Border IsVisible="{Binding HasPreviewNotice}"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                Padding="8" VerticalAlignment="Bottom">
+          <TextBlock Text="{Binding PreviewNotice}" />
+        </Border>
+      </Grid>
     </Grid>
 
     <Border Grid.Row="1" Grid.Column="2" x:Name="OutlineColumnHost" Margin="4">

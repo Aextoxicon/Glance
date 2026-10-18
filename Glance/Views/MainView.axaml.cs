@@ -123,6 +123,7 @@ public partial class MainView : UserControl
 
     private void OnToggleOutline(object? sender, RoutedEventArgs e) => _vm?.ToggleOutline();
     private void OnCloseOutline(object? sender, RoutedEventArgs e) => _vm?.CloseOutline();
+    private void OnClosePreview(object? sender, RoutedEventArgs e) => _vm?.ClearSelection();
 
     private void OnToggleTreeDrawer(object? sender, RoutedEventArgs e)
     {
@@ -211,6 +212,7 @@ public partial class MainView : UserControl
     }
 
     private void OnOpenFolder(object? sender, RoutedEventArgs e) => _ = _vm?.PickFolder() ?? Task.CompletedTask;
+    private void OnCloseWorkspace(object? sender, RoutedEventArgs e) => _vm?.CloseWorkspace();
     private void OnExpandAll(object? sender, RoutedEventArgs e) => _ = _vm?.ExpandAll() ?? Task.CompletedTask;
     private void OnCollapseAll(object? sender, RoutedEventArgs e) => _vm?.CollapseAll();
     private void OnRefresh(object? sender, RoutedEventArgs e) => _ = _vm?.RefreshTree() ?? Task.CompletedTask;
