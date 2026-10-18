@@ -91,6 +91,19 @@
                        FontSize="{Binding CodeFontSize}"
                        HorizontalScrollBarVisibility="Auto"
                        VerticalScrollBarVisibility="Auto" />
+        <Border IsVisible="{Binding !HasSelection}"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                ZIndex="10">
+          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+            <Path Width="48" Height="48" Stretch="Uniform"
+                  Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                  Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+            <TextBlock Text="选择文件以预览"
+                       HorizontalAlignment="Center"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+          </StackPanel>
+        </Border>
         <Border IsVisible="{Binding HasPreviewNotice}"
                 Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                 Padding="8" VerticalAlignment="Bottom">
