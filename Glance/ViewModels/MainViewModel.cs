@@ -105,6 +105,12 @@ public partial class MainViewModel : ViewModelBase
     private bool _hasSelection;
 
     [ObservableProperty]
+    private bool _isTreeEmpty;
+
+    [ObservableProperty]
+    private bool _showNarrowFileName;
+
+    [ObservableProperty]
     private bool _isWide = true;
 
     [ObservableProperty]
@@ -196,6 +202,15 @@ public partial class MainViewModel : ViewModelBase
     partial void OnCodeFontSizeChanged(int value) => PersistSettings();
 
     partial void OnShowLineNumbersChanged(bool value) => PersistSettings();
+
+    partial void OnTreeItemsChanged(ObservableCollection<TreeItemViewModel> value) =>
+        IsTreeEmpty = HasWorkspace && (value is null || value.Count == 0);
+
+    partial void OnHasWorkspaceChanged(bool value) =>
+        IsTreeEmpty = value && (TreeItems is null || TreeItems.Count == 0);
+
+    partial void OnIsWideChanged(bool value) => ShowNarrowFileName = !value && HasSelection;
+    partial void OnHasSelectionChanged(bool value) => ShowNarrowFileName = !IsWide && value;
 
     partial void OnRememberLastDirChanged(bool value)
     {

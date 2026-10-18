@@ -17,6 +17,11 @@
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
   </UserControl.Styles>
 
+  <UserControl.Resources>
+    <SolidColorBrush x:Key="TreeSelectionBackground" Color="{DynamicResource SystemAccentColor}" Opacity="0.22" />
+    <SolidColorBrush x:Key="TreeSelectionBackgroundStrong" Color="{DynamicResource SystemAccentColor}" Opacity="0.32" />
+  </UserControl.Resources>
+
   <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="260,*,220" x:Name="RootGrid">
     <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Margin="6" Spacing="4">
       <StackPanel Orientation="Horizontal" Spacing="6">
@@ -34,6 +39,9 @@
         <Button Content="设置" Click="OnOpenSettings" />
         <TextBlock Text="{Binding CurrentFolderName}" VerticalAlignment="Center" Margin="8,0,0,0" />
         <TextBlock Text="{Binding TotalSizeReadable}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding SelectedArtifact.Name}" IsVisible="{Binding ShowNarrowFileName}"
+                   VerticalAlignment="Center" Margin="8,0,0,0"
+                   FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="240" />
       </StackPanel>
       <ProgressBar IsIndeterminate="True"
                    IsVisible="{Binding IsComputingSize}"
@@ -49,6 +57,15 @@
           <Style Selector="TreeViewItem" x:DataType="vm:TreeItemViewModel">
             <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
           </Style>
+          <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="{DynamicResource TreeSelectionBackground}" />
+          </Style>
+          <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot:pointerover">
+            <Setter Property="Background" Value="{DynamicResource TreeSelectionBackgroundStrong}" />
+          </Style>
+          <Style Selector="TreeViewItem:pressed:selected /template/ Border#PART_LayoutRoot:pointerover">
+            <Setter Property="Background" Value="{DynamicResource TreeSelectionBackgroundStrong}" />
+          </Style>
         </TreeView.Styles>
         <TreeView.ItemTemplate>
           <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="vm:TreeItemViewModel">
@@ -59,7 +76,15 @@
             </StackPanel>
           </TreeDataTemplate>
         </TreeView.ItemTemplate>
-      </TreeView>
+        </TreeView>
+    </Border>
+
+    <Border Grid.Row="1" Grid.Column="0" IsVisible="{Binding IsTreeEmpty}"
+            Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+            ZIndex="5">
+      <TextBlock Text="空目录"
+                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                 Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
     </Border>
 
     <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="Auto,*">
