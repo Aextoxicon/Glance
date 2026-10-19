@@ -123,7 +123,7 @@ public partial class MainView : UserControl
     private void OnTreeSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_vm is null) return;
-        // 占位符不是真实条目（目录初始用来显示展开箭头），跳过以免选中后报空文件名
+        // 跳过占位以免选中后报空文件名
         var node = e.AddedItems.OfType<TreeItemViewModel>().FirstOrDefault(n => !n.IsPlaceholder);
         if (node is null || node == _lastSelected) return;
         _lastSelected = node;
