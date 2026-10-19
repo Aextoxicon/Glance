@@ -1,40 +1,45 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 // 目录列表容错catch等价于KMP的listResult.getOrNull() ?: emptyList()，属有意设计，屏蔽CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）。
 #pragma warning disable CA1031
 using CommunityToolkit.Mvvm.ComponentModel;
+using Glance.Models;
 using Glance.Repositories;
 using Glance.Utils;
+using Material.Icons;
 
 namespace Glance.ViewModels;
 
 /// <summary>
-/// 文件树节点VM。平移自KMP TreeItemViewModel.kt。
-/// 集合用 <see href="https://learn.microsoft.com/dotnet/api/system.collections.objectmodel.observablecollection-1">ObservableCollection</see>
+/// 文件树节点VM
+/// 集合用"https://learn.microsoft.com/dotnet/api/system.collections.objectmodel.observablecollection-1"
 /// 替代Compose SnapshotStateList；异步用
-/// <see href="https://learn.microsoft.com/dotnet/csharp/asynchronous-programming/">Task + CancellationToken</see> 替代协程。
+/// "https://learn.microsoft.com/dotnet/csharp/asynchronous-programming/"替代协程。
 /// </summary>
 public partial class TreeItemViewModel : ViewModelBase
 {
-    private static readonly LocalFileInfo PlaceholderInfo = new("", "", "", false, 0, 0, "");
-
-    private readonly ILocalFileSystem _fs;
+    private readonly IArtifact _artifact;
+    private readonly IArtifactRepo? _repo;
     private readonly CancellationToken _owner;
     private readonly Action? _onDirsChanged;
     private readonly GitIgnoreDirs _gitIgnored;
     // https://learn.microsoft.com/dotnet/api/system.threading.semaphoreslim
     private readonly SemaphoreSlim _opGate = new(1, 1);
 
-    public LocalFileInfo Info { get; }
+    public IArtifact Artifact => _artifact;
 
-    public bool IsDir => Info.IsDir;
+    // 平移自KMP fileIconFor
+    public MaterialIconKind IconKind { get; }
 
-    /// <summary>占位符节点（空目录 / 未加载目录的首个子项）</summary>
+    public bool IsDir => _artifact.Payload is LocalPayload p && p.IsDir;
+
+    public string Name => _artifact.Name;
+
+    /// <summary>占位符节点（空目录或未加载目录的首个子项）</summary>
     public bool IsPlaceholder { get; }
 
     [ObservableProperty]
@@ -51,32 +56,34 @@ public partial class TreeItemViewModel : ViewModelBase
 
     public ObservableCollection<TreeItemViewModel> Children { get; } = new();
 
-    /// <summary>目录显示「N项」，文件显示可读大小。依赖ChildCount/Info.Size</summary>
+    // 目录显示N项、文件显示可读大小
     public string SizeDisplay =>
-        IsDir ? (ChildCount == 0 ? "" : $"{ChildCount} 项") : FormatSize.Readable(Info.Size);
+        IsDir ? (ChildCount == 0 ? "" : $"{ChildCount} 项") : FormatSize.Readable(_artifact.Size);
 
     public TreeItemViewModel(
-        LocalFileInfo info,
-        ILocalFileSystem fs,
+        IArtifact artifact,
+        IArtifactRepo repo,
         CancellationToken owner = default,
         Action? onDirsChanged = null,
         GitIgnoreDirs? gitIgnored = null)
     {
-        Info = info;
-        _fs = fs;
+        _artifact = artifact;
+        _repo = repo;
         _owner = owner;
         _onDirsChanged = onDirsChanged;
         _gitIgnored = gitIgnored ?? GitIgnoreDirs.Empty;
         IsPlaceholder = false;
+        IconKind = FileIcon.For(artifact.Extension, IsDir);
         if (IsDir) Children.Add(new TreeItemViewModel()); // 占位符
     }
 
     private TreeItemViewModel()
     {
-        Info = PlaceholderInfo;
-        _fs = null!;
+        _artifact = new PlaceholderArtifact();
+        _repo = null;
         _gitIgnored = GitIgnoreDirs.Empty;
         IsPlaceholder = true;
+        IconKind = MaterialIconKind.FolderOutline;
     }
 
     public void ToggleExpanded()
@@ -107,23 +114,22 @@ public partial class TreeItemViewModel : ViewModelBase
 
     public async Task LoadChildrenAsync(CancellationToken ct = default)
     {
-        if (!IsDir || _fs is null) return;
+        if (!IsDir || _repo is null) return;
         await _opGate.WaitAsync(ct);
         try
         {
             IsLoading = true;
-            IReadOnlyList<LocalFileInfo> items;
-            try { items = await Task.Run(() => _fs.ListFiles(Info.Path), ct); }
-            catch (Exception) { items = Array.Empty<LocalFileInfo>(); }
-            var sorted = GitIgnore.Filter(items, _gitIgnored)
-                .OrderBy(d => !d.IsDir)
-                .ThenBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+            var path = _artifact.Payload is LocalPayload p ? p.AbsolutePath : _artifact.Id;
+            var items = await Task.Run(async () => await _repo!.ListAsync(path), ct);
+            var sorted = GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), _gitIgnored)
+                .OrderBy(a => !(a.Payload is LocalPayload lp && lp.IsDir))
+                .ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             ChildCount = sorted.Count;
             Children.Clear();
             foreach (var child in sorted)
             {
-                Children.Add(new TreeItemViewModel(child, _fs, _owner, _onDirsChanged, _gitIgnored));
+                Children.Add(new TreeItemViewModel(child, _repo, _owner, _onDirsChanged, _gitIgnored));
             }
             // 空目录：保留占位符，保证箭头始终显示
             if (Children.Count == 0) Children.Add(new TreeItemViewModel());
@@ -141,30 +147,29 @@ public partial class TreeItemViewModel : ViewModelBase
         foreach (var child in Children) child.CollapseRecursive();
     }
 
-    /// <summary>刷新重建：保留旧节点中已展开的子目录展开态</summary>
+    // 刷新重建保留旧节点已展开的子目录展开态
     public async Task RefreshFrom(TreeItemViewModel oldNode, CancellationToken ct = default)
     {
-        if (!IsDir || _fs is null) return;
+        if (!IsDir || _repo is null) return;
         await _opGate.WaitAsync(ct);
         try
         {
             IsLoading = true;
-            IReadOnlyList<LocalFileInfo> items;
-            try { items = await Task.Run(() => _fs.ListFiles(Info.Path), ct); }
-            catch (Exception) { items = Array.Empty<LocalFileInfo>(); }
+            var path = _artifact.Payload is LocalPayload p ? p.AbsolutePath : _artifact.Id;
+            var items = await Task.Run(async () => await _repo!.ListAsync(path), ct);
             var expandedChildNames = oldNode.Children
                 .Where(c => c.IsDir && c.IsExpanded)
-                .Select(c => c.Info.Name)
+                .Select(c => c.Name)
                 .ToHashSet();
-            var sorted = GitIgnore.Filter(items, _gitIgnored)
-                .OrderBy(d => !d.IsDir)
-                .ThenBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+            var sorted = GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), _gitIgnored)
+                .OrderBy(a => !(a.Payload is LocalPayload lp && lp.IsDir))
+                .ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             ChildCount = sorted.Count;
             Children.Clear();
             foreach (var child in sorted)
             {
-                var newChild = new TreeItemViewModel(child, _fs, _owner, _onDirsChanged, _gitIgnored);
+                var newChild = new TreeItemViewModel(child, _repo, _owner, _onDirsChanged, _gitIgnored);
                 if (newChild.IsDir && expandedChildNames.Contains(child.Name))
                 {
                     newChild.IsExpanded = true;
@@ -180,7 +185,7 @@ public partial class TreeItemViewModel : ViewModelBase
         }
     }
 
-    /// <summary>展开并等待子节点加载（供MainViewModel.expandAll分批调用）</summary>
+    // 供MainViewModel.expandAll分批调用
     public async Task EnsureLoadedAsync(CancellationToken ct = default)
     {
         if (!IsDir) return;
@@ -190,5 +195,19 @@ public partial class TreeItemViewModel : ViewModelBase
         {
             await LoadChildrenAsync(ct);
         }
+    }
+
+    private sealed class PlaceholderArtifact : IArtifact
+    {
+        public string Id => "";
+        public string Name => "";
+        public long Size => 0;
+        public long LastMod => 0;
+        public string Extension => "";
+        public ArtifactKind Kind => ArtifactKind.Text;
+        public ArtifactSource Source => ArtifactSource.Local;
+        public ArtifactStatus Status => ArtifactStatus.Available;
+        public ArtifactMetadata? Metadata => null;
+        public IArtifactPayload Payload => new LocalPayload("", "", false);
     }
 }

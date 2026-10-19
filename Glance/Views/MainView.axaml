@@ -5,6 +5,7 @@
              xmlns:vm="using:Glance.ViewModels"
              xmlns:native="using:Glance.Native"
              xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:views="using:Glance.Views"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
              x:Class="Glance.Views.MainView"
@@ -69,8 +70,10 @@
         </TreeView.Styles>
         <TreeView.ItemTemplate>
           <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="vm:TreeItemViewModel">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <TextBlock Text="{Binding Info.Name}" />
+            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+              <materialIcons:MaterialIcon Kind="{Binding IconKind}" Width="16" Height="16" VerticalAlignment="Center"
+                            Foreground="{DynamicResource SystemControlForegroundBaseMediumHighBrush}" />
+              <TextBlock Text="{Binding Artifact.Name}" VerticalAlignment="Center" />
               <TextBlock Text="{Binding SizeDisplay}" FontSize="11"
                          Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
             </StackPanel>

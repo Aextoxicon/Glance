@@ -19,6 +19,9 @@
 
         <PackageVersion Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
 
+        <!-- https://github.com/AvaloniaUtils/Material.Icons.Avalonia -->
+        <PackageVersion Include="Material.Icons.Avalonia" Version="3.0.2" />
+
         <PackageVersion Include="Xamarin.AndroidX.Core.SplashScreen" Version="1.0.1.15" />
         <PackageVersion Include="Xamarin.AndroidX.DocumentFile" Version="1.1.0.3" />
     </ItemGroup>

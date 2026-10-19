@@ -1,10 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
-using Glance.Repositories;
+using Glance.Models;
 
 namespace Glance.Utils;
 
-/// <summary>.gitignore解析出的忽略名单（仅目录名维度）。平移自KMPGitIgnoreDirs</summary>
 public sealed record GitIgnoreDirs(HashSet<string> DirOnly, HashSet<string> DirOrFile)
 {
     public static readonly GitIgnoreDirs Empty = new(new HashSet<string>(), new HashSet<string>());
@@ -37,7 +36,7 @@ public static class GitIgnore
         return new GitIgnoreDirs(dirOnly, dirOrFile);
     }
 
-    public static IReadOnlyList<LocalFileInfo> Filter(IReadOnlyList<LocalFileInfo> items, GitIgnoreDirs ignored)
+    public static IReadOnlyList<IArtifact> Filter(IReadOnlyList<IArtifact> items, GitIgnoreDirs ignored)
     {
         var dirOnly = ignored.DirOnly;
         var dirOrFile = ignored.DirOrFile;
@@ -46,7 +45,7 @@ public static class GitIgnore
         {
             if (item.Name.StartsWith(".")) return false;
             if (dirOrFile.Contains(item.Name)) return false;
-            if (item.IsDir && dirOnly.Contains(item.Name)) return false;
+            if (item.Payload is LocalPayload p && p.IsDir && dirOnly.Contains(item.Name)) return false;
             return true;
         }).ToList();
     }

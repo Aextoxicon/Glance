@@ -12,6 +12,7 @@ using Avalonia;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Glance.Models;
 using Glance.Native;
 using Glance.Processing;
 using Glance.Repositories;
@@ -37,6 +38,7 @@ public partial class MainViewModel : ViewModelBase
     public static readonly int[] CodeFontSizes = { 10, 12, 13, 14, 16, 18, 20, 24, 28 };
 
     private readonly ILocalFileSystem _fs;
+    private readonly IArtifactRepo _repo;
     private readonly ICodeParser _parser;
     private readonly CancellationTokenSource _scopeCts = new();
     private readonly object _cacheLock = new();
@@ -84,7 +86,7 @@ public partial class MainViewModel : ViewModelBase
     private bool _isComputingSize;
 
     [ObservableProperty]
-    private LocalFileInfo? _selectedArtifact;
+    private IArtifact? _selectedArtifact;
 
     [ObservableProperty]
     private string? _selectedContent;
@@ -169,9 +171,12 @@ public partial class MainViewModel : ViewModelBase
 
     public MainViewModel() : this(new LocalFileSystem(), new UniffiCodeParser()) { }
 
-    public MainViewModel(ILocalFileSystem fs, ICodeParser parser)
+    public MainViewModel(ILocalFileSystem fs, ICodeParser parser) : this(fs, new LocalArtifactRepo(fs), parser) { }
+
+    public MainViewModel(ILocalFileSystem fs, IArtifactRepo repo, ICodeParser parser)
     {
         _fs = fs;
+        _repo = repo;
         _parser = parser;
         _parseCache = new LruCache(ParseCacheMax);
         _nativeAvailable = ProbeNative();
@@ -337,12 +342,12 @@ public partial class MainViewModel : ViewModelBase
 
         try
         {
-            var items = await Task.Run(() => _fs.ListFiles(path), _loadCts.Token);
-            var ignored = await Task.Run(() => GitIgnore.Parse(ReadGitIgnore(path)), _loadCts.Token);
+            var items = await Task.Run(async () => await _repo.ListAsync(path), _loadCts.Token);
+            var ignored = await Task.Run(async () => GitIgnore.Parse(await ReadGitIgnore(path)), _loadCts.Token);
             if (CurrentPath != path) return;
             TreeItems = new ObservableCollection<TreeItemViewModel>(
-                GitIgnore.Filter(items, ignored).Select(info =>
-                    new TreeItemViewModel(info, _fs, _treeOwnerCts.Token, () => OnTreeDirsChanged?.Invoke(), ignored)));
+                GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), ignored).Select(artifact =>
+                    new TreeItemViewModel(artifact, _repo, _treeOwnerCts.Token, () => OnTreeDirsChanged?.Invoke(), ignored)));
             OnWorkspaceOpened?.Invoke();
             PersistSettings();
 #if !ANDROID
@@ -400,10 +405,10 @@ public partial class MainViewModel : ViewModelBase
         _selectedTreeItem = item;
         CancelAndDispose(ref _selectCts);
         _selectCts = new CancellationTokenSource();
-        await SelectFile(item.Info, _selectCts.Token);
+        await SelectFile(item.Artifact, _selectCts.Token);
     }
 
-    private async Task SelectFile(LocalFileInfo artifact, CancellationToken ct)
+    private async Task SelectFile(IArtifact artifact, CancellationToken ct)
     {
         SelectedArtifact = artifact;
         HasSelection = true;
@@ -424,10 +429,10 @@ public partial class MainViewModel : ViewModelBase
         Trace.Mark("select.end", $"name={artifact.Name}");
     }
 
-    private async Task<LoadedFile?> LoadFile(LocalFileInfo artifact, CancellationToken ct)
+    private async Task<LoadedFile?> LoadFile(IArtifact artifact, CancellationToken ct)
     {
-        if (artifact.IsDir) return null;
-        var path = artifact.Path;
+        if (artifact.Payload is LocalPayload lp && lp.IsDir) return null;
+        var path = artifact.Id;
         if (path.Length == 0)
         {
             MessageText = $"无法读取文件: {artifact.Name}";
@@ -443,7 +448,7 @@ public partial class MainViewModel : ViewModelBase
         LoadedFile? result = null;
         try
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
                 ct.ThrowIfCancellationRequested();
                 if (!_fs.IsTextFile(path))
@@ -457,7 +462,7 @@ public partial class MainViewModel : ViewModelBase
                 {
                     if (_parseCache.TryGet(key, out var cached)) { result = cached; return; }
                 }
-                var content = _fs.TryReadText(path);
+                var content = (await _repo.TryReadTextAsync(path)).GetOrNull();
                 if (content is null)
                 {
                     Trace.Mark("io.read", "failed=true");
@@ -490,7 +495,7 @@ public partial class MainViewModel : ViewModelBase
         return result;
     }
 
-    private LoadedFile BuildPreview(string normalizedContent, LocalFileInfo artifact)
+    private LoadedFile BuildPreview(string normalizedContent, IArtifact artifact)
     {
         if (!_nativeAvailable)
         {
@@ -501,11 +506,11 @@ public partial class MainViewModel : ViewModelBase
             return new LoadedFile(null, normalizedContent,
                 $"文件较大（{FormatSize.Readable(artifact.Size)}），已跳过语法高亮");
         }
-        if (FileProcessor.IsPlainText(artifact.Path))
+        if (FileProcessor.IsPlainText(artifact.Id))
         {
             return new LoadedFile(null, normalizedContent);
         }
-        var parseName = FileProcessor.ResolveParseName(artifact.Path);
+        var parseName = FileProcessor.ResolveParseName(artifact.Id);
         try
         {
             var parsed = _parser.ParseCode(normalizedContent, parseName);
@@ -539,9 +544,10 @@ public partial class MainViewModel : ViewModelBase
     private static bool IsNativeUnavailable(Exception ex) =>
         ex is DllNotFoundException or TypeLoadException or BadImageFormatException;
 
-    private string CacheKey(LocalFileInfo artifact) => $"{artifact.Path}|{artifact.LastMod}|{artifact.Size}";
+    private string CacheKey(IArtifact artifact) => $"{artifact.Id}|{artifact.LastMod}|{artifact.Size}";
 
-    private string? ReadGitIgnore(string path) => _fs.TryReadText(Path.Combine(path, ".gitignore"));
+    private async Task<string?> ReadGitIgnore(string path) =>
+        (await _repo.TryReadTextAsync(Path.Combine(path, ".gitignore"))).GetOrNull();
 
     // 总大小（BFS批并发，避免对超大仓库发起同数量级并发系统调用）
 
@@ -556,18 +562,17 @@ public partial class MainViewModel : ViewModelBase
             var batch = new List<string>();
             while (batch.Count < SizeScanConcurrency && queue.Count > 0) batch.Add(queue.Dequeue());
 
-            var lists = await Task.WhenAll(batch.Select(dir => Task.Run(() =>
+            var lists = await Task.WhenAll(batch.Select(dir => Task.Run(async () =>
             {
                 ct.ThrowIfCancellationRequested();
-                try { return _fs.ListFiles(dir); }
-                catch (Exception) { return (IReadOnlyList<LocalFileInfo>)Array.Empty<LocalFileInfo>(); }
+                return (await _repo.ListAsync(dir)).GetOrNull() ?? Array.Empty<IArtifact>();
             }, ct)));
 
             foreach (var items in lists)
             {
                 foreach (var item in items)
                 {
-                    if (item.IsDir) queue.Enqueue(item.Path);
+                    if (item.Payload is LocalPayload p && p.IsDir) queue.Enqueue(p.AbsolutePath);
                     else total += item.Size;
                 }
             }
@@ -610,12 +615,12 @@ public partial class MainViewModel : ViewModelBase
         List<TreeItemViewModel> newRoots;
         try
         {
-            var items = await Task.Run(() => _fs.ListFiles(path), ct);
+            var items = await Task.Run(async () => await _repo.ListAsync(path), ct);
             if (ct.IsCancellationRequested) return;
-            var ignored = await Task.Run(() => GitIgnore.Parse(ReadGitIgnore(path)), ct);
+            var ignored = await Task.Run(async () => GitIgnore.Parse(await ReadGitIgnore(path)), ct);
             if (ct.IsCancellationRequested) return;
-            newRoots = GitIgnore.Filter(items, ignored).Select(info =>
-                new TreeItemViewModel(info, _fs, _treeOwnerCts?.Token ?? CancellationToken.None,
+            newRoots = GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), ignored).Select(artifact =>
+                new TreeItemViewModel(artifact, _repo, _treeOwnerCts?.Token ?? CancellationToken.None,
                     () => OnTreeDirsChanged?.Invoke(), ignored)).ToList();
         }
         catch (OperationCanceledException) { return; }
@@ -638,7 +643,7 @@ public partial class MainViewModel : ViewModelBase
         var queue = new Queue<(TreeItemViewModel New, TreeItemViewModel Old)>();
         foreach (var newRoot in newRoots)
         {
-            var oldRoot = oldRoots.FirstOrDefault(o => o.IsDir && o.IsExpanded && o.Info.Name == newRoot.Info.Name);
+            var oldRoot = oldRoots.FirstOrDefault(o => o.IsDir && o.IsExpanded && o.Name == newRoot.Name);
             if (oldRoot is not null)
             {
                 newRoot.IsExpanded = true;
@@ -657,7 +662,7 @@ public partial class MainViewModel : ViewModelBase
                 foreach (var child in node.Children)
                 {
                     if (child.IsPlaceholder || !child.IsDir || !child.IsExpanded) continue;
-                    var oldChild = old.Children.FirstOrDefault(c => c.Info.Name == child.Info.Name);
+                    var oldChild = old.Children.FirstOrDefault(c => c.Name == child.Name);
                     if (oldChild is not null) queue.Enqueue((child, oldChild));
                 }
             }
@@ -666,7 +671,7 @@ public partial class MainViewModel : ViewModelBase
 
     private void ReattachSelection()
     {
-        var id = SelectedArtifact?.Path;
+        var id = SelectedArtifact?.Id;
         if (id is null) return;
         var found = FindNodeById(TreeItems, id);
         if (found is not null && found != _selectedTreeItem)
@@ -687,7 +692,7 @@ public partial class MainViewModel : ViewModelBase
         foreach (var item in items)
         {
             if (item.IsPlaceholder) continue;
-            if (item.Info.Path == id) return item;
+            if (item.Artifact.Id == id) return item;
             if (item.IsDir && item.IsExpanded)
             {
                 var found = FindNodeById(item.Children, id);
@@ -697,7 +702,7 @@ public partial class MainViewModel : ViewModelBase
         return null;
     }
 
-    /// <summary>供文件树实时监听（#9 DirectoryWatcher）注册已展开目录路径。</summary>
+    // 供文件树实时监听(#9 DirectoryWatcher)注册已展开目录路径
     public List<string> CurrentExpandedDirPaths()
     {
         var result = new List<string>();
@@ -707,7 +712,7 @@ public partial class MainViewModel : ViewModelBase
         while (queue.Count > 0)
         {
             var node = queue.Dequeue();
-            result.Add(node.Info.Path);
+            result.Add(node.Artifact.Id);
             foreach (var child in node.Children)
                 if (!child.IsPlaceholder && child.IsDir && child.IsExpanded) queue.Enqueue(child);
         }
@@ -715,13 +720,11 @@ public partial class MainViewModel : ViewModelBase
     }
 
 #if !ANDROID
-    /// <summary>DirectoryWatcher回调：FileSystemWatcher事件在thread-pool线程触发，刷新树须回到UI线程。</summary>
     private void OnDirChanged()
     {
         Dispatcher.UIThread.Post(() => _ = RefreshTree(), DispatcherPriority.Background);
     }
 
-    /// <summary>按当前根目录 + 已展开目录重算监听集合（diff增删，等价于KMP watcher.syncRoot）。</summary>
     private void SyncWatcher() => _dirWatcher?.SyncRoot(CurrentPath, CurrentExpandedDirPaths());
 #endif
 
