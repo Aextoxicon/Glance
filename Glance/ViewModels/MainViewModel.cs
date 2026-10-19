@@ -465,11 +465,18 @@ public partial class MainViewModel : ViewModelBase
                     error = $"[二进制文件] {artifact.Name} 无法预览";
                     return;
                 }
+                Trace.Mark("istext", "binary=false");
                 var key = CacheKey(artifact);
                 lock (_cacheLock)
                 {
-                    if (_parseCache.TryGet(key, out var cached)) { result = cached; return; }
+                    if (_parseCache.TryGet(key, out var cached))
+                    {
+                        Trace.Mark("cache.hit", $"bytes={artifact.Size}");
+                        result = cached;
+                        return;
+                    }
                 }
+                Trace.Mark("cache.miss", $"bytes={artifact.Size}");
                 var content = (await _repo.TryReadTextAsync(path)).GetOrNull();
                 if (content is null)
                 {
