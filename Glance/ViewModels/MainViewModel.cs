@@ -345,10 +345,11 @@ public partial class MainViewModel : ViewModelBase
         TotalSize = 0;
         TreeItems = new ObservableCollection<TreeItemViewModel>();
 
+        var ignored = GitIgnoreDirs.Empty;
         try
         {
             var items = await Task.Run(async () => await _repo.ListAsync(path), _loadCts.Token);
-            var ignored = await Task.Run(async () => GitIgnore.Parse(await ReadGitIgnore(path)), _loadCts.Token);
+            ignored = await Task.Run(async () => GitIgnore.Parse(await ReadGitIgnore(path)), _loadCts.Token);
             if (CurrentPath != path) return;
             TreeItems = new ObservableCollection<TreeItemViewModel>(
                 GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), ignored).Select(artifact =>
@@ -373,7 +374,7 @@ public partial class MainViewModel : ViewModelBase
         var sizePath = path;
         try
         {
-            var size = await ComputeTotalSize(sizePath, _sizeCts.Token);
+            var size = await ComputeTotalSize(sizePath, ignored, _sizeCts.Token);
             if (!_scopeCts.IsCancellationRequested && CurrentPath == sizePath)
             {
                 TotalSize = size;
@@ -566,7 +567,7 @@ public partial class MainViewModel : ViewModelBase
 
     // 总大小（BFS批并发，避免对超大仓库发起同数量级并发系统调用）
 
-    private async Task<long> ComputeTotalSize(string path, CancellationToken ct)
+    private async Task<long> ComputeTotalSize(string path, GitIgnoreDirs ignored, CancellationToken ct)
     {
         long total = 0;
         var queue = new Queue<string>();
@@ -585,7 +586,7 @@ public partial class MainViewModel : ViewModelBase
 
             foreach (var items in lists)
             {
-                foreach (var item in items)
+                foreach (var item in GitIgnore.Filter(items, ignored))
                 {
                     if (item.Payload is LocalPayload p && p.IsDir) queue.Enqueue(p.AbsolutePath);
                     else total += item.Size;

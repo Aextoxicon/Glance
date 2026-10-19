@@ -169,7 +169,7 @@ public partial class MainView : UserControl
         var wide = _vm.IsWide;
         RootGrid.ColumnDefinitions = wide
             ? new ColumnDefinitions("260,*,220")
-            : new ColumnDefinitions("*,0,0");
+            : new ColumnDefinitions("0,*,0");
 
         // 文件树：宽屏进左列，窄屏进左抽屉
         if (wide)
