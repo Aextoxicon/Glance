@@ -33,6 +33,7 @@ public partial class MainView : UserControl
     {
         InitializeComponent();
         FileTree.AddHandler(TreeViewItem.ExpandedEvent, OnTreeItemExpanded);
+        FileTree.ContainerPrepared += OnFileTreeContainerPrepared;
         SizeChanged += OnSizeChanged;
         DataContextChanged += OnDataContextChanged;
         if (DataContext is MainViewModel vm) AttachVm(vm);
@@ -112,10 +113,18 @@ public partial class MainView : UserControl
             _ = n.LoadChildrenAsync(CancellationToken.None);
     }
 
+    // 占位符节点只为让目录显示展开箭头而存在，容器层直接隐藏避免占一整行
+    private void OnFileTreeContainerPrepared(object? sender, ContainerPreparedEventArgs e)
+    {
+        if (e.Container.DataContext is TreeItemViewModel { IsPlaceholder: true })
+            e.Container.IsVisible = false;
+    }
+
     private void OnTreeSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_vm is null) return;
-        var node = e.AddedItems.OfType<TreeItemViewModel>().FirstOrDefault();
+        // 占位符不是真实条目（目录初始用来显示展开箭头），跳过以免选中后报空文件名
+        var node = e.AddedItems.OfType<TreeItemViewModel>().FirstOrDefault(n => !n.IsPlaceholder);
         if (node is null || node == _lastSelected) return;
         _lastSelected = node;
         _ = _vm.SelectItem(node);

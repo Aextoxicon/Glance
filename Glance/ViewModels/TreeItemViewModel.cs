@@ -52,6 +52,7 @@ public partial class TreeItemViewModel : ViewModelBase
     private bool _isSelected;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SizeDisplay))]
     private int _childCount;
 
     public ObservableCollection<TreeItemViewModel> Children { get; } = new();

@@ -402,7 +402,7 @@ public partial class MainViewModel : ViewModelBase
 
     public async Task SelectItem(TreeItemViewModel? item)
     {
-        if (item is null) return;
+        if (item is null || item.IsPlaceholder) return;
         if (item.IsDir)
         {
             item.ToggleExpanded();

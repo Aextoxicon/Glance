@@ -17,14 +17,14 @@
     <StackPanel Spacing="6">
       <TextBlock Text="代码字号" />
       <ComboBox ItemsSource="{x:Static vm:MainViewModel.CodeFontSizes}"
-                SelectedItem="{Binding CodeFontSize}"
+                SelectedItem="{Binding CodeFontSize, Mode=TwoWay}"
                 HorizontalAlignment="Left" MinWidth="100" />
     </StackPanel>
-    <CheckBox Content="记住上次打开的目录" IsChecked="{Binding RememberLastDir}" />
-    <CheckBox Content="显示行号" IsChecked="{Binding ShowLineNumbers}" />
+    <CheckBox Content="记住上次打开的目录" IsChecked="{Binding RememberLastDir, Mode=TwoWay}" />
+    <CheckBox Content="显示行号" IsChecked="{Binding ShowLineNumbers, Mode=TwoWay}" />
     <StackPanel Spacing="6">
       <TextBlock Text="诊断" />
-      <CheckBox Content="启用诊断追踪（环形缓冲，release 亦可产日志）" IsChecked="{Binding TraceEnabled}" />
+      <CheckBox Content="启用诊断追踪（环形缓冲，release 亦可产日志）" IsChecked="{Binding TraceEnabled, Mode=TwoWay}" />
       <Button Content="导出日志" HorizontalAlignment="Left" Click="OnExportTrace" />
     </StackPanel>
     <Button Content="关闭" HorizontalAlignment="Right" Click="OnClose" />
