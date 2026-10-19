@@ -85,9 +85,14 @@
     <Border Grid.Row="1" Grid.Column="0" IsVisible="{Binding IsTreeEmpty}"
             Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
             ZIndex="5">
-      <TextBlock Text="空目录"
-                 HorizontalAlignment="Center" VerticalAlignment="Center"
-                 Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+      <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+        <TextBlock Text="空目录" IsVisible="{Binding !TreeLoadMessage}"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+        <TextBlock Text="{Binding TreeLoadMessage}" IsVisible="{Binding TreeLoadMessage}"
+                   TextWrapping="Wrap" Margin="12"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" />
+      </Grid>
     </Border>
 
     <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="Auto,*">

@@ -116,6 +116,9 @@ public partial class MainViewModel : ViewModelBase
     private bool _isTreeEmpty;
 
     [ObservableProperty]
+    private string? _treeLoadMessage;
+
+    [ObservableProperty]
     private bool _showNarrowFileName;
 
     [ObservableProperty]
@@ -300,6 +303,7 @@ public partial class MainViewModel : ViewModelBase
         HasSelection = false;
         IsLoadingPreview = false;
         MessageText = null;
+        TreeLoadMessage = null;
         PreviewNotice = null;
         OnTreeDirsChanged?.Invoke();
     }
@@ -336,6 +340,7 @@ public partial class MainViewModel : ViewModelBase
         CurrentPath = path;
         LastDirectory = path;
         HasWorkspace = true;
+        TreeLoadMessage = null;
         lock (_cacheLock) _parseCache.Clear();
         TotalSize = 0;
         TreeItems = new ObservableCollection<TreeItemViewModel>();
@@ -348,6 +353,7 @@ public partial class MainViewModel : ViewModelBase
             TreeItems = new ObservableCollection<TreeItemViewModel>(
                 GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), ignored).Select(artifact =>
                     new TreeItemViewModel(artifact, _repo, _treeOwnerCts.Token, () => OnTreeDirsChanged?.Invoke(), ignored)));
+            TreeLoadMessage = null;
             OnWorkspaceOpened?.Invoke();
             PersistSettings();
 #if !ANDROID
@@ -357,7 +363,9 @@ public partial class MainViewModel : ViewModelBase
         catch (OperationCanceledException) { return; }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            MessageText = $"加载失败: {ex.Message}";
+            var msg = $"加载失败: {ex.Message}";
+            MessageText = msg;
+            TreeLoadMessage = msg;
         }
 
         IsComputingSize = true;
