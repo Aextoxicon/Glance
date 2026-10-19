@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Glance.Native;
 
@@ -15,7 +16,7 @@ public sealed class OutlineRow
         Node = node;
         Depth = depth;
         KindLabel = KindLabelFor(node.Kind);
-        Indent = new Thickness(depth * 14, 0, 0, 0);
+        Indent = new Thickness(Math.Min(depth, 3) * 14, 0, 0, 0);
     }
 
     public static string KindLabelFor(string kind)
