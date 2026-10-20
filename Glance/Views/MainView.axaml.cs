@@ -61,7 +61,8 @@ public partial class MainView : UserControl
             if (topLevel?.StorageProvider is not { } sp) return null;
             var folders = await sp.OpenFolderPickerAsync(new FolderPickerOpenOptions());
             if (folders.Count == 0) return null;
-            return folders[0].Path?.ToString();
+            var uri = folders[0].Path;
+            return uri?.Scheme == Uri.UriSchemeFile ? uri.LocalPath : null;
         };
         ApplyLayout();
     }

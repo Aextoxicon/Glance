@@ -351,6 +351,12 @@ public partial class MainViewModel : ViewModelBase
             var items = await Task.Run(async () => await _repo.ListAsync(path), _loadCts.Token);
             ignored = await Task.Run(async () => GitIgnore.Parse(await ReadGitIgnore(path)), _loadCts.Token);
             if (CurrentPath != path) return;
+            if (!items.IsSuccess)
+            {
+                var failure = items as Failure<IReadOnlyList<IArtifact>>;
+                TreeLoadMessage = $"加载失败: {failure?.Error.Message ?? "未知错误"}";
+                return;
+            }
             TreeItems = new ObservableCollection<TreeItemViewModel>(
                 GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), ignored).Select(artifact =>
                     new TreeItemViewModel(artifact, _repo, _treeOwnerCts.Token, () => OnTreeDirsChanged?.Invoke(), ignored)));
@@ -633,6 +639,12 @@ public partial class MainViewModel : ViewModelBase
         {
             var items = await Task.Run(async () => await _repo.ListAsync(path), ct);
             if (ct.IsCancellationRequested) return;
+            if (!items.IsSuccess)
+            {
+                var failure = items as Failure<IReadOnlyList<IArtifact>>;
+                MessageText = $"刷新失败: {failure?.Error.Message ?? "未知错误"}";
+                return;
+            }
             var ignored = await Task.Run(async () => GitIgnore.Parse(await ReadGitIgnore(path)), ct);
             if (ct.IsCancellationRequested) return;
             newRoots = GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), ignored).Select(artifact =>
