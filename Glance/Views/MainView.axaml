@@ -169,7 +169,7 @@
                           Padding="4,1" CornerRadius="3">
                     <TextBlock Text="{Binding KindLabel}" FontSize="11" />
                   </Border>
-                  <TextBlock Text="{Binding Node.Name}" />
+                  <TextBlock Text="{Binding DisplayName}" />
                 </StackPanel>
                 <TextBlock Text="{Binding Node.Detail}" FontSize="11"
                            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />

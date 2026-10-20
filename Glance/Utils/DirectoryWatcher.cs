@@ -1,36 +1,33 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
-// 监听容错catch等价于KMP的register返回null / normalize兜底（权限不足、路径非法、平台不支持），属有意设计，屏蔽CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）。
+// 扫描容错catch等价于KMP的normalize兜底（权限不足、路径非法），属有意设计，屏蔽CA1031。
 #pragma warning disable CA1031
 
 namespace Glance.Utils;
 
 /// <summary>
-/// 用BCL https://learn.microsoft.com/dotnet/api/system.io.filesystemwatcher
-/// 实现（仅桌面/PC可用；Android/iOS不支持，调用方以 #if !ANDROID排除本类）
+/// 定期扫描目录变化（仅桌面/PC；Android/iOS不支持，调用方以 #if !ANDROID排除本类）。
+/// 快照对比：无变化不触发回调，避免树反复重建。
 /// </summary>
 public sealed class DirectoryWatcher : IDisposable
 {
-    private readonly Action _onBatchedChange;
-    private readonly int _debounceMs;
+    private readonly Action _onChange;
+    private readonly TimeSpan _interval;
     private readonly object _gate = new();
-    private readonly Dictionary<string, FileSystemWatcher> _watchers = new(StringComparer.Ordinal);
-    private readonly Timer _debounceTimer;
+    private readonly HashSet<string> _paths = new(StringComparer.Ordinal);
+    private readonly Timer _timer;
+    private HashSet<string>? _lastSnapshot;
     private bool _disposed;
 
-    public DirectoryWatcher(Action onBatchedChange, int debounceMs = 300)
+    public DirectoryWatcher(Action onChange, TimeSpan? interval = null)
     {
-        _onBatchedChange = onBatchedChange ?? throw new ArgumentNullException(nameof(onBatchedChange));
-        _debounceMs = debounceMs;
-        _debounceTimer = new Timer(_ => Flush(), null, Timeout.Infinite, Timeout.Infinite);
+        _onChange = onChange ?? throw new ArgumentNullException(nameof(onChange));
+        _interval = interval ?? TimeSpan.FromSeconds(3);
+        _timer = new Timer(OnTick, null, Timeout.Infinite, Timeout.Infinite);
     }
 
-    /// <summary>
-    /// 目标为空集合则停止全部监听。
-    /// </summary>
     public void SyncRoot(string? root, IReadOnlyList<string>? expandedDirs)
     {
         var target = new HashSet<string>(StringComparer.Ordinal);
@@ -49,91 +46,80 @@ public sealed class DirectoryWatcher : IDisposable
         lock (_gate)
         {
             if (_disposed) return;
-            foreach (var path in _watchers.Keys.ToList())
-            {
-                if (!target.Contains(path)) RemoveWatcher(path);
-            }
+            _paths.Clear();
+            foreach (var p in target) _paths.Add(p);
+            _lastSnapshot = null;
             if (target.Count == 0)
+                _timer.Change(Timeout.Infinite, Timeout.Infinite);
+            else
+                _timer.Change(_interval, _interval);
+        }
+    }
+
+    private void OnTick(object? state)
+    {
+        HashSet<string> paths;
+        lock (_gate)
+        {
+            if (_disposed || _paths.Count == 0) return;
+            paths = new HashSet<string>(_paths, StringComparer.Ordinal);
+            _timer.Change(Timeout.Infinite, Timeout.Infinite);
+        }
+
+        var snapshot = ScanSnapshot(paths);
+
+        lock (_gate)
+        {
+            if (_disposed || _paths.Count == 0) return;
+            if (_lastSnapshot is null)
             {
-                StopAll();
+                _lastSnapshot = snapshot;
+                _timer.Change(_interval, _interval);
                 return;
             }
-            foreach (var path in target)
+            if (_lastSnapshot.SetEquals(snapshot))
             {
-                if (!_watchers.ContainsKey(path)) AddWatcher(path);
+                _timer.Change(_interval, _interval);
+                return;
             }
+            _lastSnapshot = snapshot;
+        }
+
+        try { _onChange(); } catch { }
+
+        lock (_gate)
+        {
+            if (!_disposed && _paths.Count > 0)
+                _timer.Change(_interval, _interval);
         }
     }
 
-    public void Close() => Dispose();
-
-    private void AddWatcher(string path)
+    private static HashSet<string> ScanSnapshot(HashSet<string> paths)
     {
-        if (!Directory.Exists(path)) return;
-        try
+        var snapshot = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var dir in paths)
         {
-            var fsw = new FileSystemWatcher(path)
+            try
             {
-                IncludeSubdirectories = false,
-                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite,
-            };
-            fsw.Created += OnFsEvent;
-            fsw.Deleted += OnFsEvent;
-            fsw.Renamed += OnFsEvent;
-            fsw.Changed += OnFsEvent;
-            fsw.Error += OnFsError;
-            fsw.EnableRaisingEvents = true;
-            _watchers[path] = fsw;
+                foreach (var entry in Directory.EnumerateFileSystemEntries(dir))
+                {
+                    try
+                    {
+                        var attrs = File.GetAttributes(entry);
+                        if ((attrs & FileAttributes.Directory) != 0)
+                            snapshot.Add($"{entry}|D");
+                        else
+                        {
+                            var fi = new FileInfo(entry);
+                            snapshot.Add($"{entry}|{fi.Length}|{fi.LastWriteTimeUtc.Ticks}");
+                        }
+                    }
+                    catch { snapshot.Add(entry); }
+                }
+            }
+            catch { }
         }
-        catch (Exception)
-        {
-            // 监听失败（权限不足/平台不支持）静默跳过
-        }
-    }
-
-    private void RemoveWatcher(string path)
-    {
-        if (_watchers.TryGetValue(path, out var fsw))
-        {
-            fsw.EnableRaisingEvents = false;
-            fsw.Created -= OnFsEvent;
-            fsw.Deleted -= OnFsEvent;
-            fsw.Renamed -= OnFsEvent;
-            fsw.Changed -= OnFsEvent;
-            fsw.Error -= OnFsError;
-            fsw.Dispose();
-            _watchers.Remove(path);
-        }
-    }
-
-    private void OnFsEvent(object sender, FileSystemEventArgs e) => ScheduleDebouncedNotify();
-
-    private void OnFsError(object sender, ErrorEventArgs e) => ScheduleDebouncedNotify();
-
-    private void ScheduleDebouncedNotify()
-    {
-        lock (_gate)
-        {
-            if (_disposed) return;
-            try { _debounceTimer.Change(_debounceMs, Timeout.Infinite); }
-            catch (ObjectDisposedException) { }
-        }
-    }
-
-    private void Flush()
-    {
-        lock (_gate)
-        {
-            if (_disposed) return;
-            try { _debounceTimer.Change(Timeout.Infinite, Timeout.Infinite); }
-            catch (ObjectDisposedException) { }
-        }
-        _onBatchedChange();
-    }
-
-    private void StopAll()
-    {
-        foreach (var path in _watchers.Keys.ToList()) RemoveWatcher(path);
+        return snapshot;
     }
 
     private static string? Normalize(string? path)
@@ -144,7 +130,7 @@ public sealed class DirectoryWatcher : IDisposable
             return Path.GetFullPath(path)
                 .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
-        catch (Exception) { return path; }
+        catch { return path; }
     }
 
     public void Dispose()
@@ -153,8 +139,7 @@ public sealed class DirectoryWatcher : IDisposable
         {
             if (_disposed) return;
             _disposed = true;
-            StopAll();
         }
-        _debounceTimer.Dispose();
+        _timer.Dispose();
     }
 }

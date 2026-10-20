@@ -136,7 +136,7 @@ public partial class MainViewModel : ViewModelBase
     partial void OnTraceEnabledChanged(bool value) => Trace.Enabled = value;
 
     [ObservableProperty]
-    private bool _outlineOpen = true;
+    private bool _outlineOpen = false;
 
     [ObservableProperty]
     private int? _outlineScrollTargetLine;
@@ -718,7 +718,7 @@ public partial class MainViewModel : ViewModelBase
         return null;
     }
 
-    // 供文件树实时监听(#9 DirectoryWatcher)注册已展开目录路径
+    // 供文件树定期扫描(DirectoryWatcher)注册已展开目录路径
     public List<string> CurrentExpandedDirPaths()
     {
         var result = new List<string>();

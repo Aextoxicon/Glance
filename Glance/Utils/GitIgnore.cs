@@ -26,7 +26,7 @@ public static class GitIgnore
             if (line.StartsWith("!")) continue;
             if (line.Contains('*') || line.Contains('?') || line.Contains('[') || line.Contains(']')) continue;
             if (line.StartsWith("/")) continue;
-            var name = line.TrimEnd('/');
+            var name = line.Length > 0 && line[^1] == '/' ? line[..^1] : line;
             if (name.Length == 0 || name.StartsWith(".")) continue;
             if (name.Contains('/')) continue;
             if (line.EndsWith("/")) dirOnly.Add(name);

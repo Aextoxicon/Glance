@@ -10,6 +10,7 @@ public sealed class OutlineRow
     public int Depth { get; }
     public string KindLabel { get; }
     public Thickness Indent { get; }
+    public string DisplayName => string.IsNullOrEmpty(Node.Name) ? "（无名）" : Node.Name;
 
     public OutlineRow(OutlineNode node, int depth)
     {
@@ -19,30 +20,41 @@ public sealed class OutlineRow
         Indent = new Thickness(Math.Min(depth, 3) * 14, 0, 0, 0);
     }
 
+    private static readonly (string Prefix, string Label)[] KindPrefixes =
+    {
+        ("generator_function", "函数"),
+        ("namespace", "命名空间"),
+        ("class", "类"),
+        ("interface", "接口"),
+        ("struct", "结构体"),
+        ("enum", "枚举"),
+        ("method", "方法"),
+        ("constructor", "构造"),
+        ("function", "函数"),
+        ("type_alias", "类型"),
+        ("type_item", "类型"),
+        ("type_declaration", "类型"),
+        ("const", "常量"),
+        ("field", "字段"),
+        ("property", "属性"),
+        ("variable", "变量"),
+        ("module", "模块"),
+        ("mod", "模块"),
+        ("macro", "宏"),
+        ("record", "记录"),
+        ("trait", "特征"),
+        ("impl", "实现"),
+        ("union", "联合"),
+        ("package_clause", "包"),
+    };
+
     public static string KindLabelFor(string kind)
     {
-        return kind switch
+        foreach (var (prefix, label) in KindPrefixes)
         {
-            "class_declaration" or "class" => "类",
-            "interface_declaration" or "interface" => "接口",
-            "struct" or "struct_declaration" => "结构体",
-            "enum" or "enum_declaration" => "枚举",
-            "method" or "method_declaration" => "方法",
-            "function" or "function_declaration" => "函数",
-            "namespace" or "namespace_definition" => "命名空间",
-            "type_alias" or "type_alias_declaration" => "类型",
-            "const" or "const_declaration" => "常量",
-            "package_clause" => "包",
-            "module" or "module_declaration" => "模块",
-            "trait" => "特征",
-            "impl" => "实现",
-            "constructor" or "constructor_declaration" => "构造",
-            "field" or "field_declaration" => "字段",
-            "property" or "property_declaration" => "属性",
-            "variable" or "variable_declaration" => "变量",
-            "macro" or "macro_declaration" => "宏",
-            "union" => "联合",
-            _ => kind
-        };
+            if (kind.StartsWith(prefix, StringComparison.Ordinal))
+                return label;
+        }
+        return kind;
     }
 }
