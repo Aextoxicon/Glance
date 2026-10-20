@@ -14,6 +14,10 @@
     <vm:MainViewModel />
   </Design.DataContext>
 
+  <UserControl.Resources>
+    <x:Int32 x:Key="Zero">0</x:Int32>
+  </UserControl.Resources>
+
   <UserControl.Styles>
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
   </UserControl.Styles>
@@ -82,7 +86,8 @@
         </TreeView>
     </Border>
 
-    <Border Grid.Row="1" Grid.Column="0" IsVisible="{Binding IsTreeEmpty}"
+    <Border Grid.Row="1" Grid.Column="0"
+            IsVisible="{Binding #FileTree.ItemCount, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={StaticResource Zero}}"
             Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
             ZIndex="5">
       <Grid HorizontalAlignment="Center" VerticalAlignment="Center">

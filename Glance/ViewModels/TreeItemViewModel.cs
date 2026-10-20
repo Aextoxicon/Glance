@@ -22,11 +22,11 @@ namespace Glance.ViewModels;
 /// </summary>
 public partial class TreeItemViewModel : ViewModelBase
 {
-    private readonly IArtifact _artifact;
+    private IArtifact _artifact;
     private readonly IArtifactRepo? _repo;
     private readonly CancellationToken _owner;
     private readonly Action? _onDirsChanged;
-    private readonly GitIgnoreDirs _gitIgnored;
+    private GitIgnoreDirs _gitIgnored;
     // https://learn.microsoft.com/dotnet/api/system.threading.semaphoreslim
     private readonly SemaphoreSlim _opGate = new(1, 1);
 
@@ -126,14 +126,7 @@ public partial class TreeItemViewModel : ViewModelBase
                 .OrderBy(a => !(a.Payload is LocalPayload lp && lp.IsDir))
                 .ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            ChildCount = sorted.Count;
-            Children.Clear();
-            foreach (var child in sorted)
-            {
-                Children.Add(new TreeItemViewModel(child, _repo, _owner, _onDirsChanged, _gitIgnored));
-            }
-            // 空目录：保留占位符，保证箭头始终显示
-            if (Children.Count == 0) Children.Add(new TreeItemViewModel());
+            ReconcileChildren(sorted);
         }
         finally
         {
@@ -148,42 +141,56 @@ public partial class TreeItemViewModel : ViewModelBase
         foreach (var child in Children) child.CollapseRecursive();
     }
 
-    // 刷新重建保留旧节点已展开的子目录展开态
-    public async Task RefreshFrom(TreeItemViewModel oldNode, CancellationToken ct = default)
+    public void UpdateArtifact(IArtifact artifact)
     {
-        if (!IsDir || _repo is null) return;
-        await _opGate.WaitAsync(ct);
-        try
+        _artifact = artifact;
+        OnPropertyChanged(nameof(SizeDisplay));
+    }
+
+    // 按Artifact.Id就地增删移，复用已有节点以保住容器身份与展开/选中态
+    public void ReconcileChildren(IReadOnlyList<IArtifact> sorted, GitIgnoreDirs? gitIgnored = null)
+    {
+        if (_repo is null) return;
+        if (gitIgnored is not null) _gitIgnored = gitIgnored;
+
+        for (var i = Children.Count - 1; i >= 0; i--)
+            if (Children[i].IsPlaceholder) Children.RemoveAt(i);
+
+        var byId = new Dictionary<string, TreeItemViewModel>(Children.Count, StringComparer.Ordinal);
+        for (var i = Children.Count - 1; i >= 0; i--)
+            if (!byId.TryAdd(Children[i].Artifact.Id, Children[i])) Children.RemoveAt(i);
+
+        var desired = new List<TreeItemViewModel>(sorted.Count);
+        foreach (var artifact in sorted)
         {
-            IsLoading = true;
-            var path = _artifact.Payload is LocalPayload p ? p.AbsolutePath : _artifact.Id;
-            var items = await Task.Run(async () => await _repo!.ListAsync(path), ct);
-            var expandedChildNames = oldNode.Children
-                .Where(c => c.IsDir && c.IsExpanded)
-                .Select(c => c.Name)
-                .ToHashSet();
-            var sorted = GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), _gitIgnored)
-                .OrderBy(a => !(a.Payload is LocalPayload lp && lp.IsDir))
-                .ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            ChildCount = sorted.Count;
-            Children.Clear();
-            foreach (var child in sorted)
+            var isDir = artifact.Payload is LocalPayload p && p.IsDir;
+            if (byId.TryGetValue(artifact.Id, out var node) && node.IsDir == isDir)
             {
-                var newChild = new TreeItemViewModel(child, _repo, _owner, _onDirsChanged, _gitIgnored);
-                if (newChild.IsDir && expandedChildNames.Contains(child.Name))
-                {
-                    newChild.IsExpanded = true;
-                }
-                Children.Add(newChild);
+                node.UpdateArtifact(artifact);
+                desired.Add(node);
             }
-            if (Children.Count == 0) Children.Add(new TreeItemViewModel());
+            else
+            {
+                if (node is not null) Children.Remove(node);
+                desired.Add(new TreeItemViewModel(artifact, _repo, _owner, _onDirsChanged, _gitIgnored));
+            }
         }
-        finally
+
+        var keep = new HashSet<TreeItemViewModel>(desired);
+        for (var i = Children.Count - 1; i >= 0; i--)
+            if (!keep.Contains(Children[i])) Children.RemoveAt(i);
+
+        for (var i = 0; i < desired.Count; i++)
         {
-            IsLoading = false;
-            _opGate.Release();
+            var node = desired[i];
+            if (i < Children.Count && ReferenceEquals(Children[i], node)) continue;
+            var from = Children.IndexOf(node);
+            if (from >= 0) Children.Move(from, i);
+            else Children.Insert(i, node);
         }
+
+        ChildCount = sorted.Count;
+        if (Children.Count == 0) Children.Add(new TreeItemViewModel());
     }
 
     // 供MainViewModel.expandAll分批调用

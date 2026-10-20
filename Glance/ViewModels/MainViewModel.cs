@@ -113,9 +113,6 @@ public partial class MainViewModel : ViewModelBase
     private bool _isLoadingPreview;
 
     [ObservableProperty]
-    private bool _isTreeEmpty;
-
-    [ObservableProperty]
     private string? _treeLoadMessage;
 
     [ObservableProperty]
@@ -222,12 +219,6 @@ public partial class MainViewModel : ViewModelBase
     partial void OnCodeFontSizeChanged(int value) => PersistSettings();
 
     partial void OnShowLineNumbersChanged(bool value) => PersistSettings();
-
-    partial void OnTreeItemsChanged(ObservableCollection<TreeItemViewModel> value) =>
-        IsTreeEmpty = HasWorkspace && (value is null || value.Count == 0);
-
-    partial void OnHasWorkspaceChanged(bool value) =>
-        IsTreeEmpty = value && (TreeItems is null || TreeItems.Count == 0);
 
     partial void OnIsWideChanged(bool value) => ShowNarrowFileName = !value && HasSelection;
     partial void OnHasSelectionChanged(bool value) => ShowNarrowFileName = !IsWide && value;
@@ -633,8 +624,6 @@ public partial class MainViewModel : ViewModelBase
         _treeRefreshCts = new CancellationTokenSource();
         var ct = _treeRefreshCts.Token;
         var path = CurrentPath;
-        var oldRoots = TreeItems.ToList();
-        List<TreeItemViewModel> newRoots;
         try
         {
             var items = await Task.Run(async () => await _repo.ListAsync(path), ct);
@@ -647,9 +636,8 @@ public partial class MainViewModel : ViewModelBase
             }
             var ignored = await Task.Run(async () => GitIgnore.Parse(await ReadGitIgnore(path)), ct);
             if (ct.IsCancellationRequested) return;
-            newRoots = GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), ignored).Select(artifact =>
-                new TreeItemViewModel(artifact, _repo, _treeOwnerCts?.Token ?? CancellationToken.None,
-                    () => OnTreeDirsChanged?.Invoke(), ignored)).ToList();
+            ReconcileRoots(GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), ignored), ignored);
+            await ReconcileExpandedDirs(ignored, ct);
         }
         catch (OperationCanceledException) { return; }
         catch (Exception ex)
@@ -658,43 +646,82 @@ public partial class MainViewModel : ViewModelBase
             return;
         }
 
-        TreeItems = new ObservableCollection<TreeItemViewModel>(newRoots);
-        await RefreshExpandedSubtree(oldRoots, newRoots, ct);
         if (ct.IsCancellationRequested) return;
         ReattachSelection();
         OnTreeDirsChanged?.Invoke();
     }
 
-    private async Task RefreshExpandedSubtree(
-        List<TreeItemViewModel> oldRoots, List<TreeItemViewModel> newRoots, CancellationToken ct)
+    private void ReconcileRoots(IReadOnlyList<IArtifact> sorted, GitIgnoreDirs ignored)
     {
-        var queue = new Queue<(TreeItemViewModel New, TreeItemViewModel Old)>();
-        foreach (var newRoot in newRoots)
+        var byId = new Dictionary<string, TreeItemViewModel>(TreeItems.Count, StringComparer.Ordinal);
+        foreach (var root in TreeItems)
+            if (!root.IsPlaceholder) byId.TryAdd(root.Artifact.Id, root);
+
+        var desired = new List<TreeItemViewModel>(sorted.Count);
+        foreach (var artifact in sorted)
         {
-            var oldRoot = oldRoots.FirstOrDefault(o => o.IsDir && o.IsExpanded && o.Name == newRoot.Name);
-            if (oldRoot is not null)
+            var isDir = artifact.Payload is LocalPayload p && p.IsDir;
+            if (byId.TryGetValue(artifact.Id, out var node) && node.IsDir == isDir)
             {
-                newRoot.IsExpanded = true;
-                queue.Enqueue((newRoot, oldRoot));
+                node.UpdateArtifact(artifact);
+                desired.Add(node);
+            }
+            else
+            {
+                desired.Add(new TreeItemViewModel(artifact, _repo, _treeOwnerCts?.Token ?? CancellationToken.None,
+                    () => OnTreeDirsChanged?.Invoke(), ignored));
             }
         }
+
+        var keep = new HashSet<TreeItemViewModel>(desired);
+        for (var i = TreeItems.Count - 1; i >= 0; i--)
+            if (!keep.Contains(TreeItems[i])) TreeItems.RemoveAt(i);
+
+        for (var i = 0; i < desired.Count; i++)
+        {
+            var node = desired[i];
+            if (i < TreeItems.Count && ReferenceEquals(TreeItems[i], node)) continue;
+            var from = TreeItems.IndexOf(node);
+            if (from >= 0) TreeItems.Move(from, i);
+            else TreeItems.Insert(i, node);
+        }
+    }
+
+    private async Task ReconcileExpandedDirs(GitIgnoreDirs ignored, CancellationToken ct)
+    {
+        var queue = new Queue<TreeItemViewModel>();
+        foreach (var root in TreeItems)
+            if (root.IsDir && root.IsExpanded) queue.Enqueue(root);
+
         while (queue.Count > 0)
         {
             ct.ThrowIfCancellationRequested();
-        var batch = new List<(TreeItemViewModel New, TreeItemViewModel Old)>();
-        while (batch.Count < ExpandConcurrency && queue.Count > 0) batch.Add(queue.Dequeue());
-        await Task.WhenAll(batch.Select(p => p.New.RefreshFrom(p.Old, ct)));
+            var batch = new List<TreeItemViewModel>();
+            while (batch.Count < ExpandConcurrency && queue.Count > 0) batch.Add(queue.Dequeue());
+
+            var loaded = await Task.WhenAll(batch.Select(dir => LoadSortedChildrenAsync(dir, ignored, ct)));
             if (ct.IsCancellationRequested) return;
-            foreach (var (node, old) in batch)
+
+            for (var i = 0; i < batch.Count; i++)
             {
-                foreach (var child in node.Children)
-                {
-                    if (child.IsPlaceholder || !child.IsDir || !child.IsExpanded) continue;
-                    var oldChild = old.Children.FirstOrDefault(c => c.Name == child.Name);
-                    if (oldChild is not null) queue.Enqueue((child, oldChild));
-                }
+                if (loaded[i] is not { } children) continue;
+                batch[i].ReconcileChildren(children, ignored);
+                foreach (var child in batch[i].Children)
+                    if (child.IsDir && child.IsExpanded) queue.Enqueue(child);
             }
         }
+    }
+
+    private async Task<IReadOnlyList<IArtifact>?> LoadSortedChildrenAsync(
+        TreeItemViewModel dir, GitIgnoreDirs ignored, CancellationToken ct)
+    {
+        var path = dir.Artifact.Payload is LocalPayload p ? p.AbsolutePath : dir.Artifact.Id;
+        var result = await Task.Run(async () => await _repo.ListAsync(path), ct);
+        if (result.GetOrNull() is not { } items) return null;
+        return GitIgnore.Filter(items, ignored)
+            .OrderBy(a => !(a.Payload is LocalPayload lp && lp.IsDir))
+            .ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private void ReattachSelection()
