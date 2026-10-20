@@ -61,8 +61,10 @@ public partial class MainView : UserControl
             if (topLevel?.StorageProvider is not { } sp) return null;
             var folders = await sp.OpenFolderPickerAsync(new FolderPickerOpenOptions());
             if (folders.Count == 0) return null;
+            // file:// 走本地路径（DirectoryInfo 不认 URI），content:// 原样交给 AndroidLocalFileSystem
             var uri = folders[0].Path;
-            return uri?.Scheme == Uri.UriSchemeFile ? uri.LocalPath : null;
+            if (uri is null) return null;
+            return uri.Scheme == Uri.UriSchemeFile ? uri.LocalPath : uri.ToString();
         };
         ApplyLayout();
     }
