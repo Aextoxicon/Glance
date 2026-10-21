@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -32,7 +33,6 @@ public partial class MainView : UserControl
     public MainView()
     {
         InitializeComponent();
-        FileTree.AddHandler(TreeViewItem.ExpandedEvent, OnTreeItemExpanded);
         FileTree.ContainerPrepared += OnFileTreeContainerPrepared;
         SizeChanged += OnSizeChanged;
         DataContextChanged += OnDataContextChanged;
@@ -110,12 +110,6 @@ public partial class MainView : UserControl
         view.Redraw();
     }
 
-    private void OnTreeItemExpanded(object? sender, RoutedEventArgs e)
-    {
-        if (e.Source is TreeViewItem tvi && tvi.DataContext is TreeItemViewModel n)
-            _ = n.LoadChildrenAsync(CancellationToken.None);
-    }
-
     // 占位符节点只为让目录显示展开箭头而存在，容器层直接隐藏避免占一整行
     private void OnFileTreeContainerPrepared(object? sender, ContainerPreparedEventArgs e)
     {
@@ -144,6 +138,16 @@ public partial class MainView : UserControl
     private void OnCloseOutline(object? sender, RoutedEventArgs e) => _vm?.CloseOutline();
     private void OnClosePreview(object? sender, RoutedEventArgs e) => _vm?.ClearSelection();
 
+    private void OnDismissError(object? sender, RoutedEventArgs e) => _vm?.ClearError();
+
+    private async void OnCopyError(object? sender, RoutedEventArgs e)
+    {
+        var text = _vm?.ErrorText;
+        if (string.IsNullOrEmpty(text)) return;
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (clipboard is not null) await clipboard.SetTextAsync(text);
+    }
+
     private void OnToggleTreeDrawer(object? sender, RoutedEventArgs e)
     {
         _treeDrawerOpen = !_treeDrawerOpen;
@@ -171,7 +175,7 @@ public partial class MainView : UserControl
         if (_vm is null) return;
         var wide = _vm.IsWide;
         RootGrid.ColumnDefinitions = wide
-            ? new ColumnDefinitions("260,*,220")
+            ? new ColumnDefinitions(_vm.OutlineOpen ? "260,*,330" : "260,*,0")
             : new ColumnDefinitions("0,*,0");
 
         // 文件树：宽屏进左列，窄屏进左抽屉

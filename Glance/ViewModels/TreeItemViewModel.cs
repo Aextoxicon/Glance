@@ -29,6 +29,8 @@ public partial class TreeItemViewModel : ViewModelBase
     private GitIgnoreDirs _gitIgnored;
     // https://learn.microsoft.com/dotnet/api/system.threading.semaphoreslim
     private readonly SemaphoreSlim _opGate = new(1, 1);
+    private bool _childrenLoaded;
+    private bool _suppressDirsChanged;
 
     public IArtifact Artifact => _artifact;
 
@@ -89,36 +91,24 @@ public partial class TreeItemViewModel : ViewModelBase
 
     public void ToggleExpanded()
     {
-        if (!IsDir) return;
-        if (!IsExpanded) Expand();
-        else Collapse();
+        if (IsDir) IsExpanded = !IsExpanded;
     }
 
-    public void Expand()
+    partial void OnIsExpandedChanged(bool value)
     {
         if (!IsDir) return;
-        IsExpanded = true;
-        _onDirsChanged?.Invoke();
-        // 仅在展开时 + 尚未加载子节点时加载
-        if (Children.Count > 0 && Children[0].IsPlaceholder)
-        {
-            _ = LoadChildrenAsync(_owner);
-        }
-    }
-
-    public void Collapse()
-    {
-        if (!IsDir) return;
-        IsExpanded = false;
-        _onDirsChanged?.Invoke();
+        if (!_suppressDirsChanged) _onDirsChanged?.Invoke();
+        if (value && !_childrenLoaded) _ = LoadChildrenAsync(_owner);
     }
 
     public async Task LoadChildrenAsync(CancellationToken ct = default)
     {
         if (!IsDir || _repo is null) return;
-        await _opGate.WaitAsync(ct);
+        try { await _opGate.WaitAsync(ct); }
+        catch (OperationCanceledException) { return; }
         try
         {
+            if (_childrenLoaded) return;
             IsLoading = true;
             var path = _artifact.Payload is LocalPayload p ? p.AbsolutePath : _artifact.Id;
             var items = await Task.Run(async () => await _repo!.ListAsync(path), ct);
@@ -127,7 +117,9 @@ public partial class TreeItemViewModel : ViewModelBase
                 .ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             ReconcileChildren(sorted);
+            _childrenLoaded = true;
         }
+        catch (OperationCanceledException) { }
         finally
         {
             IsLoading = false;
@@ -137,8 +129,15 @@ public partial class TreeItemViewModel : ViewModelBase
 
     public void CollapseRecursive()
     {
-        IsExpanded = false;
+        SetExpandedSilently(false);
         foreach (var child in Children) child.CollapseRecursive();
+    }
+
+    private void SetExpandedSilently(bool value)
+    {
+        _suppressDirsChanged = true;
+        try { IsExpanded = value; }
+        finally { _suppressDirsChanged = false; }
     }
 
     public void UpdateArtifact(IArtifact artifact)
@@ -193,16 +192,12 @@ public partial class TreeItemViewModel : ViewModelBase
         if (Children.Count == 0) Children.Add(new TreeItemViewModel());
     }
 
-    // 供MainViewModel.expandAll分批调用
-    public async Task EnsureLoadedAsync(CancellationToken ct = default)
+    // 先加载再展开，使OnIsExpandedChanged看到已加载而不再发起第二次
+    public async Task EnsureLoadedAsync()
     {
         if (!IsDir) return;
+        await LoadChildrenAsync(_owner);
         IsExpanded = true;
-        _onDirsChanged?.Invoke();
-        if (Children.Count > 0 && Children[0].IsPlaceholder)
-        {
-            await LoadChildrenAsync(ct);
-        }
     }
 
     private sealed class PlaceholderArtifact : IArtifact

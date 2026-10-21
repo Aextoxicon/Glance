@@ -77,22 +77,34 @@ public partial class MainViewModel : ViewModelBase
     private string? _lastDirectory;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CurrentFolderName))]
     private string _currentPath = "";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TotalSizeReadable))]
     private long _totalSize;
 
     [ObservableProperty]
     private bool _isComputingSize;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedSizeDisplay))]
     private IArtifact? _selectedArtifact;
 
     [ObservableProperty]
     private string? _selectedContent;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMessage))]
     private string? _messageText;
+
+    // 阻塞性失败走弹窗；MessageText留给非阻塞提示（日志导出结果等）
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasError))]
+    private string? _errorText;
+
+    public bool HasMessage => !string.IsNullOrEmpty(MessageText);
+    public bool HasError => !string.IsNullOrEmpty(ErrorText);
 
     [ObservableProperty]
     private string? _previewNotice;
@@ -140,7 +152,17 @@ public partial class MainViewModel : ViewModelBase
 
     public string TotalSizeReadable => FormatSize.Readable(TotalSize);
     public string SelectedSizeDisplay => SelectedArtifact is not null ? FormatSize.Readable(SelectedArtifact.Size) : "";
-    public string CurrentFolderName => CurrentPath.Length == 0 ? "" : Path.GetFileName(CurrentPath);
+    public string CurrentFolderName
+    {
+        get
+        {
+            // 直接GetFileName会返回空串
+            var trimmed = Path.TrimEndingDirectorySeparator(CurrentPath);
+            if (trimmed.Length == 0) return "工作区";
+            var name = Path.GetFileName(trimmed);
+            return name.Length > 0 ? name : trimmed;
+        }
+    }
 
     public IReadOnlyList<OutlineNode>? CurrentOutline =>
         SelectedParseResult?.Outline is { Count: > 0 } outline ? outline : null;
@@ -294,6 +316,7 @@ public partial class MainViewModel : ViewModelBase
         HasSelection = false;
         IsLoadingPreview = false;
         MessageText = null;
+        ErrorText = null;
         TreeLoadMessage = null;
         PreviewNotice = null;
         OnTreeDirsChanged?.Invoke();
@@ -362,7 +385,7 @@ public partial class MainViewModel : ViewModelBase
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             var msg = $"加载失败: {ex.Message}";
-            MessageText = msg;
+            ErrorText = msg;
             TreeLoadMessage = msg;
         }
 
@@ -381,9 +404,11 @@ public partial class MainViewModel : ViewModelBase
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            MessageText = $"计算大小失败: {ex.Message}";
+            ErrorText = $"计算大小失败: {ex.Message}";
         }
     }
+
+    public void ClearError() => ErrorText = null;
 
     public void ClearSelection()
     {
@@ -395,6 +420,7 @@ public partial class MainViewModel : ViewModelBase
         SelectedParseResult = null;
         IsLoadingPreview = false;
         MessageText = null;
+        ErrorText = null;
         PreviewNotice = null;
     }
 
@@ -419,6 +445,7 @@ public partial class MainViewModel : ViewModelBase
         SelectedArtifact = artifact;
         HasSelection = true;
         MessageText = null;
+        ErrorText = null;
         SelectedContent = null;
         SelectedParseResult = null;
         PreviewNotice = null;
@@ -441,12 +468,12 @@ public partial class MainViewModel : ViewModelBase
         var path = artifact.Id;
         if (path.Length == 0)
         {
-            MessageText = $"无法读取文件: {artifact.Name}";
+            ErrorText = $"无法读取文件: {artifact.Name}";
             return null;
         }
         if (artifact.Size > PreviewHardLimitBytes)
         {
-            MessageText = $"文件过大（{FormatSize.Readable(artifact.Size)}），已跳过预览";
+            ErrorText = $"文件过大（{FormatSize.Readable(artifact.Size)}），已跳过预览";
             return null;
         }
 
@@ -496,13 +523,13 @@ public partial class MainViewModel : ViewModelBase
         catch (OperationCanceledException) { return null; }
         catch (Exception ex)
         {
-            MessageText = $"读取失败: {ex.Message}";
+            ErrorText = $"读取失败: {ex.Message}";
             return null;
         }
 
         if (error is not null)
         {
-            MessageText = error;
+            ErrorText = error;
             return null;
         }
         return result;
@@ -597,24 +624,29 @@ public partial class MainViewModel : ViewModelBase
     {
         var queue = new Queue<TreeItemViewModel>();
         foreach (var root in TreeItems) if (root.IsDir) queue.Enqueue(root);
-        while (queue.Count > 0)
+        try
         {
-            var batch = new List<TreeItemViewModel>();
-            while (batch.Count < ExpandConcurrency && queue.Count > 0) batch.Add(queue.Dequeue());
-            await Task.WhenAll(batch.Select(item => item.EnsureLoadedAsync(_treeOwnerCts?.Token ?? CancellationToken.None)));
-            foreach (var item in batch)
+            while (queue.Count > 0)
             {
-                foreach (var child in item.Children)
+                var batch = new List<TreeItemViewModel>();
+                while (batch.Count < ExpandConcurrency && queue.Count > 0) batch.Add(queue.Dequeue());
+                await Task.WhenAll(batch.Select(item => item.EnsureLoadedAsync()));
+                foreach (var item in batch)
                 {
-                    if (!child.IsPlaceholder && child.IsDir) queue.Enqueue(child);
+                    foreach (var child in item.Children)
+                    {
+                        if (!child.IsPlaceholder && child.IsDir) queue.Enqueue(child);
+                    }
                 }
             }
         }
+        catch (OperationCanceledException) { }
     }
 
     public void CollapseAll()
     {
         foreach (var root in TreeItems) root.CollapseRecursive();
+        OnTreeDirsChanged?.Invoke();
     }
 
     public async Task RefreshTree()
@@ -631,7 +663,7 @@ public partial class MainViewModel : ViewModelBase
             if (!items.IsSuccess)
             {
                 var failure = items as Failure<IReadOnlyList<IArtifact>>;
-                MessageText = $"刷新失败: {failure?.Error.Message ?? "未知错误"}";
+                ErrorText = $"刷新失败: {failure?.Error.Message ?? "未知错误"}";
                 return;
             }
             var ignored = await Task.Run(async () => GitIgnore.Parse(await ReadGitIgnore(path)), ct);
@@ -642,7 +674,7 @@ public partial class MainViewModel : ViewModelBase
         catch (OperationCanceledException) { return; }
         catch (Exception ex)
         {
-            MessageText = $"刷新失败: {ex.Message}";
+            ErrorText = $"刷新失败: {ex.Message}";
             return;
         }
 

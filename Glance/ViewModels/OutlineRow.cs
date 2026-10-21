@@ -1,5 +1,5 @@
 using System;
-using Avalonia;
+using System.Collections.Generic;
 using Glance.Native;
 
 namespace Glance.ViewModels;
@@ -9,15 +9,18 @@ public sealed class OutlineRow
     public OutlineNode Node { get; }
     public int Depth { get; }
     public string KindLabel { get; }
-    public Thickness Indent { get; }
+    // 每个祖先层级一个元素，仅用于在XAML里生成同样数量的缩进引导线格子
+    public IReadOnlyList<int> GuideLevels { get; }
     public string DisplayName => string.IsNullOrEmpty(Node.Name) ? "（无名）" : Node.Name;
+    // 空Detail若仍参与布局会多占一行高度，导致行内上紧下松
+    public bool HasDetail => !string.IsNullOrEmpty(Node.Detail);
 
     public OutlineRow(OutlineNode node, int depth)
     {
         Node = node;
         Depth = depth;
         KindLabel = KindLabelFor(node.Kind);
-        Indent = new Thickness(Math.Min(depth, 3) * 14, 0, 0, 0);
+        GuideLevels = new int[Math.Min(depth, 3)];
     }
 
     private static readonly (string Prefix, string Label)[] KindPrefixes =
