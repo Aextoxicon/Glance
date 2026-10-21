@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -137,16 +136,6 @@ public partial class MainView : UserControl
     private void OnToggleOutline(object? sender, RoutedEventArgs e) => _vm?.ToggleOutline();
     private void OnCloseOutline(object? sender, RoutedEventArgs e) => _vm?.CloseOutline();
     private void OnClosePreview(object? sender, RoutedEventArgs e) => _vm?.ClearSelection();
-
-    private void OnDismissError(object? sender, RoutedEventArgs e) => _vm?.ClearError();
-
-    private async void OnCopyError(object? sender, RoutedEventArgs e)
-    {
-        var text = _vm?.ErrorText;
-        if (string.IsNullOrEmpty(text)) return;
-        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
-        if (clipboard is not null) await clipboard.SetTextAsync(text);
-    }
 
     private void OnToggleTreeDrawer(object? sender, RoutedEventArgs e)
     {

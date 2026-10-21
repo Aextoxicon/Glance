@@ -92,19 +92,19 @@ public partial class MainViewModel : ViewModelBase
     private IArtifact? _selectedArtifact;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPreviewMessage))]
     private string? _selectedContent;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasMessage))]
+    [NotifyPropertyChangedFor(nameof(HasPreviewMessage))]
     private string? _messageText;
 
-    // 阻塞性失败走弹窗；MessageText留给非阻塞提示（日志导出结果等）
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasError))]
-    private string? _errorText;
-
     public bool HasMessage => !string.IsNullOrEmpty(MessageText);
-    public bool HasError => !string.IsNullOrEmpty(ErrorText);
+
+    // 已选中但拿不到内容（二进制/超大/读取失败）时，把原因画在预览区，避免看起来像一个空文件
+    public bool HasPreviewMessage =>
+        HasSelection && SelectedContent is null && IsLoadingPreview is false && HasMessage;
 
     [ObservableProperty]
     private string? _previewNotice;
@@ -119,9 +119,11 @@ public partial class MainViewModel : ViewModelBase
     private bool _hasWorkspace;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPreviewMessage))]
     private bool _hasSelection;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPreviewMessage))]
     private bool _isLoadingPreview;
 
     [ObservableProperty]
@@ -316,7 +318,6 @@ public partial class MainViewModel : ViewModelBase
         HasSelection = false;
         IsLoadingPreview = false;
         MessageText = null;
-        ErrorText = null;
         TreeLoadMessage = null;
         PreviewNotice = null;
         OnTreeDirsChanged?.Invoke();
@@ -385,7 +386,7 @@ public partial class MainViewModel : ViewModelBase
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             var msg = $"加载失败: {ex.Message}";
-            ErrorText = msg;
+            MessageText = msg;
             TreeLoadMessage = msg;
         }
 
@@ -404,11 +405,9 @@ public partial class MainViewModel : ViewModelBase
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            ErrorText = $"计算大小失败: {ex.Message}";
+            MessageText = $"计算大小失败: {ex.Message}";
         }
     }
-
-    public void ClearError() => ErrorText = null;
 
     public void ClearSelection()
     {
@@ -420,7 +419,6 @@ public partial class MainViewModel : ViewModelBase
         SelectedParseResult = null;
         IsLoadingPreview = false;
         MessageText = null;
-        ErrorText = null;
         PreviewNotice = null;
     }
 
@@ -445,7 +443,6 @@ public partial class MainViewModel : ViewModelBase
         SelectedArtifact = artifact;
         HasSelection = true;
         MessageText = null;
-        ErrorText = null;
         SelectedContent = null;
         SelectedParseResult = null;
         PreviewNotice = null;
@@ -468,12 +465,12 @@ public partial class MainViewModel : ViewModelBase
         var path = artifact.Id;
         if (path.Length == 0)
         {
-            ErrorText = $"无法读取文件: {artifact.Name}";
+            MessageText = $"无法读取文件: {artifact.Name}";
             return null;
         }
         if (artifact.Size > PreviewHardLimitBytes)
         {
-            ErrorText = $"文件过大（{FormatSize.Readable(artifact.Size)}），已跳过预览";
+            MessageText = $"文件过大（{FormatSize.Readable(artifact.Size)}），已跳过预览";
             return null;
         }
 
@@ -523,13 +520,13 @@ public partial class MainViewModel : ViewModelBase
         catch (OperationCanceledException) { return null; }
         catch (Exception ex)
         {
-            ErrorText = $"读取失败: {ex.Message}";
+            MessageText = $"读取失败: {ex.Message}";
             return null;
         }
 
         if (error is not null)
         {
-            ErrorText = error;
+            MessageText = error;
             return null;
         }
         return result;
@@ -663,7 +660,7 @@ public partial class MainViewModel : ViewModelBase
             if (!items.IsSuccess)
             {
                 var failure = items as Failure<IReadOnlyList<IArtifact>>;
-                ErrorText = $"刷新失败: {failure?.Error.Message ?? "未知错误"}";
+                MessageText = $"刷新失败: {failure?.Error.Message ?? "未知错误"}";
                 return;
             }
             var ignored = await Task.Run(async () => GitIgnore.Parse(await ReadGitIgnore(path)), ct);
@@ -674,7 +671,7 @@ public partial class MainViewModel : ViewModelBase
         catch (OperationCanceledException) { return; }
         catch (Exception ex)
         {
-            ErrorText = $"刷新失败: {ex.Message}";
+            MessageText = $"刷新失败: {ex.Message}";
             return;
         }
 
