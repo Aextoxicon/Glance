@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
-// VM顶层操作刻意吞掉具体异常、转成MessageText展示给用户纯属有意设计，屏蔽CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）。
+// VM顶层操作刻意吞掉具体异常、转成MessageText展示给用户纯属有意设计，屏蔽CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）
 #pragma warning disable CA1031
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -567,7 +567,7 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
-    // 避免Android无.so 时每个文件重复触发DllNotFoundException
+    // 避免Android无.so时每个文件重复触发DllNotFoundException
     private static bool ProbeNative()
     {
         if (NativeLibrary.TryLoad("uniffi_code_parser", out var handle))

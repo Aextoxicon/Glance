@@ -28,7 +28,7 @@ pub fn build_grammar(language: tree_sitter::Language, segments: &[&str]) -> Gram
     }
 }
 
-// 数出query文本里的节点模式个数：语法里 `(` 只开节点模式，开谓词时紧跟 `#`
+// 数出query文本里的节点模式个数：语法里(只开节点模式，开谓词时紧跟#
 fn count_pattern_nodes(text: &str) -> usize {
     let bytes = text.as_bytes();
     let mut nodes = 0usize;
@@ -153,7 +153,7 @@ pub fn get_grammar_by_filename(filename: &str) -> Option<&'static LazyLock<Gramm
     }
 }
 
-/// 先按文件名（Makefile/Dockerfile 等无扩展名），再按扩展名路由 grammar
+/// 先按文件名（Makefile/Dockerfile等无扩展名），再按扩展名路由grammar
 pub fn resolve_grammar(filename: &str) -> Option<&'static LazyLock<GrammarDef>> {
     let base = basename(filename);
     if let Some(g) = get_grammar_by_filename(base) {

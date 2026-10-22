@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-// 目录列表容错catch等价于KMP的listResult.getOrNull() ?: emptyList()，属有意设计，屏蔽CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）。
+// 目录列表容错catch等价于KMP的listResult.getOrNull() ?: emptyList()，属有意设计，屏蔽CA1031（https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1031）
 #pragma warning disable CA1031
 using CommunityToolkit.Mvvm.ComponentModel;
 using Glance.Models;
@@ -18,7 +18,7 @@ namespace Glance.ViewModels;
 /// 文件树节点VM
 /// 集合用"https://learn.microsoft.com/dotnet/api/system.collections.objectmodel.observablecollection-1"
 /// 替代Compose SnapshotStateList；异步用
-/// "https://learn.microsoft.com/dotnet/csharp/asynchronous-programming/"替代协程。
+/// "https://learn.microsoft.com/dotnet/csharp/asynchronous-programming/"替代协程
 /// </summary>
 public partial class TreeItemViewModel : ViewModelBase
 {

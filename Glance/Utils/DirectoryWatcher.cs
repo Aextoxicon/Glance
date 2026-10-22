@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-// 扫描容错catch等价于KMP的normalize兜底（权限不足、路径非法），属有意设计，屏蔽CA1031。
+// 扫描容错catch等价于KMP的normalize兜底（权限不足、路径非法），属有意设计，屏蔽CA1031
 #pragma warning disable CA1031
 
 namespace Glance.Utils;
 
 /// <summary>
-/// 定期扫描目录变化（仅桌面/PC；Android/iOS不支持，调用方以 #if !ANDROID排除本类）。
-/// 快照对比：无变化不触发回调，避免树反复重建。
+/// 定期扫描目录变化（仅桌面/PC；Android/iOS不支持，调用方以 #if !ANDROID排除本类）
+/// 快照对比：无变化不触发回调，避免树反复重建
 /// </summary>
 public sealed class DirectoryWatcher : IDisposable
 {

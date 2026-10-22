@@ -3,5 +3,6 @@
     <Deploy />
   </Project>
   <Project Path="Glance.Desktop/Glance.Desktop.csproj" />
+  <Project Path="Glance.Tests/Glance.Tests.csproj" />
   <Project Path="Glance/Glance.csproj" />
 </Solution>

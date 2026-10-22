@@ -60,7 +60,7 @@ public partial class MainView : UserControl
             if (topLevel?.StorageProvider is not { } sp) return null;
             var folders = await sp.OpenFolderPickerAsync(new FolderPickerOpenOptions());
             if (folders.Count == 0) return null;
-            // file:// 走本地路径（DirectoryInfo 不认 URI），content:// 原样交给 AndroidLocalFileSystem
+            // file://走本地路径（DirectoryInfo不认URI），content://原样交给AndroidLocalFileSystem
             var uri = folders[0].Path;
             if (uri is null) return null;
             return uri.Scheme == Uri.UriSchemeFile ? uri.LocalPath : uri.ToString();
@@ -245,7 +245,7 @@ public partial class MainView : UserControl
         if (ReferenceEquals(e.Source, SettingsOverlay)) SettingsOverlay.IsVisible = false;
     }
 
-    // 3 行上下文 + 远距离先瞬跳再平滑滚动最后30行
+    // 3行上下文 + 远距离先瞬跳再平滑滚动最后30行
     private void ScrollOutlineToLine(int line)
     {
         var target = Math.Max(1, line - OutlineScrollContextLines);

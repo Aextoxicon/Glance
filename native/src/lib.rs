@@ -145,7 +145,7 @@ fn line_span_of(token: &Token, line_starts: &[u64], line_count: usize) -> Option
     Some((start_line, end_line.min(line_count - 1)))
 }
 
-/// 按行打包高亮。两趟：先数每行几条，再写入 —— 不为每行建Vec，也不产生String。
+/// 按行打包高亮。两趟：先数每行几条，再写入 —— 不为每行建Vec，也不产生String
 fn pack_highlights_by_line(
     line_boundaries: &[(u64, u64)],
     highlights: &[Token],
