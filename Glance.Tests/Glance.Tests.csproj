@@ -17,4 +17,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Glance\Glance.csproj" />
   </ItemGroup>
+
+  <!-- MainViewModel.ProbeNative用NativeLibrary.TryLoad探测；缺库时解析结果恒为 null，相关断言会跳过 -->
+  <ItemGroup Condition="Exists('..\native\target\release\uniffi_code_parser.dll')">
+    <None Include="..\native\target\release\uniffi_code_parser.dll"
+          Link="uniffi_code_parser.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Glance.Tests;
 
-// ReconcileChildren 是本轮唯一没有 KMP 参照的自研逻辑：按 Id 复用、移动、增删
+// 按Id复用、移动、增删
 public class ReconcileChildrenTests
 {
     private static TreeItemViewModel NewDir() =>
@@ -20,7 +20,7 @@ public class ReconcileChildrenTests
     }
 
     [Fact]
-    public void 同Id复用同一实例()
+    public void 同标识复用同一实例()
     {
         var dir = NewDir();
         var a = Artifacts.File(@"D:\ws\a.cs");
@@ -56,7 +56,7 @@ public class ReconcileChildrenTests
     }
 
     [Fact]
-    public void 顺序变化走Move_实例不变()
+    public void 顺序变化走移动_实例不变()
     {
         var dir = NewDir();
         var a = Artifacts.File(@"D:\ws\a.cs");
@@ -99,7 +99,7 @@ public class ReconcileChildrenTests
     }
 
     [Fact]
-    public void 内容变化时SizeDisplay跟着更新()
+    public void 内容变化时可读大小跟着更新()
     {
         var dir = NewDir();
         var a = Artifacts.File(@"D:\ws\a.cs", size: 100);

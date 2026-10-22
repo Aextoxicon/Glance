@@ -29,7 +29,7 @@ public static class TestAppBuilder
         AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions());
 }
 
-// 无头会话按程序集共享；所有触碰 Avalonia 的代码都必须经它调度到 UI 线程
+// 无头会话按程序集共享；所有触碰Avalonia的代码都必须经它调度到UI线程
 public static class AvaloniaTest
 {
     private static readonly HeadlessUnitTestSession Session =

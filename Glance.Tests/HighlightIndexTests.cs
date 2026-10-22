@@ -29,7 +29,7 @@ public class HighlightIndexTests
     }
 
     [Fact]
-    public void 空索引行数为０()
+    public void 空索引行数为0()
     {
         var idx = HighlightIndex.Empty();
         Assert.Equal(0, idx.LineCount);
@@ -39,7 +39,7 @@ public class HighlightIndexTests
     }
 
     [Fact]
-    public void 单行三枚token偏移与kind正确()
+    public void 单行三枚记号偏移与种类正确()
     {
         var idx = new HighlightIndex(
             Tokens((0, 5, 0), (6, 10, 1), (11, 15, 0)),
@@ -58,7 +58,7 @@ public class HighlightIndexTests
     }
 
     [Fact]
-    public void 多行按lineIndex分段()
+    public void 多行按行索引分段()
     {
         var idx = new HighlightIndex(
             Tokens((0, 2, 0), (3, 5, 0), (10, 12, 0)),
@@ -76,7 +76,7 @@ public class HighlightIndexTests
     [InlineData(-1)]
     [InlineData(1)]
     [InlineData(99)]
-    public void 越界行返回０而不是抛异常(int line)
+    public void 越界行返回0而不是抛异常(int line)
     {
         var idx = new HighlightIndex(
             Tokens((0, 2, 0)),
@@ -88,7 +88,7 @@ public class HighlightIndexTests
     }
 
     [Fact]
-    public void kindIndex越界返回空字符串()
+    public void 种类索引越界返回空字符串()
     {
         var idx = new HighlightIndex(
             Tokens((0, 2, 42)),
@@ -99,7 +99,7 @@ public class HighlightIndexTests
     }
 
     [Fact]
-    public void 负kindIndex不抛异常()
+    public void 负种类索引不抛异常()
     {
         var idx = new HighlightIndex(
             Tokens((0, 2, -1)),

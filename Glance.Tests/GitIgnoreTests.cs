@@ -23,7 +23,7 @@ public class GitIgnoreTests
     }
 
     [Fact]
-    public void 尾斜杠目录进DirOnly_无斜杠进DirOrFile()
+    public void 尾斜杠目录进目录集_无斜杠进通用集()
     {
         var g = GitIgnore.Parse("build/\ndist");
 
@@ -36,7 +36,7 @@ public class GitIgnoreTests
     [Fact]
     public void 双尾斜杠只去一个_剩余含斜杠行被跳过()
     {
-        // KMP removeSuffix("/") 语义：只去掉一个，剩 "dir/" 含 '/' → 整行忽略
+        // KMP的removeSuffix("/")语义：只去掉一个，剩"dir/"含'/'→整行忽略
         var g = GitIgnore.Parse("dir//");
 
         Assert.Empty(g.DirOnly);
@@ -53,7 +53,7 @@ public class GitIgnoreTests
     }
 
     [Fact]
-    public void Filter剔除点开头与名字命中的文件()
+    public void 过滤剔除点开头与名字命中的文件()
     {
         var g = GitIgnore.Parse("dist\nsecret.txt");
         var items = new[]
@@ -70,7 +70,7 @@ public class GitIgnoreTests
     }
 
     [Fact]
-    public void DirOnly只剔除目录_同名文件保留()
+    public void 目录集只剔除目录_同名文件保留()
     {
         var g = GitIgnore.Parse("build/");
         var items = new[]

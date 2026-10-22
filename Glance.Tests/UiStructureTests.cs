@@ -6,14 +6,14 @@ using Xunit;
 
 namespace Glance.Tests;
 
-// 只断言控件树的语义状态（列宽/可见性），不做像素比对、不模拟鼠标点击
+// 只断言控件树的语义状态（列宽/可见性）
 public class UiStructureTests
 {
     private static MainViewModel NewVm() =>
         new(new FakeFileSystem(), new FakeArtifactRepo(), new FakeParser());
 
     [Fact]
-    public Task 宽屏大纲关时第三列为０_打开后为３３０() => AvaloniaTest.Run(() =>
+    public Task 宽屏大纲关时第三列为0_打开后为330() => AvaloniaTest.Run(() =>
     {
         var vm = NewVm();
         var view = new MainView { DataContext = vm };
@@ -40,7 +40,7 @@ public class UiStructureTests
     });
 
     [Fact]
-    public Task 宽屏树列恒为２６０_大纲列受开关控制() => AvaloniaTest.Run(() =>
+    public Task 宽屏树列恒为260_大纲列受开关控制() => AvaloniaTest.Run(() =>
     {
         var vm = NewVm();
         var view = new MainView { DataContext = vm };
