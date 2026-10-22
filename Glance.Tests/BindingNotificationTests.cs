@@ -41,13 +41,6 @@ public class BindingNotificationTests
     });
 
     [Fact]
-    public Task 当前路径变化时文件夹名发出通知() => WithVm(vm =>
-    {
-        var names = Capture(vm, () => vm.CurrentPath = @"D:\GitHub\Collisions\");
-        Assert.Contains(nameof(MainViewModel.CurrentFolderName), names);
-    });
-
-    [Fact]
     public Task 选中项变化时选中大小发出通知() => WithVm(vm =>
     {
         var names = Capture(vm, () => vm.SelectedArtifact = Artifacts.File(@"D:\a\b.cs", 2048));
@@ -61,20 +54,6 @@ public class BindingNotificationTests
         var names = Capture(node, () => node.ChildCount = 7);
         Assert.Contains(nameof(TreeItemViewModel.SizeDisplay), names);
     }
-
-    [Theory]
-    [InlineData(@"D:\projects\", "projects")]
-    [InlineData(@"D:\projects", "projects")]
-    [InlineData(@"D:/projects/", "projects")]
-    // 与KMP的差异：KMP的PathUtil会把"D:\"削成"D:"；C#的TrimEndingDirectorySeparator
-    // 刻意保留根路径，所以这里显示完整"D:\"，保留更清晰的一方
-    [InlineData(@"D:\", @"D:\")]
-    [InlineData("", "工作区")]
-    public Task 文件夹名按尾分隔符与空路径返回(string path, string expected) => WithVm(vm =>
-    {
-        vm.CurrentPath = path;
-        Assert.Equal(expected, vm.CurrentFolderName);
-    });
 
     [Fact]
     public Task 预览提示层四条件() => WithVm(vm =>

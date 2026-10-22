@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.IO;
+using Glance.Models;
 
 namespace Glance.Processing;
 
@@ -14,17 +14,19 @@ public static class FileProcessor
         { "gnumakefile", "makefile" },
     };
 
-    public static bool IsPlainText(string path) =>
-        TextExtensions.Contains(Path.GetExtension(path).TrimStart('.').ToLowerInvariant());
+    public static bool IsPlainText(IArtifact artifact) =>
+        TextExtensions.Contains(CleanExtension(artifact.Extension));
 
-    // 无扩展名但文件名命中已知映射时返回带点扩展名供native选grammar，否则原样返回
-    public static string ResolveParseName(string path)
+    // 无扩展名但文件名命中已知映射时返回带点扩展名供native选grammar，否则返回文件名
+    public static string ResolveParseName(IArtifact artifact)
     {
-        var cleanExt = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
-        if (cleanExt.Length > 0) return path;
-        var name = Path.GetFileName(path);
-        if (name.Length > 0 && FilenameToExt.TryGetValue(name.ToLowerInvariant().TrimStart('.'), out var mapped))
-            return "." + mapped;
-        return path;
+        if (CleanExtension(artifact.Extension).Length > 0) return artifact.Name;
+        var name = artifact.Name.ToLowerInvariant().TrimStart('.');
+        return name.Length > 0 && FilenameToExt.TryGetValue(name, out var mapped)
+            ? "." + mapped
+            : artifact.Name;
     }
+
+    private static string CleanExtension(string extension) =>
+        extension.TrimStart('.').ToLowerInvariant();
 }

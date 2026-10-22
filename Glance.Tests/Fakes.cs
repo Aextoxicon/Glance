@@ -13,11 +13,20 @@ namespace Glance.Tests;
 public sealed class FakeFileSystem : ILocalFileSystem
 {
     private readonly Dictionary<string, string> _text = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _names = new(StringComparer.Ordinal);
 
     public void PutText(string path, string content) => _text[path] = content;
 
+    public void PutName(string path, string name) => _names[path] = name;
+
+    // 未登记的路径按最后一段推断
+    public LocalFileInfo FileInfo(string path)
+    {
+        var name = _names.TryGetValue(path, out var n) ? n : Path.GetFileName(path.TrimEnd('/', '\\'));
+        return new LocalFileInfo(path, name, "", true, 0, 0, "");
+    }
+
     public IReadOnlyList<LocalFileInfo> ListFiles(string path) => Array.Empty<LocalFileInfo>();
-    public LocalFileInfo FileInfo(string path) => throw new FileNotFoundException(path);
     public string? TryReadText(string path) => _text.TryGetValue(path, out var t) ? t : null;
     public bool Delete(string path) => false;
     public string ToUri(string path) => path;

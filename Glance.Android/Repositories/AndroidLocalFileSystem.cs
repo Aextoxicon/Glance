@@ -44,7 +44,9 @@ public sealed class AndroidLocalFileSystem : ILocalFileSystem
     {
         var uri = global::Android.Net.Uri.Parse(path);
         if (uri is null) throw new FileNotFoundException($"文件或目录不存在: {path}");
-        var docFile = DocumentFile.FromSingleUri(Application.Context, uri)
+        // 工作区根是tree URI，FromSingleUri不认
+        var docFile = DocumentFile.FromTreeUri(Application.Context, uri)
+            ?? DocumentFile.FromSingleUri(Application.Context, uri)
             ?? throw new FileNotFoundException($"文件或目录不存在: {path}");
         var info = MapDocumentFile(docFile, docFile.ParentFile?.Uri?.ToString() ?? "")
             ?? throw new FileNotFoundException($"无法解析文件信息: {path}");

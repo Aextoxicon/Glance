@@ -77,8 +77,11 @@ public partial class MainViewModel : ViewModelBase
     private string? _lastDirectory;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CurrentFolderName))]
     private string _currentPath = "";
+
+    // 工作区根的显示名，由LoadCore从FileInfo取一次
+    [ObservableProperty]
+    private string _currentFolderName = "";
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TotalSizeReadable))]
@@ -154,15 +157,18 @@ public partial class MainViewModel : ViewModelBase
 
     public string TotalSizeReadable => FormatSize.Readable(TotalSize);
     public string SelectedSizeDisplay => SelectedArtifact is not null ? FormatSize.Readable(SelectedArtifact.Size) : "";
-    public string CurrentFolderName
+
+    // 走ILocalFileSystem而不是Path.*：Android的路径是content://的SAF URI
+    private string SafeDisplayName(string path)
     {
-        get
+        try
         {
-            // 直接GetFileName会返回空串
-            var trimmed = Path.TrimEndingDirectorySeparator(CurrentPath);
-            if (trimmed.Length == 0) return "工作区";
-            var name = Path.GetFileName(trimmed);
-            return name.Length > 0 ? name : trimmed;
+            var name = _fs.FileInfo(path).Name;
+            return name.Length > 0 ? name : "工作区";
+        }
+        catch (Exception)
+        {
+            return "工作区";
         }
     }
 
@@ -309,6 +315,7 @@ public partial class MainViewModel : ViewModelBase
         CancelLoadJobs();
         IsComputingSize = false;
         CurrentPath = "";
+        CurrentFolderName = "";
         HasWorkspace = false;
         TreeItems = new ObservableCollection<TreeItemViewModel>();
         TotalSize = 0;
@@ -363,17 +370,29 @@ public partial class MainViewModel : ViewModelBase
         var ignored = GitIgnoreDirs.Empty;
         try
         {
-            var items = await Task.Run(async () => await _repo.ListAsync(path), _loadCts.Token);
-            ignored = await Task.Run(async () => GitIgnore.Parse(await ReadGitIgnore(path)), _loadCts.Token);
-            if (CurrentPath != path) return;
-            if (!items.IsSuccess)
+            // 根目录只列一次
+            var listed = await Task.Run(async () =>
             {
-                var failure = items as Failure<IReadOnlyList<IArtifact>>;
+                var list = await _repo.ListAsync(path);
+                var entries = list.GetOrNull() ?? Array.Empty<IArtifact>();
+                var gitignore = entries.FirstOrDefault(i => i.Name == ".gitignore");
+                var text = gitignore is null
+                    ? null
+                    : (await _repo.TryReadTextAsync(gitignore.Id)).GetOrNull();
+                return (List: list, Entries: entries, GitIgnoreText: text, Name: SafeDisplayName(path));
+            }, _loadCts.Token);
+
+            ignored = GitIgnore.Parse(listed.GitIgnoreText);
+            if (CurrentPath != path) return;
+            if (!listed.List.IsSuccess)
+            {
+                var failure = listed.List as Failure<IReadOnlyList<IArtifact>>;
                 TreeLoadMessage = $"加载失败: {failure?.Error.Message ?? "未知错误"}";
                 return;
             }
+            CurrentFolderName = listed.Name;
             TreeItems = new ObservableCollection<TreeItemViewModel>(
-                GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), ignored).Select(artifact =>
+                GitIgnore.Filter(listed.Entries, ignored).Select(artifact =>
                     new TreeItemViewModel(artifact, _repo, _treeOwnerCts.Token, () => OnTreeDirsChanged?.Invoke(), ignored)));
             TreeLoadMessage = null;
             OnWorkspaceOpened?.Invoke();
@@ -543,11 +562,11 @@ public partial class MainViewModel : ViewModelBase
             return new LoadedFile(null, normalizedContent,
                 $"文件较大（{FormatSize.Readable(artifact.Size)}），已跳过语法高亮");
         }
-        if (FileProcessor.IsPlainText(artifact.Id))
+        if (FileProcessor.IsPlainText(artifact))
         {
             return new LoadedFile(null, normalizedContent);
         }
-        var parseName = FileProcessor.ResolveParseName(artifact.Id);
+        var parseName = FileProcessor.ResolveParseName(artifact);
         try
         {
             var parsed = _parser.ParseCode(normalizedContent, parseName);
@@ -582,9 +601,6 @@ public partial class MainViewModel : ViewModelBase
         ex is DllNotFoundException or TypeLoadException or BadImageFormatException;
 
     private string CacheKey(IArtifact artifact) => $"{artifact.Id}|{artifact.LastMod}|{artifact.Size}";
-
-    private async Task<string?> ReadGitIgnore(string path) =>
-        (await _repo.TryReadTextAsync(Path.Combine(path, ".gitignore"))).GetOrNull();
 
     // 总大小（BFS批并发，避免对超大仓库发起同数量级并发系统调用）
 
@@ -655,17 +671,26 @@ public partial class MainViewModel : ViewModelBase
         var path = CurrentPath;
         try
         {
-            var items = await Task.Run(async () => await _repo.ListAsync(path), ct);
-            if (ct.IsCancellationRequested) return;
-            if (!items.IsSuccess)
+            var listed = await Task.Run(async () =>
             {
-                var failure = items as Failure<IReadOnlyList<IArtifact>>;
+                var list = await _repo.ListAsync(path);
+                var entries = list.GetOrNull() ?? Array.Empty<IArtifact>();
+                var gitignore = entries.FirstOrDefault(i => i.Name == ".gitignore");
+                var text = gitignore is null
+                    ? null
+                    : (await _repo.TryReadTextAsync(gitignore.Id)).GetOrNull();
+                return (List: list, Entries: entries, GitIgnoreText: text);
+            }, ct);
+            if (ct.IsCancellationRequested) return;
+            if (!listed.List.IsSuccess)
+            {
+                var failure = listed.List as Failure<IReadOnlyList<IArtifact>>;
                 MessageText = $"刷新失败: {failure?.Error.Message ?? "未知错误"}";
                 return;
             }
-            var ignored = await Task.Run(async () => GitIgnore.Parse(await ReadGitIgnore(path)), ct);
+            var ignored = GitIgnore.Parse(listed.GitIgnoreText);
             if (ct.IsCancellationRequested) return;
-            ReconcileRoots(GitIgnore.Filter(items.GetOrNull() ?? Array.Empty<IArtifact>(), ignored), ignored);
+            ReconcileRoots(GitIgnore.Filter(listed.Entries, ignored), ignored);
             await ReconcileExpandedDirs(ignored, ct);
         }
         catch (OperationCanceledException) { return; }

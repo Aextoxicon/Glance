@@ -100,11 +100,15 @@ public static class VmHarness
     public static string P(string name) => Path.Combine(Root, name);
 
     public static Task RunAsync(Func<MainViewModel, ScriptedRepo, Task> body) =>
+        RunAsync((vm, repo, _) => body(vm, repo));
+
+    public static Task RunAsync(Func<MainViewModel, ScriptedRepo, FakeFileSystem, Task> body) =>
         AvaloniaTest.RunAsync(async () =>
         {
             var repo = new ScriptedRepo();
-            var vm = new MainViewModel(new FakeFileSystem(), repo, new FakeParser());
-            try { await body(vm, repo); }
+            var fs = new FakeFileSystem();
+            var vm = new MainViewModel(fs, repo, new FakeParser());
+            try { await body(vm, repo, fs); }
             finally { vm.Dispose(); }
         });
 

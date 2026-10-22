@@ -13,7 +13,5 @@
     <Application.Styles>
         <FluentTheme />
         <materialIcons:MaterialIconStyles />
-        <!-- AvaloniaEdit's theme is wired in code-behind (App.Initialize) because AvaloniaEdit
-             ships no Android TFM and must not be referenced from the Android build. -->
     </Application.Styles>
 </Application>
