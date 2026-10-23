@@ -28,7 +28,8 @@
     <SolidColorBrush x:Key="OutlineGuideBrush" Color="#808080" Opacity="0.4" />
   </UserControl.Resources>
 
-  <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="260,*,220" x:Name="RootGrid">
+  <!-- 列宽初值仅供设计器预览，运行期由ApplyLayout按OutlineOpen重设 -->
+  <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="260,*,330" x:Name="RootGrid">
     <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Margin="6" Spacing="4">
       <StackPanel Orientation="Horizontal" Spacing="6">
         <Button x:Name="DrawerToggle" Click="OnToggleTreeDrawer" IsVisible="{Binding !IsWide}"
@@ -55,7 +56,29 @@
                    Margin="0,2,0,0" />
     </StackPanel>
 
-    <Border Grid.Row="1" Grid.Column="0" x:Name="TreeColumnHost" Padding="2">
+    <Border Grid.Row="1" Grid.Column="0" x:Name="TreeColumnHost">
+      <Border.Styles>
+        <Style Selector="Border#TreeColumnHost">
+          <Setter Property="Padding" Value="2" />
+        </Style>
+        <Style Selector="Border#TreeColumnHost.drawer">
+          <Setter Property="Width" Value="280" />
+          <Setter Property="HorizontalAlignment" Value="Left" />
+          <Setter Property="Padding" Value="0" />
+          <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+          <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+          <Setter Property="BorderThickness" Value="0,0,1,0" />
+          <Setter Property="RenderTransform" Value="translateX(-280px)" />
+          <Setter Property="Transitions">
+            <Transitions>
+              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" />
+            </Transitions>
+          </Setter>
+        </Style>
+        <Style Selector="Border#TreeColumnHost.drawer.open">
+          <Setter Property="RenderTransform" Value="translateX(0px)" />
+        </Style>
+      </Border.Styles>
       <TreeView x:Name="FileTree"
                 ItemsSource="{Binding TreeItems}"
                 SelectionChanged="OnTreeSelectionChanged">
@@ -171,7 +194,29 @@
       </Grid>
     </Grid>
 
-    <Border Grid.Row="1" Grid.Column="2" x:Name="OutlineColumnHost" Margin="4">
+    <Border Grid.Row="1" Grid.Column="2" x:Name="OutlineColumnHost">
+      <Border.Styles>
+        <Style Selector="Border#OutlineColumnHost">
+          <Setter Property="Margin" Value="4" />
+        </Style>
+        <Style Selector="Border#OutlineColumnHost.drawer">
+          <Setter Property="Width" Value="360" />
+          <Setter Property="HorizontalAlignment" Value="Right" />
+          <Setter Property="Margin" Value="0" />
+          <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+          <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+          <Setter Property="BorderThickness" Value="1,0,0,0" />
+          <Setter Property="RenderTransform" Value="translateX(240px)" />
+          <Setter Property="Transitions">
+            <Transitions>
+              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" />
+            </Transitions>
+          </Setter>
+        </Style>
+        <Style Selector="Border#OutlineColumnHost.drawer.open">
+          <Setter Property="RenderTransform" Value="translateX(0px)" />
+        </Style>
+      </Border.Styles>
       <Grid x:Name="OutlineContent" RowDefinitions="Auto,*">
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,4">
           <TextBlock Text="大纲" FontWeight="Bold" VerticalAlignment="Center" />
@@ -234,75 +279,35 @@
                  Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" />
     </Border>
 
-    <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-          x:Name="TreeDrawer" IsVisible="False" ZIndex="40">
-      <Border x:Name="TreeDrawerScrim" Background="#80000000" PointerPressed="OnTreeDrawerScrimPressed">
-        <Border.Styles>
-          <Style Selector="Border">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="Transitions">
-              <Transitions>
-                <DoubleTransition Property="Opacity" Duration="0:0:0.25" />
-              </Transitions>
-            </Setter>
-          </Style>
-        </Border.Styles>
-      </Border>
-      <Border x:Name="TreeDrawerPanel"
-              Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-              BorderThickness="0,0,1,0" Width="280"
-              HorizontalAlignment="Left">
-        <Border.Styles>
-          <Style Selector="Border">
-            <Setter Property="RenderTransform" Value="translateX(-280px)" />
-            <Setter Property="Transitions">
-              <Transitions>
-                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" />
-              </Transitions>
-            </Setter>
-          </Style>
-          <Style Selector="Border.open">
-            <Setter Property="RenderTransform" Value="translateX(0px)" />
-          </Style>
-        </Border.Styles>
-      </Border>
-    </Grid>
+    <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+            x:Name="TreeDrawerScrim" Background="#80000000" ZIndex="39"
+            IsVisible="False" PointerPressed="OnTreeDrawerScrimPressed">
+      <Border.Styles>
+        <Style Selector="Border">
+          <Setter Property="Opacity" Value="0" />
+          <Setter Property="Transitions">
+            <Transitions>
+              <DoubleTransition Property="Opacity" Duration="0:0:0.25" />
+            </Transitions>
+          </Setter>
+        </Style>
+      </Border.Styles>
+    </Border>
 
-    <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-          x:Name="OutlineDrawer" IsVisible="False" ZIndex="40">
-      <Border x:Name="OutlineDrawerScrim" Background="#80000000" PointerPressed="OnOutlineDrawerScrimPressed">
-        <Border.Styles>
-          <Style Selector="Border">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="Transitions">
-              <Transitions>
-                <DoubleTransition Property="Opacity" Duration="0:0:0.25" />
-              </Transitions>
-            </Setter>
-          </Style>
-        </Border.Styles>
-      </Border>
-      <Border x:Name="OutlineDrawerPanel"
-              Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-              BorderThickness="1,0,0,0" Width="360"
-              HorizontalAlignment="Right">
-        <Border.Styles>
-          <Style Selector="Border">
-            <Setter Property="RenderTransform" Value="translateX(240px)" />
-            <Setter Property="Transitions">
-              <Transitions>
-                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" />
-              </Transitions>
-            </Setter>
-          </Style>
-          <Style Selector="Border.open">
-            <Setter Property="RenderTransform" Value="translateX(0px)" />
-          </Style>
-        </Border.Styles>
-      </Border>
-    </Grid>
+    <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+            x:Name="OutlineDrawerScrim" Background="#80000000" ZIndex="41"
+            IsVisible="False" PointerPressed="OnOutlineDrawerScrimPressed">
+      <Border.Styles>
+        <Style Selector="Border">
+          <Setter Property="Opacity" Value="0" />
+          <Setter Property="Transitions">
+            <Transitions>
+              <DoubleTransition Property="Opacity" Duration="0:0:0.25" />
+            </Transitions>
+          </Setter>
+        </Style>
+      </Border.Styles>
+    </Border>
 
     <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="3"
           x:Name="WelcomePanel" IsVisible="{Binding !HasWorkspace}"

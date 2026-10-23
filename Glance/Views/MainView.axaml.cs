@@ -167,55 +167,23 @@ public partial class MainView : UserControl
             ? new ColumnDefinitions(_vm.OutlineOpen ? "260,*,330" : "260,*,0")
             : new ColumnDefinitions("0,*,0");
 
-        // 文件树：宽屏进左列，窄屏进左抽屉
-        if (wide)
-        {
-            if (FileTree.Parent != TreeColumnHost)
-            {
-                TreeDrawerPanel.Child = null;
-                TreeColumnHost.Child = FileTree;
-            }
-            TreeColumnHost.IsVisible = true;
-            TreeDrawer.IsVisible = false;
-        }
-        else
-        {
-            if (FileTree.Parent != TreeDrawerPanel)
-            {
-                TreeColumnHost.Child = null;
-                TreeDrawerPanel.Child = FileTree;
-            }
-            TreeColumnHost.IsVisible = false;
-            TreeDrawer.IsVisible = true;
-            TreeDrawerPanel.Classes.Set("open", _treeDrawerOpen);
-            TreeDrawerScrim.Opacity = _treeDrawerOpen ? 1 : 0;
-            TreeDrawerScrim.IsHitTestVisible = _treeDrawerOpen;
-        }
+        ApplyHostLayout(TreeColumnHost, TreeDrawerScrim, wide, _treeDrawerOpen, 40);
+        ApplyHostLayout(OutlineColumnHost, OutlineDrawerScrim, wide, _vm.OutlineOpen, 42);
+        // 宽屏大纲列归零时宿主也要隐藏
+        OutlineColumnHost.IsVisible = !wide || _vm.OutlineOpen;
+    }
 
-        // 大纲：宽屏进右列，窄屏进右抽屉
-        if (wide)
-        {
-            if (OutlineContent.Parent != OutlineColumnHost)
-            {
-                OutlineDrawerPanel.Child = null;
-                OutlineColumnHost.Child = OutlineContent;
-            }
-            OutlineColumnHost.IsVisible = _vm.OutlineOpen;
-            OutlineDrawer.IsVisible = false;
-        }
-        else
-        {
-            if (OutlineContent.Parent != OutlineDrawerPanel)
-            {
-                OutlineColumnHost.Child = null;
-                OutlineDrawerPanel.Child = OutlineContent;
-            }
-            OutlineColumnHost.IsVisible = false;
-            OutlineDrawer.IsVisible = true;
-            OutlineDrawerPanel.Classes.Set("open", _vm.OutlineOpen);
-            OutlineDrawerScrim.Opacity = _vm.OutlineOpen ? 1 : 0;
-            OutlineDrawerScrim.IsHitTestVisible = _vm.OutlineOpen;
-        }
+    // 宽屏驻留列、窄屏铺满三列当抽屉
+    private static void ApplyHostLayout(Border host, Border scrim, bool wide, bool open, int drawerZIndex)
+    {
+        Grid.SetColumnSpan(host, wide ? 1 : 3);
+        host.SetValue(Panel.ZIndexProperty, wide ? 0 : drawerZIndex);
+        host.Classes.Set("drawer", !wide);
+        host.Classes.Set("open", !wide && open);
+        scrim.IsVisible = !wide;
+        scrim.SetValue(Panel.ZIndexProperty, drawerZIndex - 1);
+        scrim.Opacity = !wide && open ? 1 : 0;
+        scrim.IsHitTestVisible = !wide && open;
     }
 
     private int LineOf(ulong startByte)
