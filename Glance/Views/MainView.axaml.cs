@@ -35,6 +35,22 @@ public partial class MainView : UserControl
         FileTree.ContainerPrepared += OnFileTreeContainerPrepared;
         SizeChanged += OnSizeChanged;
         DataContextChanged += OnDataContextChanged;
+        AttachedToVisualTree += OnAttachedToVisualTree;
+        DetachedFromVisualTree += OnDetachedFromVisualTree;
+        if (DataContext is MainViewModel vm) AttachVm(vm);
+    }
+
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (_vm is null) return;
+        _vm.PropertyChanged -= OnVmPropertyChanged;
+        // 闭包捕获this，不清空则VM会一直持有已离树的视图
+        _vm.PickFolderAction = null;
+        _vm = null;
+    }
+
+    private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
         if (DataContext is MainViewModel vm) AttachVm(vm);
     }
 

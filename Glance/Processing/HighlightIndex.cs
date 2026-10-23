@@ -49,14 +49,6 @@ public sealed class HighlightIndex
         return result;
     }
 
-    public IReadOnlyList<HighlightToken> AllTokens()
-    {
-        var result = new List<HighlightToken>();
-        for (var i = 0; i < LineCount; i++)
-            result.AddRange(TokensOf(i));
-        return result;
-    }
-
     public static HighlightIndex Empty() => new(Array.Empty<byte>(), Array.Empty<byte>(), Array.Empty<string>());
 
     private const int TokenBytes = 12;

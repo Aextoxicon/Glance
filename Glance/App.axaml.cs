@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -11,6 +12,8 @@ namespace Glance;
 
 public partial class App : Application
 {
+    private MainViewModel? _vm;
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -24,26 +27,41 @@ public partial class App : Application
 #if !ANDROID
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var vm = new MainViewModel();
-            var window = new MainWindow { DataContext = vm };
+            _vm = new MainViewModel();
+            var window = new MainWindow { DataContext = _vm };
             desktop.MainWindow = window;
-            vm.TryRestoreLastDirectory();
+            desktop.Exit += (_, _) => DisposeVm();
+            _vm.TryRestoreLastDirectory();
         }
-        else if (ApplicationLifetime is IActivityApplicationLifetime singleViewFactoryApplicationLifetime)
+        else if (ApplicationLifetime is IActivityApplicationLifetime activityLifetime)
         {
-            singleViewFactoryApplicationLifetime.MainViewFactory = () => new MainView { DataContext = new MainViewModel() };
+            activityLifetime.MainViewFactory = () => NewMainView(() => new MainViewModel());
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            singleViewPlatform.MainView = new MainView { DataContext = new MainViewModel() };
+            singleViewPlatform.MainView = NewMainView(() => new MainViewModel());
         }
 #else
         if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
             var fs = PlatformServices.FileSystem ?? new LocalFileSystem();
-            singleViewPlatform.MainView = new MainView { DataContext = new MainViewModel(fs, new UniffiCodeParser()) };
+            singleViewPlatform.MainView = NewMainView(() => new MainViewModel(fs, new UniffiCodeParser()));
         }
 #endif
         base.OnFrameworkInitializationCompleted();
+    }
+
+    // 旧VM不释放会被Application的主题订阅拴住并连带整个文件树与解析缓存
+    private MainView NewMainView(Func<MainViewModel> factory)
+    {
+        DisposeVm();
+        _vm = factory();
+        return new MainView { DataContext = _vm };
+    }
+
+    private void DisposeVm()
+    {
+        _vm?.Dispose();
+        _vm = null;
     }
 }

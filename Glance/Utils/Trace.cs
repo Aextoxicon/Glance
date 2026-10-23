@@ -37,8 +37,6 @@ public static class Trace
         }
     }
 
-    public static string DrainText() => string.Join('\n', Drain());
-
     // 导出到指定目录，返回文件路径；环形缓冲为空时返回null
     public static string? ExportTo(string directory)
     {

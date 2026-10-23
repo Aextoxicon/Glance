@@ -64,9 +64,6 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public Func<Task<string?>>? PickFolderAction { get; set; }
 
     [ObservableProperty]
-    public partial string Greeting { get; set; } = "Welcome to Avalonia!";
-
-    [ObservableProperty]
     private ThemeMode _themeMode = ThemeMode.System;
 
     [ObservableProperty]
@@ -295,7 +292,6 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     }
 
     public bool HasPreviewNotice => PreviewNotice is not null;
-    public void SelectCodeFontSize(int size) => CodeFontSize = size;
 
     public void OnWindowResized(double width) => IsWide = width > WideModeThreshold;
 
