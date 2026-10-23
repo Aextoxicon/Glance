@@ -61,7 +61,7 @@ public class BindingNotificationTests
         Assert.False(vm.HasPreviewMessage);
 
         vm.HasSelection = true;
-        vm.MessageText = "[二进制文件] x 无法预览";
+        vm.MessageText = "[二进制文件] x无法预览";
         vm.IsLoadingPreview = true;
         Assert.False(vm.HasPreviewMessage); // 加载中即使有消息也不该盖住进度条
         vm.IsLoadingPreview = false;

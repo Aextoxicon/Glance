@@ -16,7 +16,7 @@ public class SelectionRaceTests
         var gate = repo.GateRead(slowPath);
 
         var slow = vm.SelectItem(VmHarness.Item(repo, slowPath));
-        await VmHarness.WaitUntil(() => repo.ReadCalls.ContainsKey(slowPath), "slow 读取应已开始");
+        await VmHarness.WaitUntil(() => repo.ReadCalls.ContainsKey(slowPath), "slow读取应已开始");
 
         await vm.SelectItem(VmHarness.Item(repo, fastPath));
 
@@ -107,7 +107,7 @@ public class SelectionRaceTests
         repo.Listing(rootB, new[] { fileB });
 
         var loadA = vm.LoadCore(rootA);
-        await VmHarness.WaitUntil(() => vm.IsComputingSize, "A 应进入计算大小阶段");
+        await VmHarness.WaitUntil(() => vm.IsComputingSize, "A应进入计算大小阶段");
 
         await vm.LoadCore(rootB);
 

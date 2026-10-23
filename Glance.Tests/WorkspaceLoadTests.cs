@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Glance.Tests;
 
-// 工作区根的显示名与.gitignore 定位都不该用Path.*处理平台标识符
+// 工作区根的显示名与.gitignore定位都不该用Path.*处理平台标识符
 // Android的路径是content://的SAF URI
 public class WorkspaceLoadTests
 {
