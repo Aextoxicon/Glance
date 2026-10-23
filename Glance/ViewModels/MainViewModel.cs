@@ -24,7 +24,7 @@ namespace Glance.ViewModels;
 /// 平移自KMP MainViewModel.kt；协程模型见
 /// "https://learn.microsoft.com/dotnet/csharp/asynchronous-programming/"
 /// </summary>
-public partial class MainViewModel : ViewModelBase
+public partial class MainViewModel : ViewModelBase, IDisposable
 {
     private const int WideModeThreshold = 640;
     private const int ParseCacheMax = 32;
@@ -44,6 +44,8 @@ public partial class MainViewModel : ViewModelBase
     private readonly object _cacheLock = new();
     private readonly LruCache _parseCache;
     private bool _nativeAvailable = true;
+    private Application? _app;
+    private bool _disposed;
 
     private CancellationTokenSource? _loadCts;
     private CancellationTokenSource? _selectCts;
@@ -221,8 +223,9 @@ public partial class MainViewModel : ViewModelBase
         _lastDirectory = saved.LastDirectory;
         _showLineNumbers = saved.ShowLineNumbers;
         IsDark = ResolveDark();
-        if (Application.Current is { } app)
-            app.ActualThemeVariantChanged += OnAppThemeVariantChanged;
+        _app = Application.Current;
+        if (_app is not null)
+            _app.ActualThemeVariantChanged += OnAppThemeVariantChanged;
     }
 
     public void TryRestoreLastDirectory()
@@ -855,6 +858,15 @@ public partial class MainViewModel : ViewModelBase
 
     public void Dispose()
     {
+        if (_disposed)
+            return;
+        _disposed = true;
+
+        if (_app is not null)
+        {
+            _app.ActualThemeVariantChanged -= OnAppThemeVariantChanged;
+            _app = null;
+        }
         CancelLoadJobs();
 #if !ANDROID
         _dirWatcher?.Dispose();
