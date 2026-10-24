@@ -21,7 +21,6 @@ public static class Trace
         var now = Base.ElapsedMilliseconds;
         var delta = now - System.Threading.Interlocked.Exchange(ref _last, now);
         var line = $"TRACE total_ms={now} delta_ms={delta} {label} {extra}".Trim();
-        Console.WriteLine(line);
         lock (_lock)
         {
             _buffer.Enqueue(line);

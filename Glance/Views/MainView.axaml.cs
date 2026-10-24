@@ -135,6 +135,11 @@ public partial class MainView : UserControl
             e.Handled = true;
             _vm?.ToggleBenchmarkMode();
         }
+        else if (e.Key == Key.Escape && _vm?.BenchmarkMode == true)
+        {
+            e.Handled = true;
+            _vm.StopBenchmark();
+        }
     }
 
     private void OnWorkspaceOpened()

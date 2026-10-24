@@ -55,6 +55,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private CancellationTokenSource? _benchCts;
     private TreeItemViewModel? _selectedTreeItem;
 
+    private static async Task WaitRenderFrame(CancellationToken ct)
+    {
+        var tcs = new TaskCompletionSource();
+        Dispatcher.UIThread.Post(() => tcs.TrySetResult(), DispatcherPriority.Render);
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+        await tcs.Task;
+    }
+
 #if !ANDROID
     private readonly DirectoryWatcher? _dirWatcher;
 #endif
@@ -157,8 +165,16 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         BenchmarkMode = !BenchmarkMode;
         TraceEnabled = BenchmarkMode;
         MessageText = BenchmarkMode
-            ? "诊断基准模式：开启（打开文件夹将自动展开全部+逐文件计时，跑完自动导出日志）"
+            ? "诊断基准模式：开启（打开文件夹将自动展开全部+逐文件计时，跑完自动导出日志，Esc取消）"
             : "诊断基准模式：关闭";
+    }
+
+    public void StopBenchmark()
+    {
+        _benchCts?.Cancel();
+        BenchmarkMode = false;
+        TraceEnabled = false;
+        MessageText = "诊断基准模式：已取消";
     }
 
     [ObservableProperty]
@@ -711,8 +727,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                         else if (IsHighlightable(child.Artifact))
                         {
                             await SelectItem(child);
-                            // 让上一文件首帧信号(select.painted)先落地，再开下一文件，避免标记交错
-                            await Task.Delay(20, ct);
+                            await WaitRenderFrame(ct);
                             files++;
                         }
                     }
@@ -720,7 +735,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 else if (IsHighlightable(item.Artifact))
                 {
                     await SelectItem(item);
-                    await Task.Delay(20, ct);
+                    await WaitRenderFrame(ct);
                     files++;
                 }
             }
