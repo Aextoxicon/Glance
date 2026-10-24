@@ -52,6 +52,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private CancellationTokenSource? _sizeCts;
     private CancellationTokenSource? _treeRefreshCts;
     private CancellationTokenSource? _treeOwnerCts;
+    private CancellationTokenSource? _benchCts;
     private TreeItemViewModel? _selectedTreeItem;
 
 #if !ANDROID
@@ -147,6 +148,18 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private bool _traceEnabled;
 
     partial void OnTraceEnabledChanged(bool value) => Trace.Enabled = value;
+
+    public bool BenchmarkMode { get; private set; }
+
+    // F12打开即开启trace并清基线，关闭即关trace
+    public void ToggleBenchmarkMode()
+    {
+        BenchmarkMode = !BenchmarkMode;
+        TraceEnabled = BenchmarkMode;
+        MessageText = BenchmarkMode
+            ? "诊断基准模式：开启（打开文件夹将自动展开全部+逐文件计时，跑完自动导出日志）"
+            : "诊断基准模式：关闭";
+    }
 
     [ObservableProperty]
     private bool _outlineOpen = false;
@@ -634,6 +647,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     public async Task ExpandAll()
     {
+        Trace.Mark("expandall.start");
+        var dirs = 0;
         var queue = new Queue<TreeItemViewModel>();
         foreach (var root in TreeItems) if (root.IsDir) queue.Enqueue(root);
         try
@@ -643,6 +658,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 var batch = new List<TreeItemViewModel>();
                 while (batch.Count < ExpandConcurrency && queue.Count > 0) batch.Add(queue.Dequeue());
                 await Task.WhenAll(batch.Select(item => item.EnsureLoadedAsync()));
+                dirs += batch.Count;
                 foreach (var item in batch)
                 {
                     foreach (var child in item.Children)
@@ -653,12 +669,79 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             }
         }
         catch (OperationCanceledException) { }
+        Trace.Mark("expandall.end", $"dirs={dirs}");
     }
 
     public void CollapseAll()
     {
         foreach (var root in TreeItems) root.CollapseRecursive();
         OnTreeDirsChanged?.Invoke();
+    }
+
+    // 诊断基准模式：工作区加载完成后逐步展开目录并逐个打开受高亮支持文件
+    // 展开计时走 bench.expand.*（每目录），逐文件计时走 select.*；本序列只负责编排+分界标记
+    // 逐步而非一次性铺开：避免整树ExpandAll+全量打开把UI/IO一次性打满，且可被新文件夹打开取消
+    public async Task RunBenchmarkSequence()
+    {
+        if (!BenchmarkMode) return;
+        CancelAndDispose(ref _benchCts);
+        _benchCts = new CancellationTokenSource();
+        var ct = _benchCts.Token;
+        try
+        {
+            Trace.Mark("bench.start");
+            var dirs = 0;
+            var files = 0;
+            var queue = new Queue<TreeItemViewModel>();
+            foreach (var root in TreeItems) queue.Enqueue(root);
+            while (queue.Count > 0)
+            {
+                if (ct.IsCancellationRequested) break;
+                var item = queue.Dequeue();
+                if (item.IsDir)
+                {
+                    Trace.Mark("bench.expand.start", $"name={item.Name}");
+                    await item.EnsureLoadedAsync();
+                    Trace.Mark("bench.expand.end", $"name={item.Name}");
+                    dirs++;
+                    foreach (var child in item.Children)
+                    {
+                        if (ct.IsCancellationRequested) break;
+                        if (child.IsDir) queue.Enqueue(child);
+                        else if (IsHighlightable(child.Artifact))
+                        {
+                            await SelectItem(child);
+                            // 让上一文件首帧信号(select.painted)先落地，再开下一文件，避免标记交错
+                            await Task.Delay(20, ct);
+                            files++;
+                        }
+                    }
+                }
+                else if (IsHighlightable(item.Artifact))
+                {
+                    await SelectItem(item);
+                    await Task.Delay(20, ct);
+                    files++;
+                }
+            }
+            Trace.Mark("bench.end", $"dirs={dirs} files={files}");
+            ExportTraceLog();
+        }
+        catch (OperationCanceledException)
+        {
+            CancelAndDispose(ref _selectCts);
+        }
+    }
+
+    private bool IsHighlightable(IArtifact artifact)
+    {
+        var path = artifact.Id;
+        if (path.Length == 0) return false;
+        if (artifact.Size > PreviewPlainLimitBytes) return false;
+        if (!_fs.IsTextFile(path)) return false;
+        if (!_nativeAvailable) return false;
+        if (FileProcessor.IsPlainText(artifact)) return false;
+        return true;
     }
 
     public async Task RefreshTree()

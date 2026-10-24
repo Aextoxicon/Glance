@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using Trace = Glance.Utils.Trace;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +15,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using Glance.Native;
 using Glance.Processing;
+using Glance.Utils;
 using Glance.ViewModels;
 
 namespace Glance.Views;
@@ -24,6 +27,11 @@ public partial class MainView : UserControl
     private HighlightTransformer? _transformer;
     private bool _treeDrawerOpen;
     private DispatcherTimer? _scrollTimer;
+    private bool _paintPending;
+    private ScrollViewer? _editorScroll;
+    private readonly Stopwatch _scrollSw = Stopwatch.StartNew();
+    private bool _scrollPaintPending;
+    private const double ScrollJankMs = 20;
 
     private const int OutlineScrollContextLines = 3;
     private const int OutlineScrollPreJumpLines = 30;
@@ -32,6 +40,7 @@ public partial class MainView : UserControl
     public MainView()
     {
         InitializeComponent();
+        this.AddHandler(InputElement.KeyDownEvent, OnKeyDown, RoutingStrategies.Bubble);
         FileTree.ContainerPrepared += OnFileTreeContainerPrepared;
         SizeChanged += OnSizeChanged;
         DataContextChanged += OnDataContextChanged;
@@ -44,6 +53,7 @@ public partial class MainView : UserControl
     {
         if (_vm is null) return;
         _vm.PropertyChanged -= OnVmPropertyChanged;
+        _vm.OnWorkspaceOpened -= OnWorkspaceOpened;
         // 闭包捕获this，不清空则VM会一直持有已离树的视图
         _vm.PickFolderAction = null;
         _vm = null;
@@ -52,6 +62,8 @@ public partial class MainView : UserControl
     private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
         if (DataContext is MainViewModel vm) AttachVm(vm);
+        // 模板应用后再取ScrollViewer，避免null
+        Dispatcher.UIThread.Post(AttachEditorScrollProbe, DispatcherPriority.Loaded);
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -62,9 +74,10 @@ public partial class MainView : UserControl
     private void AttachVm(MainViewModel vm)
     {
         if (_vm == vm) return;
-        if (_vm is not null) _vm.PropertyChanged -= OnVmPropertyChanged;
+        if (_vm is not null) { _vm.PropertyChanged -= OnVmPropertyChanged; _vm.OnWorkspaceOpened -= OnWorkspaceOpened; }
         _vm = vm;
         _vm.PropertyChanged += OnVmPropertyChanged;
+        _vm.OnWorkspaceOpened += OnWorkspaceOpened;
         UpdateDocument(_vm.SelectedContent);
         UpdateHighlighter(_vm.SelectedParseResult);
         PreviewEditor.FontSize = _vm.CodeFontSize;
@@ -88,9 +101,15 @@ public partial class MainView : UserControl
     {
         if (_vm is null) return;
         if (e.PropertyName == nameof(MainViewModel.SelectedContent))
+        {
             UpdateDocument(_vm.SelectedContent);
+            SchedulePaintProbe();
+        }
         else if (e.PropertyName == nameof(MainViewModel.SelectedParseResult))
+        {
             UpdateHighlighter(_vm.SelectedParseResult);
+            SchedulePaintProbe();
+        }
         else if (e.PropertyName == nameof(MainViewModel.CodeFontSize))
             PreviewEditor.FontSize = _vm.CodeFontSize;
         else if (e.PropertyName == nameof(MainViewModel.ShowLineNumbers))
@@ -109,6 +128,21 @@ public partial class MainView : UserControl
             ApplyLayout();
     }
 
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.F12)
+        {
+            e.Handled = true;
+            _vm?.ToggleBenchmarkMode();
+        }
+    }
+
+    private void OnWorkspaceOpened()
+    {
+        if (_vm?.BenchmarkMode == true)
+            _ = _vm.RunBenchmarkSequence();
+    }
+
     private void UpdateDocument(string? text)
     {
         var doc = PreviewEditor.Document;
@@ -123,6 +157,40 @@ public partial class MainView : UserControl
         _transformer = parsed is not null ? new HighlightTransformer(parsed.Highlights, _vm?.IsDark ?? false) : null;
         if (_transformer is not null) view.LineTransformers.Add(_transformer);
         view.Redraw();
+    }
+
+    // 首帧信号：内容+高亮绑定完成后，等渲染帧跑完再发，覆盖"解析+高亮画完"全链路
+    private void SchedulePaintProbe()
+    {
+        if (!Trace.Enabled || _paintPending) return;
+        _paintPending = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _paintPending = false;
+            Trace.Mark("select.painted", $"name={_vm?.SelectedArtifact?.Name}");
+        }, DispatcherPriority.Render);
+    }
+
+    // 滚动卡顿探针：每次视口变化后等渲染帧，超阈值才发信号，避免刷屏
+    private void AttachEditorScrollProbe()
+    {
+        if (_editorScroll is not null) return;
+        _editorScroll = PreviewEditor.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        if (_editorScroll is not null) _editorScroll.ScrollChanged += OnEditorScrollChanged;
+    }
+
+    private void OnEditorScrollChanged(object? sender, ScrollChangedEventArgs e)
+    {
+        if (!Trace.Enabled || _scrollPaintPending) return;
+        _scrollPaintPending = true;
+        var t0 = _scrollSw.Elapsed.TotalMilliseconds;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _scrollPaintPending = false;
+            var delta = _scrollSw.Elapsed.TotalMilliseconds - t0;
+            if (delta > ScrollJankMs)
+                Trace.Mark("scroll.frame", $"delta={delta:F1}ms dy={e.OffsetDelta.Y:F0}");
+        }, DispatcherPriority.Render);
     }
 
     // 占位符节点只为让目录显示展开箭头而存在，容器层直接隐藏避免占一整行
