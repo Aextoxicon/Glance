@@ -103,12 +103,12 @@ public partial class MainView : UserControl
         if (e.PropertyName == nameof(MainViewModel.SelectedContent))
         {
             UpdateDocument(_vm.SelectedContent);
-            SchedulePaintProbe();
+            if (_vm.SelectedContent is not null) SchedulePaintProbe();
         }
         else if (e.PropertyName == nameof(MainViewModel.SelectedParseResult))
         {
             UpdateHighlighter(_vm.SelectedParseResult);
-            SchedulePaintProbe();
+            if (_vm.SelectedParseResult is not null) SchedulePaintProbe();
         }
         else if (e.PropertyName == nameof(MainViewModel.CodeFontSize))
             PreviewEditor.FontSize = _vm.CodeFontSize;

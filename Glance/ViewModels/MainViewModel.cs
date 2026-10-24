@@ -506,6 +506,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         Trace.Mark("select.end", $"name={artifact.Name}");
     }
 
+    private const long SyncLoadThresholdBytes = 64 * 1024;
+
     private async Task<LoadedFile?> LoadFile(IArtifact artifact, CancellationToken ct)
     {
         if (artifact.Payload is LocalPayload lp && lp.IsDir) return null;
@@ -519,6 +521,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         {
             MessageText = $"文件过大（{FormatSize.Readable(artifact.Size)}），已跳过预览";
             return null;
+        }
+
+        if (artifact.Size <= SyncLoadThresholdBytes)
+        {
+            ct.ThrowIfCancellationRequested();
+            return LoadFileSync(artifact, path);
         }
 
         string? error = null;
@@ -570,6 +578,63 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             MessageText = $"读取失败: {ex.Message}";
             return null;
         }
+
+        if (error is not null)
+        {
+            MessageText = error;
+            return null;
+        }
+        return result;
+    }
+
+    private LoadedFile? LoadFileSync(IArtifact artifact, string path)
+    {
+        string? error = null;
+        LoadedFile? result = null;
+        try
+        {
+            if (!_fs.IsTextFile(path))
+            {
+                Trace.Mark("istext", "binary=true");
+                error = $"[二进制文件] {artifact.Name} 无法预览";
+            }
+            else
+            {
+                Trace.Mark("istext", "binary=false");
+                var key = CacheKey(artifact);
+                lock (_cacheLock)
+                {
+                    if (_parseCache.TryGet(key, out var cached))
+                    {
+                        Trace.Mark("cache.hit", $"bytes={artifact.Size}");
+                        result = cached;
+                    }
+                }
+                if (result is null)
+                {
+                    Trace.Mark("cache.miss", $"bytes={artifact.Size}");
+                    var content = _repo.TryReadTextAsync(path).GetAwaiter().GetResult().GetOrNull();
+                    if (content is null)
+                    {
+                        Trace.Mark("io.read", "failed=true");
+                        error = $"无法读取文件: {artifact.Name}";
+                    }
+                    else
+                    {
+                        Trace.Mark("io.read", $"chars={content.Length}");
+                        var normalized = content.Replace("\t", "    ");
+                        Trace.Mark("tabs.replace", $"chars={normalized.Length}");
+                        result = BuildPreview(normalized, artifact);
+                        Trace.Mark("build.done", $"highlight={result.ParseResult is not null}");
+                        if (artifact.Size <= PreviewPlainLimitBytes)
+                        {
+                            lock (_cacheLock) _parseCache.Set(key, result);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception) { /* handled below */ }
 
         if (error is not null)
         {
@@ -703,6 +768,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         CancelAndDispose(ref _benchCts);
         _benchCts = new CancellationTokenSource();
         var ct = _benchCts.Token;
+        var dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Glance");
+        Trace.Start(dir);
         try
         {
             Trace.Mark("bench.start");
@@ -745,6 +813,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         catch (OperationCanceledException)
         {
             CancelAndDispose(ref _selectCts);
+            ExportTraceLog();
+        }
+        finally
+        {
+            Trace.Stop();
         }
     }
 

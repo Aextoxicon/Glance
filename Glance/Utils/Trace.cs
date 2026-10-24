@@ -8,9 +8,12 @@ public static class Trace
 {
     public static bool Enabled { get; set; }
 
-    private const int Capacity = 2000;
+    private const int Capacity = 20000;
+    private const int FlushThreshold = 100;
     private static readonly object _lock = new();
     private static readonly System.Collections.Generic.Queue<string> _buffer = new();
+    private static StreamWriter? _stream;
+    private static string? _streamPath;
 
     private static readonly Stopwatch Base = Stopwatch.StartNew();
     private static long _last;
@@ -24,7 +27,37 @@ public static class Trace
         lock (_lock)
         {
             _buffer.Enqueue(line);
-            while (_buffer.Count > Capacity) _buffer.Dequeue();
+            if (_buffer.Count > Capacity) _buffer.Dequeue();
+            if (_stream is not null)
+            {
+                _stream.WriteLine(line);
+                if (_buffer.Count % FlushThreshold == 0) _stream.Flush();
+            }
+        }
+    }
+
+    public static string? Start(string directory)
+    {
+        lock (_lock)
+        {
+            Directory.CreateDirectory(directory);
+            _streamPath = Path.Combine(directory, $"glance_trace_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+            _stream = new StreamWriter(_streamPath, append: false) { AutoFlush = false };
+            _buffer.Clear();
+            return _streamPath;
+        }
+    }
+
+    public static string? Stop()
+    {
+        lock (_lock)
+        {
+            _stream?.Flush();
+            _stream?.Dispose();
+            _stream = null;
+            var path = _streamPath;
+            _streamPath = null;
+            return path;
         }
     }
 
@@ -39,6 +72,8 @@ public static class Trace
     // 导出到指定目录，返回文件路径；环形缓冲为空时返回null
     public static string? ExportTo(string directory)
     {
+        var stopped = Stop();
+        if (stopped is not null) return stopped;
         var lines = Drain();
         if (lines.Length == 0) return null;
         Directory.CreateDirectory(directory);
