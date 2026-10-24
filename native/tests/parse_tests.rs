@@ -246,6 +246,56 @@ fn main() {
     assert_debug_snapshot!(snapshot_of(&result));
 }
 
+#[test]
+fn test_outline_ruby() {
+    let source = r#"class Greeter
+  def greet(name)
+    puts "hello #{name}"
+  end
+
+  def farewell
+    puts "bye"
+  end
+end
+
+module Utils
+  def self.log(msg)
+    puts msg
+  end
+end
+"#;
+    let result: CodeParseResult = parse_code(source.to_string(), ".rb".to_string());
+    assert!(outline_contains(&result.outline, "class"), "expected class in Ruby outline");
+    assert!(outline_contains(&result.outline, "module"), "expected module in Ruby outline");
+    assert!(outline_contains(&result.outline, "method"), "expected method in Ruby outline");
+    assert!(outline_contains(&result.outline, "singleton_method"), "expected singleton_method in Ruby outline");
+    let has_greeter = result.outline.iter().any(|n| n.name == "Greeter");
+    assert!(has_greeter, "expected class named 'Greeter' in Ruby outline");
+    assert_debug_snapshot!(snapshot_of(&result));
+}
+
+#[test]
+fn test_outline_make() {
+    let source = "all: foo.o bar.o\n\tgcc -o app foo.o bar.o\n\nfoo.o: foo.c\n\tgcc -c foo.c\n\nbar.o: bar.c\n\tgcc -c bar.c\n\nclean:\n\trm -f *.o app\n";
+    let result: CodeParseResult = parse_code(source.to_string(), ".mk".to_string());
+    assert!(outline_contains(&result.outline, "rule"), "expected rule in Make outline");
+    let has_all = result.outline.iter().any(|n| n.name == "all");
+    assert!(has_all, "expected rule named 'all' in Make outline");
+    let has_clean = result.outline.iter().any(|n| n.name == "clean");
+    assert!(has_clean, "expected rule named 'clean' in Make outline");
+    assert_debug_snapshot!(snapshot_of(&result));
+}
+
+#[test]
+fn test_outline_dockerfile() {
+    let source = "FROM ubuntu AS base\nRUN apt-get update\n\nFROM base AS builder\nRUN make build\n\nFROM base AS runtime\nCOPY --from=builder /app /app\n";
+    let result: CodeParseResult = parse_code(source.to_string(), ".dockerfile".to_string());
+    assert!(outline_contains(&result.outline, "from_instruction"), "expected from_instruction in Dockerfile outline");
+    let has_base = result.outline.iter().any(|n| n.name == "base");
+    assert!(has_base, "expected stage named 'base' in Dockerfile outline");
+    assert_debug_snapshot!(snapshot_of(&result));
+}
+
 /// 含跨行字符串（一条token覆盖多行）与一个空行
 const SPANNING_SRC: &str = "fn main() {\n    let x = \"a\nb\";\n\n    println!(\"{}\", x);\n}\n";
 

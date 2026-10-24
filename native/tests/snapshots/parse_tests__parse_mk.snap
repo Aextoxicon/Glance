@@ -26,5 +26,14 @@ Snapshot {
         [],
         [],
     ],
-    outline: [],
+    outline: [
+        OutlineNode {
+            kind: "rule",
+            name: "all",
+            detail: "",
+            start_byte: 15,
+            end_byte: 32,
+            children: [],
+        },
+    ],
 }

@@ -119,5 +119,32 @@ Snapshot {
         ],
         [],
     ],
-    outline: [],
+    outline: [
+        OutlineNode {
+            kind: "module",
+            name: "M",
+            detail: "",
+            start_byte: 35,
+            end_byte: 104,
+            children: [
+                OutlineNode {
+                    kind: "class",
+                    name: "C",
+                    detail: "",
+                    start_byte: 46,
+                    end_byte: 100,
+                    children: [
+                        OutlineNode {
+                            kind: "method",
+                            name: "m",
+                            detail: "",
+                            start_byte: 58,
+                            end_byte: 94,
+                            children: [],
+                        },
+                    ],
+                },
+            ],
+        },
+    ],
 }

@@ -8,7 +8,7 @@ const EXTS: &[&str] = &[
     ".rb", ".php",
 ];
 
-const KNOWN_RED: &[&str] = &[".mk", ".dockerfile", ".rb"];
+const KNOWN_RED: &[&str] = &[];
 
 // 各grammar crate自带的node-types.json；少数crate的常量名带前缀
 fn node_types_of(ext: &str) -> &'static str {

@@ -297,6 +297,26 @@ fn extract_name(node: tree_sitter::Node, source: &[u8]) -> String {
                 return text_of(name, source);
             }
         }
+        "rule" => {
+            // 静态模式规则(%.o:%.c)的target
+            if let Some(target) = node.child_by_field_name("target") {
+                return text_of(target, source);
+            }
+            // 普通规则的target
+            if let Some(targets) = find_child_of_kind(node, &["targets"]) {
+                return text_of(targets, source);
+            }
+        }
+        "from_instruction" => {
+            if let Some(alias) = node.child_by_field_name("as") {
+                return text_of(alias, source);
+            }
+            if let Some(name) = find_child_of_kind(node, &["image_spec"])
+                .and_then(|spec| spec.child_by_field_name("name"))
+            {
+                return text_of(name, source);
+            }
+        }
         _ => {}
     }
 
@@ -338,6 +358,17 @@ pub const OUTLINE_STRUCTURAL_KINDS: &[&str] = &[
     "const_item",
     "type_declaration",
     "package_clause",
+
+    // Ruby
+    "class",
+    "module",
+    "method",
+    "singleton_method",
+    // Makefile
+    "rule",
+    "define_directive",
+    // Dockerfile
+    "from_instruction",
 ];
 
 const MAX_OUTLINE_DEPTH: usize = 16;

@@ -1,0 +1,88 @@
+---
+source: tests/parse_tests.rs
+expression: snapshot_of(&result)
+---
+Snapshot {
+    highlights: [
+        [
+            (
+                0,
+                3,
+                "constant.macro",
+            ),
+            (
+                3,
+                4,
+                "punctuation.delimiter",
+            ),
+        ],
+        [],
+        [],
+        [
+            (
+                5,
+                6,
+                "punctuation.delimiter",
+            ),
+        ],
+        [],
+        [],
+        [
+            (
+                5,
+                6,
+                "punctuation.delimiter",
+            ),
+        ],
+        [],
+        [],
+        [
+            (
+                0,
+                5,
+                "constant.macro",
+            ),
+            (
+                5,
+                6,
+                "punctuation.delimiter",
+            ),
+        ],
+        [],
+        [],
+    ],
+    outline: [
+        OutlineNode {
+            kind: "rule",
+            name: "all",
+            detail: "",
+            start_byte: 0,
+            end_byte: 42,
+            children: [],
+        },
+        OutlineNode {
+            kind: "rule",
+            name: "foo.o",
+            detail: "",
+            start_byte: 42,
+            end_byte: 70,
+            children: [],
+        },
+        OutlineNode {
+            kind: "rule",
+            name: "bar.o",
+            detail: "",
+            start_byte: 70,
+            end_byte: 98,
+            children: [],
+        },
+        OutlineNode {
+            kind: "rule",
+            name: "clean",
+            detail: "",
+            start_byte: 98,
+            end_byte: 120,
+            children: [],
+        },
+    ],
+}

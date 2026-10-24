@@ -49,6 +49,9 @@ public sealed class OutlineRow
         ("impl", "实现"),
         ("union", "联合"),
         ("package_clause", "包"),
+        ("rule", "目标"),
+        ("define_directive", "变量"),
+        ("from_instruction", "阶段"),
     };
 
     public static string KindLabelFor(string kind)

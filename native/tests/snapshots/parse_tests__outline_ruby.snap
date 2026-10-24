@@ -1,0 +1,246 @@
+---
+source: tests/parse_tests.rs
+expression: snapshot_of(&result)
+---
+Snapshot {
+    highlights: [
+        [
+            (
+                0,
+                5,
+                "keyword",
+            ),
+            (
+                6,
+                13,
+                "constructor",
+            ),
+        ],
+        [
+            (
+                2,
+                5,
+                "keyword",
+            ),
+            (
+                6,
+                11,
+                "function.method",
+            ),
+            (
+                11,
+                12,
+                "punctuation.bracket",
+            ),
+            (
+                12,
+                16,
+                "function.method",
+            ),
+            (
+                16,
+                17,
+                "punctuation.bracket",
+            ),
+        ],
+        [
+            (
+                4,
+                8,
+                "function.method",
+            ),
+            (
+                9,
+                16,
+                "string",
+            ),
+            (
+                16,
+                18,
+                "punctuation.special",
+            ),
+            (
+                18,
+                22,
+                "function.method",
+            ),
+            (
+                22,
+                23,
+                "embedded",
+            ),
+            (
+                23,
+                24,
+                "string",
+            ),
+        ],
+        [
+            (
+                2,
+                5,
+                "keyword",
+            ),
+        ],
+        [],
+        [
+            (
+                2,
+                5,
+                "keyword",
+            ),
+            (
+                6,
+                14,
+                "function.method",
+            ),
+        ],
+        [
+            (
+                4,
+                8,
+                "function.method",
+            ),
+            (
+                9,
+                14,
+                "string",
+            ),
+        ],
+        [
+            (
+                2,
+                5,
+                "keyword",
+            ),
+        ],
+        [
+            (
+                0,
+                3,
+                "keyword",
+            ),
+        ],
+        [],
+        [
+            (
+                0,
+                6,
+                "keyword",
+            ),
+            (
+                7,
+                12,
+                "constructor",
+            ),
+        ],
+        [
+            (
+                2,
+                5,
+                "keyword",
+            ),
+            (
+                6,
+                10,
+                "variable.builtin",
+            ),
+            (
+                10,
+                11,
+                "punctuation.delimiter",
+            ),
+            (
+                11,
+                14,
+                "function.method",
+            ),
+            (
+                14,
+                15,
+                "punctuation.bracket",
+            ),
+            (
+                15,
+                18,
+                "function.method",
+            ),
+            (
+                18,
+                19,
+                "punctuation.bracket",
+            ),
+        ],
+        [
+            (
+                4,
+                8,
+                "function.method",
+            ),
+            (
+                9,
+                12,
+                "function.method",
+            ),
+        ],
+        [
+            (
+                2,
+                5,
+                "keyword",
+            ),
+        ],
+        [
+            (
+                0,
+                3,
+                "keyword",
+            ),
+        ],
+        [],
+    ],
+    outline: [
+        OutlineNode {
+            kind: "class",
+            name: "Greeter",
+            detail: "",
+            start_byte: 0,
+            end_byte: 103,
+            children: [
+                OutlineNode {
+                    kind: "method",
+                    name: "greet",
+                    detail: "",
+                    start_byte: 16,
+                    end_byte: 62,
+                    children: [],
+                },
+                OutlineNode {
+                    kind: "method",
+                    name: "farewell",
+                    detail: "",
+                    start_byte: 66,
+                    end_byte: 99,
+                    children: [],
+                },
+            ],
+        },
+        OutlineNode {
+            kind: "module",
+            name: "Utils",
+            detail: "",
+            start_byte: 105,
+            end_byte: 160,
+            children: [
+                OutlineNode {
+                    kind: "singleton_method",
+                    name: "log",
+                    detail: "",
+                    start_byte: 120,
+                    end_byte: 156,
+                    children: [],
+                },
+            ],
+        },
+    ],
+}
