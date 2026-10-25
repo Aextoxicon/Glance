@@ -660,3 +660,158 @@ pub fn parse_code(source: String, filename: String) -> CodeParseResult {
     );
     result
 }
+
+use std::io::Cursor;
+use acadrust::entities::EntityType;
+use acadrust::io::dxf::{DxfReader, DxfReaderConfiguration};
+use acadrust::io::dwg::{DwgReader, DwgReadOptions};
+
+#[derive(uniffi::Record, Debug, Default)]
+pub struct CadParseResult {
+    pub format: String,
+    pub type_names: Vec<String>,
+    pub entity_counts: Vec<u32>,
+    pub layer_names: Vec<String>,
+    pub diagnostics: Vec<String>,
+    pub version: String,
+}
+
+// Debug会序列化整个实体,大文件极慢,用match取变体名
+fn entity_type_name(e: &EntityType) -> &'static str {
+    match e {
+        EntityType::Point(_) => "Point",
+        EntityType::Line(_) => "Line",
+        EntityType::Circle(_) => "Circle",
+        EntityType::Arc(_) => "Arc",
+        EntityType::Ellipse(_) => "Ellipse",
+        EntityType::Polyline(_) => "Polyline",
+        EntityType::Polyline2D(_) => "Polyline2D",
+        EntityType::Polyline3D(_) => "Polyline3D",
+        EntityType::LwPolyline(_) => "LwPolyline",
+        EntityType::Text(_) => "Text",
+        EntityType::MText(_) => "MText",
+        EntityType::Spline(_) => "Spline",
+        EntityType::Helix(_) => "Helix",
+        EntityType::Dimension(_) => "Dimension",
+        EntityType::Hatch(_) => "Hatch",
+        EntityType::Solid(_) => "Solid",
+        EntityType::Face3D(_) => "Face3D",
+        EntityType::Insert(_) => "Insert",
+        EntityType::Block(_) => "Block",
+        EntityType::BlockEnd(_) => "BlockEnd",
+        EntityType::Ray(_) => "Ray",
+        EntityType::XLine(_) => "XLine",
+        EntityType::Viewport(_) => "Viewport",
+        EntityType::AttributeDefinition(_) => "AttributeDefinition",
+        EntityType::AttributeEntity(_) => "AttributeEntity",
+        EntityType::Leader(_) => "Leader",
+        EntityType::MultiLeader(_) => "MultiLeader",
+        EntityType::MLine(_) => "MLine",
+        EntityType::Mesh(_) => "Mesh",
+        EntityType::RasterImage(_) => "RasterImage",
+        EntityType::Solid3D(_) => "Solid3D",
+        EntityType::Region(_) => "Region",
+        EntityType::Body(_) => "Body",
+        EntityType::Surface(_) => "Surface",
+        EntityType::Table(_) => "Table",
+        EntityType::Tolerance(_) => "Tolerance",
+        EntityType::PolyfaceMesh(_) => "PolyfaceMesh",
+        EntityType::Wipeout(_) => "Wipeout",
+        EntityType::Shape(_) => "Shape",
+        EntityType::Underlay(_) => "Underlay",
+        EntityType::Seqend(_) => "Seqend",
+        EntityType::Ole2Frame(_) => "Ole2Frame",
+        EntityType::PolygonMesh(_) => "PolygonMesh",
+        EntityType::Light(_) => "Light",
+        EntityType::SectionSymbol(_) => "SectionSymbol",
+        EntityType::ViewBorder(_) => "ViewBorder",
+        EntityType::Extended(_) => "Extended",
+        EntityType::Unknown(_) => "Unknown",
+    }
+}
+
+#[uniffi::export]
+pub fn parse_cad(file_bytes: Vec<u8>, filename: String) -> CadParseResult {
+    let lower = filename.to_ascii_lowercase();
+    let is_dwg = lower.ends_with(".dwg");
+    let is_dxf = lower.ends_with(".dxf");
+    if !is_dwg && !is_dxf {
+        debug_log!("[RUST] unsupported cad file: {}", filename);
+        return CadParseResult::default();
+    }
+
+    debug_log!(
+        "[RUST] parse_cad start: format={} bytes={}",
+        if is_dwg { "DWG" } else { "DXF" },
+        file_bytes.len()
+    );
+
+    let outcome = if is_dwg {
+        let mut reader =
+            DwgReader::from_stream_with_options(Cursor::new(file_bytes), DwgReadOptions::failsafe());
+        match reader.read_with_stats() {
+            Ok(o) => o,
+            Err(e) => {
+                debug_log!("[RUST] dwg parse failed: {}", e);
+                return CadParseResult::default();
+            }
+        }
+    } else {
+        let reader = match DxfReader::from_reader(Cursor::new(file_bytes)) {
+            Ok(r) => r,
+            Err(e) => {
+                debug_log!("[RUST] dxf parse failed: {}", e);
+                return CadParseResult::default();
+            }
+        };
+        let reader = reader.with_configuration(DxfReaderConfiguration {
+            failsafe: true,
+            default_encoding: None,
+        });
+        match reader.read_with_stats() {
+            Ok(o) => o,
+            Err(e) => {
+                debug_log!("[RUST] dxf parse failed: {}", e);
+                return CadParseResult::default();
+            }
+        }
+    };
+
+    let doc = outcome.document;
+    let stats = outcome.stats;
+
+    let mut names: Vec<String> = Vec::new();
+    let mut counts: Vec<u32> = Vec::new();
+    for e in doc.entities() {
+        let name = entity_type_name(e);
+        if let Some(i) = names.iter().position(|n| n == name) {
+            counts[i] += 1;
+        } else {
+            names.push(name.to_string());
+            counts.push(1);
+        }
+    }
+
+    let layer_names: Vec<String> = doc.layers.iter().map(|l| l.name.clone()).collect();
+    let diagnostics: Vec<String> = stats
+        .diagnostics
+        .iter()
+        .map(|d| format!("{}: {}", d.code, d.message))
+        .collect();
+
+    debug_log!(
+        "[RUST] parse_cad ok: entities={} layers={} version={}",
+        counts.iter().sum::<u32>(),
+        layer_names.len(),
+        stats.source_version
+    );
+
+    CadParseResult {
+        format: if is_dwg { "DWG" } else { "DXF" }.to_string(),
+        type_names: names,
+        entity_counts: counts,
+        layer_names,
+        diagnostics,
+        version: stats.source_version,
+    }
+}

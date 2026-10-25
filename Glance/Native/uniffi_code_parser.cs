@@ -741,12 +741,25 @@ static class _UniFFILib {
     
     
     
+    
+    
 
     static _UniFFILib() {
         _UniFFILib.uniffiCheckContractApiVersion();
         _UniFFILib.uniffiCheckApiChecksums();
         
         }
+
+    #if NET8_0_OR_GREATER
+    [LibraryImport("uniffi_code_parser")]
+    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static partial
+#else
+    [DllImport("uniffi_code_parser", CallingConvention = CallingConvention.Cdecl)]
+    public static extern
+#endif
+     RustBuffer uniffi_uniffi_code_parser_fn_func_parse_cad(RustBuffer @fileBytes,RustBuffer @filename,ref UniffiRustCallStatus _uniffi_out_err
+    );
 
     #if NET8_0_OR_GREATER
     [LibraryImport("uniffi_code_parser")]
@@ -1339,6 +1352,17 @@ static class _UniFFILib {
     [DllImport("uniffi_code_parser", CallingConvention = CallingConvention.Cdecl)]
     public static extern
 #endif
+     ushort uniffi_uniffi_code_parser_checksum_func_parse_cad(
+    );
+
+    #if NET8_0_OR_GREATER
+    [LibraryImport("uniffi_code_parser")]
+    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static partial
+#else
+    [DllImport("uniffi_code_parser", CallingConvention = CallingConvention.Cdecl)]
+    public static extern
+#endif
      ushort uniffi_uniffi_code_parser_checksum_func_parse_code(
     );
 
@@ -1363,6 +1387,12 @@ static class _UniFFILib {
     }
     static void uniffiCheckApiChecksums() {
         {
+            var checksum = _UniFFILib.uniffi_uniffi_code_parser_checksum_func_parse_cad();
+            if (checksum != 54400) {
+                throw new UniffiContractChecksumException($"Glance.Native: uniffi bindings expected function `uniffi_uniffi_code_parser_checksum_func_parse_cad` checksum `54400`, library returned `{checksum}`");
+            }
+        }
+        {
             var checksum = _UniFFILib.uniffi_uniffi_code_parser_checksum_func_parse_code();
             if (checksum != 33798) {
                 throw new UniffiContractChecksumException($"Glance.Native: uniffi bindings expected function `uniffi_uniffi_code_parser_checksum_func_parse_code` checksum `33798`, library returned `{checksum}`");
@@ -1375,6 +1405,32 @@ static class _UniFFILib {
 
 #pragma warning disable 8625
 
+
+
+
+class FfiConverterUInt32: FfiConverter<uint, uint> {
+    public static FfiConverterUInt32 INSTANCE = new FfiConverterUInt32();
+
+    public override uint Lift(uint value) {
+        return value;
+    }
+
+    public override uint Read(BigEndianStream stream) {
+        return stream.ReadUInt();
+    }
+
+    public override uint Lower(uint value) {
+        return value;
+    }
+
+    public override int AllocationSize(uint value) {
+        return 4;
+    }
+
+    public override void Write(uint value, BigEndianStream stream) {
+        stream.WriteUInt(value);
+    }
+}
 
 
 
@@ -1467,6 +1523,52 @@ class FfiConverterByteArray: FfiConverterRustBuffer<byte[]> {
     public override void Write(byte[] value, BigEndianStream stream) {
         stream.WriteInt(value.Length);
         stream.WriteBytes(value);
+    }
+}
+
+
+
+internal record CadParseResult (
+    string Format, 
+    string[] TypeNames, 
+    uint[] EntityCounts, 
+    string[] LayerNames, 
+    string[] Diagnostics, 
+    string Version
+) {
+}
+
+class FfiConverterTypeCadParseResult: FfiConverterRustBuffer<CadParseResult> {
+    public static FfiConverterTypeCadParseResult INSTANCE = new FfiConverterTypeCadParseResult();
+
+    public override CadParseResult Read(BigEndianStream stream) {
+        return new CadParseResult(
+            Format: FfiConverterString.INSTANCE.Read(stream),
+            TypeNames: FfiConverterSequenceString.INSTANCE.Read(stream),
+            EntityCounts: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
+            LayerNames: FfiConverterSequenceString.INSTANCE.Read(stream),
+            Diagnostics: FfiConverterSequenceString.INSTANCE.Read(stream),
+            Version: FfiConverterString.INSTANCE.Read(stream)
+        );
+    }
+
+    public override int AllocationSize(CadParseResult value) {
+        return 0
+            + FfiConverterString.INSTANCE.AllocationSize(value.Format)
+            + FfiConverterSequenceString.INSTANCE.AllocationSize(value.TypeNames)
+            + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.EntityCounts)
+            + FfiConverterSequenceString.INSTANCE.AllocationSize(value.LayerNames)
+            + FfiConverterSequenceString.INSTANCE.AllocationSize(value.Diagnostics)
+            + FfiConverterString.INSTANCE.AllocationSize(value.Version);
+    }
+
+    public override void Write(CadParseResult value, BigEndianStream stream) {
+            FfiConverterString.INSTANCE.Write(value.Format, stream);
+            FfiConverterSequenceString.INSTANCE.Write(value.TypeNames, stream);
+            FfiConverterSequenceUInt32.INSTANCE.Write(value.EntityCounts, stream);
+            FfiConverterSequenceString.INSTANCE.Write(value.LayerNames, stream);
+            FfiConverterSequenceString.INSTANCE.Write(value.Diagnostics, stream);
+            FfiConverterString.INSTANCE.Write(value.Version, stream);
     }
 }
 
@@ -1569,6 +1671,52 @@ class FfiConverterTypeOutlineNode: FfiConverterRustBuffer<OutlineNode> {
 
 
 
+class FfiConverterSequenceUInt32: FfiConverterRustBuffer<uint[]> {
+    public static FfiConverterSequenceUInt32 INSTANCE = new FfiConverterSequenceUInt32();
+
+    public override uint[]  Read(BigEndianStream stream) {
+        var length = stream.ReadInt();
+        if (length == 0) {
+            return [];
+        }
+
+        var result = new uint[length];
+        var readFn = FfiConverterUInt32.INSTANCE.Read;
+        for (int i = 0; i < length; i++) {
+            result[i] = readFn(stream);
+        }
+        return result;
+    }
+
+    public override int AllocationSize(uint[]  value) {
+        var sizeForLength = 4;
+
+        // details/1-empty-list-as-default-method-parameter.md
+        if (value == null) {
+            return sizeForLength;
+        }
+
+        var allocationSizeFn = FfiConverterUInt32.INSTANCE.AllocationSize;
+        var sizeForItems = value.Sum(item => allocationSizeFn(item));
+        return sizeForLength + sizeForItems;
+    }
+
+    public override void Write(uint[] value, BigEndianStream stream) {
+        // details/1-empty-list-as-default-method-parameter.md
+        if (value == null) {
+            stream.WriteInt(0);
+            return;
+        }
+
+        stream.WriteInt(value.Length);
+        var writerFn = FfiConverterUInt32.INSTANCE.Write;
+        value.ForEach(item => writerFn(item, stream));
+    }
+}
+
+
+
+
 class FfiConverterSequenceString: FfiConverterRustBuffer<string[]> {
     public static FfiConverterSequenceString INSTANCE = new FfiConverterSequenceString();
 
@@ -1659,6 +1807,14 @@ class FfiConverterSequenceTypeOutlineNode: FfiConverterRustBuffer<OutlineNode[]>
 }
 #pragma warning restore 8625
 internal static class UniffiCodeParserMethods {
+    public static CadParseResult ParseCad(byte[] @fileBytes, string @filename) {
+        return FfiConverterTypeCadParseResult.INSTANCE.Lift(
+    _UniffiHelpers.RustCall( (ref UniffiRustCallStatus _status) =>
+    _UniFFILib.uniffi_uniffi_code_parser_fn_func_parse_cad(FfiConverterByteArray.INSTANCE.Lower(@fileBytes), FfiConverterString.INSTANCE.Lower(@filename), ref _status)
+));
+    }
+
+
     public static CodeParseResult ParseCode(string @source, string @filename) {
         return FfiConverterTypeCodeParseResult.INSTANCE.Lift(
     _UniffiHelpers.RustCall( (ref UniffiRustCallStatus _status) =>
