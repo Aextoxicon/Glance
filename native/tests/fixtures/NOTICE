@@ -1,0 +1,5 @@
+测试用CAD样本来自acadrust 0.6.7
+作者: Hakan AK
+仓库: https://github.com/hakanaktt/acadrust
+协议: Mozilla Public License 2.0 (MPL-2.0)
+本目录的.dxf/.dwg作为acadrust的测试资源随其源码分发，此处仅用于解析测试。
