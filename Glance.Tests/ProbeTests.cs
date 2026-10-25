@@ -127,12 +127,9 @@ fn main() {
 
     private static double ParseTotal(string line)
     {
-        var i = line.IndexOf("total_ms=", StringComparison.Ordinal);
-        if (i < 0) return -1;
-        var s = line.Substring(i + "total_ms=".Length);
-        var sp = s.IndexOf(' ');
-        if (sp > 0) s = s.Substring(0, sp);
-        return double.TryParse(s, out var v) ? v : -1;
+        var comma = line.IndexOf(',');
+        if (comma < 0) return -1;
+        return double.TryParse(line.Substring(0, comma), out var v) ? v : -1;
     }
 
     [Fact]
@@ -183,7 +180,7 @@ fn main() {
 
             var dir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Glance");
-            var file = Directory.GetFiles(dir, "glance_trace_*.log")
+            var file = Directory.GetFiles(dir, "glance_trace_*.csv")
                 .OrderByDescending(File.GetLastWriteTime).FirstOrDefault();
             Assert.NotNull(file);
             var log = File.ReadAllText(file);
