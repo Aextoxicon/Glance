@@ -663,9 +663,12 @@ pub fn parse_code(source: String, filename: String) -> CodeParseResult {
 
 use std::io::Cursor;
 use std::collections::HashMap;
-use acadrust::entities::EntityType;
+use acadrust::entities::{
+    AttachmentPoint, EntityType, HorizontalAlignment, TextHorizontalAlignment, TextVerticalAlignment,
+    VerticalAlignment,
+};
 use acadrust::Entity;
-use acadrust::types::{Color, Matrix3, Vector3};
+use acadrust::types::{BoundingBox3D, Color, Matrix3, Vector3};
 use acadrust::tables::Layer;
 use acadrust::document::CadDocument;
 use acadrust::io::dxf::{DxfReader, DxfReaderConfiguration};
@@ -696,6 +699,11 @@ pub struct CadGeometry {
     pub arc_colors: Vec<u32>,
     pub ellipse_colors: Vec<u32>,
     pub polyline_colors: Vec<u32>,
+    // 每条文字:x,y,z,height,rotation,halign(0左1中2右),valign(0基线1下2中3上),layer_idx
+    pub text_data: Vec<f64>,
+    // 与text_data平行,每条一个内容
+    pub text_values: Vec<String>,
+    pub text_colors: Vec<u32>,
     pub layer_names: Vec<String>,
     // 整图包围盒
     pub bounds_min: Vec<f64>,
@@ -755,6 +763,103 @@ fn resolve_rgb(color: &Color, layer: Option<&Layer>) -> u32 {
         }
     }
     0
+}
+
+fn text_halign(h: TextHorizontalAlignment) -> f64 {
+    match h {
+        TextHorizontalAlignment::Center | TextHorizontalAlignment::Middle => 1.0,
+        TextHorizontalAlignment::Right => 2.0,
+        _ => 0.0,
+    }
+}
+
+fn text_valign(v: TextVerticalAlignment) -> f64 {
+    match v {
+        TextVerticalAlignment::Baseline => 0.0,
+        TextVerticalAlignment::Bottom => 1.0,
+        TextVerticalAlignment::Middle => 2.0,
+        TextVerticalAlignment::Top => 3.0,
+    }
+}
+
+fn attr_halign(h: HorizontalAlignment) -> f64 {
+    match h {
+        HorizontalAlignment::Center | HorizontalAlignment::Middle => 1.0,
+        HorizontalAlignment::Right => 2.0,
+        _ => 0.0,
+    }
+}
+
+fn attr_valign(v: VerticalAlignment) -> f64 {
+    match v {
+        VerticalAlignment::Baseline => 0.0,
+        VerticalAlignment::Bottom => 1.0,
+        VerticalAlignment::Middle => 2.0,
+        VerticalAlignment::Top => 3.0,
+    }
+}
+
+// MText的9宫格附着点归一成水平/垂直码
+fn mtext_align(a: AttachmentPoint) -> (f64, f64) {
+    use AttachmentPoint::*;
+    let h = match a {
+        TopLeft | MiddleLeft | BottomLeft => 0.0,
+        TopCenter | MiddleCenter | BottomCenter => 1.0,
+        _ => 2.0,
+    };
+    let v = match a {
+        TopLeft | TopCenter | TopRight => 3.0,
+        MiddleLeft | MiddleCenter | MiddleRight => 2.0,
+        _ => 1.0,
+    };
+    (h, v)
+}
+
+// 非左对齐时用对齐点当基准,零向量说明没设
+fn pick_anchor(alignment: Option<Vector3>, insertion: Vector3) -> Vector3 {
+    match alignment {
+        Some(p) if p.x != 0.0 || p.y != 0.0 => p,
+        _ => insertion,
+    }
+}
+
+fn pick_anchor_v(alignment: Vector3, insertion: Vector3) -> Vector3 {
+    if alignment.x != 0.0 || alignment.y != 0.0 {
+        alignment
+    } else {
+        insertion
+    }
+}
+
+// MText的\P是硬回车,其余格式码暂不处理
+fn clean_mtext(value: &str) -> String {
+    value.replace("\\P", "\n").replace("\\p", "\n")
+}
+
+#[allow(clippy::too_many_arguments)]
+fn push_text(
+    g: &mut CadGeometry,
+    b: &mut Bounds,
+    anchor: Vector3,
+    height: f64,
+    rotation: f64,
+    halign: f64,
+    valign: f64,
+    layer_idx: u32,
+    rgb: u32,
+    value: &str,
+    bb: BoundingBox3D,
+) {
+    if value.trim().is_empty() || height <= 0.0 {
+        return;
+    }
+    g.text_data.extend_from_slice(&[
+        anchor.x, anchor.y, anchor.z, height, rotation, halign, valign, layer_idx as f64,
+    ]);
+    g.text_values.push(value.to_string());
+    g.text_colors.push(rgb);
+    b.expand(bb.min.x, bb.min.y, bb.min.z);
+    b.expand(bb.max.x, bb.max.y, bb.max.z);
 }
 
 // 隐藏实体与关闭/冻结图层上的实体不该出现在预览里
@@ -843,6 +948,29 @@ fn process_entity(
             g.polyline_layers.push(li);
             g.polyline_closed.push(p.is_closed);
             g.polyline_colors.push(rgb);
+        }
+        EntityType::Text(t) => {
+            push_text(g, b, pick_anchor(t.alignment_point, t.insertion_point), t.height, t.rotation,
+                text_halign(t.horizontal_alignment), text_valign(t.vertical_alignment),
+                li, rgb, &t.value, t.bounding_box());
+        }
+        EntityType::MText(m) => {
+            let (halign, valign) = mtext_align(m.attachment_point);
+            let value = clean_mtext(&m.value);
+            push_text(g, b, m.insertion_point, m.height, m.rotation, halign, valign,
+                li, rgb, &value, m.bounding_box());
+        }
+        // 块属性定义:没填默认值时用tag当可见文字
+        EntityType::AttributeDefinition(d) => {
+            let value = if d.default_value.trim().is_empty() { d.tag.as_str() } else { d.default_value.as_str() };
+            push_text(g, b, pick_anchor_v(d.alignment_point, d.insertion_point), d.height, d.rotation,
+                attr_halign(d.horizontal_alignment), attr_valign(d.vertical_alignment),
+                li, rgb, value, d.bounding_box());
+        }
+        EntityType::AttributeEntity(a) => {
+            push_text(g, b, pick_anchor_v(a.alignment_point, a.insertion_point), a.height, a.rotation,
+                attr_halign(a.horizontal_alignment), attr_valign(a.vertical_alignment),
+                li, rgb, &a.value, a.bounding_box());
         }
         _ => {}
     }

@@ -24,6 +24,9 @@ const RED_LINE_DXF: &str = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1027\n0\nEN
 // 三点闭合多段线,首顶点带bulge=0.5(逆时针弧)
 const LWPOLYLINE_DXF: &str = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1027\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nLWPOLYLINE\n8\n0\n90\n3\n70\n1\n10\n0.0\n20\n0.0\n42\n0.5\n10\n10.0\n20\n0.0\n10\n10.0\n20\n10.0\n0\nENDSEC\n0\nEOF\n";
 
+// 单行文字:插入点(5,7),高度2.5,默认左对齐基线
+const TEXT_DXF: &str = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1027\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nTEXT\n8\n0\n10\n5.0\n20\n7.0\n30\n0.0\n40\n2.5\n1\nHello\n0\nENDSEC\n0\nEOF\n";
+
 
 #[test]
 fn parse_minimal_dxf_returns_format_and_entity() {
@@ -110,6 +113,19 @@ fn 几何解析_多段线带闭合与凸度() {
     assert!((g.polyline_data[3] - 0.5).abs() < 1e-9, "首顶点bulge应为0.5, 实得{}", g.polyline_data[3]);
     assert!((g.polyline_data[7] - 0.0).abs() < 1e-9, "其余顶点bulge应为0");
     assert_eq!(g.polyline_colors.len(), 1);
+}
+
+#[test]
+fn 几何解析_单行文字位置与内容() {
+    let g = parse_cad_geometry(TEXT_DXF.as_bytes().to_vec(), "text.dxf".to_string());
+    assert_eq!(g.text_data.len(), 8, "一条文字应占8个f64");
+    assert_eq!(g.text_values, vec!["Hello".to_string()]);
+    assert_eq!(g.text_colors.len(), 1);
+    assert!((g.text_data[0] - 5.0).abs() < 1e-9, "x应为5, 实得{}", g.text_data[0]);
+    assert!((g.text_data[1] - 7.0).abs() < 1e-9, "y应为7, 实得{}", g.text_data[1]);
+    assert!((g.text_data[3] - 2.5).abs() < 1e-9, "高度应为2.5, 实得{}", g.text_data[3]);
+    assert!((g.text_data[5] - 0.0).abs() < 1e-9 && (g.text_data[6] - 0.0).abs() < 1e-9, "默认左对齐基线");
+    assert!(g.bounds_max[0] > 5.0, "包围盒应含文字宽度");
 }
 
 #[test]

@@ -92,6 +92,9 @@ public sealed class FakeCadParser : ICadParser
             ArcColors: Array.Empty<uint>(),
             EllipseColors: Array.Empty<uint>(),
             PolylineColors: Array.Empty<uint>(),
+            TextData: Array.Empty<double>(),
+            TextValues: Array.Empty<string>(),
+            TextColors: Array.Empty<uint>(),
             LayerNames: Array.Empty<string>(),
             BoundsMin: new[] { 0.0, 0.0, 0.0 },
             BoundsMax: new[] { 100.0, 100.0, 0.0 });

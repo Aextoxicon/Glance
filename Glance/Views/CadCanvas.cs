@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -55,16 +56,25 @@ public sealed class CadCanvas : Control
         Point ToScreen(double x, double y) => new(offsetX + x * scale, offsetY - y * scale);
 
         var themeColor = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark ? Colors.White : Colors.Black;
-        var themePen = new Pen(new SolidColorBrush(themeColor), 1);
-        var cache = new Dictionary<uint, IPen>();
+        var themeBrush = new SolidColorBrush(themeColor);
+        var brushCache = new Dictionary<uint, IBrush>();
+
+        IBrush BrushFor(uint rgb)
+        {
+            if (rgb == 0) return themeBrush;
+            if (brushCache.TryGetValue(rgb, out var cached)) return cached;
+            var brush = new SolidColorBrush(Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb));
+            brushCache[rgb] = brush;
+            return brush;
+        }
+
+        var penCache = new Dictionary<uint, IPen>();
 
         IPen PenFor(uint rgb)
         {
-            if (rgb == 0) return themePen;
-            if (cache.TryGetValue(rgb, out var cached)) return cached;
-            var brush = new SolidColorBrush(Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb));
-            var pen = new Pen(brush, 1);
-            cache[rgb] = pen;
+            if (penCache.TryGetValue(rgb, out var cached)) return cached;
+            var pen = new Pen(BrushFor(rgb), 1);
+            penCache[rgb] = pen;
             return pen;
         }
 
@@ -73,6 +83,7 @@ public sealed class CadCanvas : Control
         DrawArcs(context, g, PenFor, ToScreen, scale);
         DrawEllipses(context, g, PenFor, ToScreen, scale);
         DrawPolylines(context, g, PenFor, ToScreen);
+        DrawTexts(context, g, BrushFor, ToScreen, scale);
     }
 
     private static void DrawLines(DrawingContext context, CadGeometry g, Func<uint, IPen> penFor,
@@ -218,6 +229,62 @@ public sealed class CadCanvas : Control
             }
             context.DrawGeometry(null, pen, geometry);
             cursor += count * 4;
+        }
+    }
+
+    // 每条8个值(x,y,z,height,rotation,halign,valign,layer)，锚点是基线左端
+    private static void DrawTexts(DrawingContext context, CadGeometry g, Func<uint, IBrush> brushFor,
+        Func<double, double, Point> toScreen, double scale)
+    {
+        var data = g.TextData;
+        var values = g.TextValues;
+        for (var i = 0; i + 8 <= data.Length; i += 8)
+        {
+            var index = i / 8;
+            if (index >= values.Length) break;
+            var text = values[index];
+            if (string.IsNullOrWhiteSpace(text)) continue;
+
+            var emSize = data[i + 3] * scale;
+            // 屏幕上太小的字会糊成一团
+            if (emSize < 4) continue;
+
+            var anchor = toScreen(data[i], data[i + 1]);
+            var rotation = data[i + 4];
+            var horizontal = (int)Math.Round(data[i + 5]);
+            var vertical = (int)Math.Round(data[i + 6]);
+
+            var formatted = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+                Typeface.Default, emSize, brushFor(ColorAt(g.TextColors, index)));
+
+            var x = horizontal switch
+            {
+                1 => anchor.X - formatted.Width / 2,
+                2 => anchor.X - formatted.Width,
+                _ => anchor.X,
+            };
+            var y = vertical switch
+            {
+                1 => anchor.Y - formatted.Height,
+                2 => anchor.Y - formatted.Height / 2,
+                3 => anchor.Y,
+                _ => anchor.Y - formatted.Baseline,
+            };
+
+            if (Math.Abs(rotation) < 1e-6)
+            {
+                context.DrawText(formatted, new Point(x, y));
+                continue;
+            }
+
+            // 屏幕Y轴翻转，旋转角取反
+            using (context.PushTransform(
+                Matrix.CreateTranslation(-anchor.X, -anchor.Y) *
+                Matrix.CreateRotation(-rotation) *
+                Matrix.CreateTranslation(anchor.X, anchor.Y)))
+            {
+                context.DrawText(formatted, new Point(x, y));
+            }
         }
     }
 

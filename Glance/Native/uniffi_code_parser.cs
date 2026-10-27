@@ -1624,6 +1624,9 @@ public record CadGeometry (
     uint[] ArcColors, 
     uint[] EllipseColors, 
     uint[] PolylineColors, 
+    double[] TextData, 
+    string[] TextValues, 
+    uint[] TextColors, 
     string[] LayerNames, 
     double[] BoundsMin, 
     double[] BoundsMax
@@ -1648,6 +1651,9 @@ class FfiConverterTypeCadGeometry: FfiConverterRustBuffer<CadGeometry> {
             ArcColors: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
             EllipseColors: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
             PolylineColors: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
+            TextData: FfiConverterSequenceDouble.INSTANCE.Read(stream),
+            TextValues: FfiConverterSequenceString.INSTANCE.Read(stream),
+            TextColors: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
             LayerNames: FfiConverterSequenceString.INSTANCE.Read(stream),
             BoundsMin: FfiConverterSequenceDouble.INSTANCE.Read(stream),
             BoundsMax: FfiConverterSequenceDouble.INSTANCE.Read(stream)
@@ -1669,6 +1675,9 @@ class FfiConverterTypeCadGeometry: FfiConverterRustBuffer<CadGeometry> {
             + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.ArcColors)
             + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.EllipseColors)
             + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.PolylineColors)
+            + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.TextData)
+            + FfiConverterSequenceString.INSTANCE.AllocationSize(value.TextValues)
+            + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.TextColors)
             + FfiConverterSequenceString.INSTANCE.AllocationSize(value.LayerNames)
             + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.BoundsMin)
             + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.BoundsMax);
@@ -1688,6 +1697,9 @@ class FfiConverterTypeCadGeometry: FfiConverterRustBuffer<CadGeometry> {
             FfiConverterSequenceUInt32.INSTANCE.Write(value.ArcColors, stream);
             FfiConverterSequenceUInt32.INSTANCE.Write(value.EllipseColors, stream);
             FfiConverterSequenceUInt32.INSTANCE.Write(value.PolylineColors, stream);
+            FfiConverterSequenceDouble.INSTANCE.Write(value.TextData, stream);
+            FfiConverterSequenceString.INSTANCE.Write(value.TextValues, stream);
+            FfiConverterSequenceUInt32.INSTANCE.Write(value.TextColors, stream);
             FfiConverterSequenceString.INSTANCE.Write(value.LayerNames, stream);
             FfiConverterSequenceDouble.INSTANCE.Write(value.BoundsMin, stream);
             FfiConverterSequenceDouble.INSTANCE.Write(value.BoundsMax, stream);
