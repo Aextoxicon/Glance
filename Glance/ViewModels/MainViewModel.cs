@@ -40,6 +40,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private readonly ILocalFileSystem _fs;
     private readonly IArtifactRepo _repo;
     private readonly ICodeParser _parser;
+    private readonly ICadParser _cadParser;
     private readonly CancellationTokenSource _scopeCts = new();
     private readonly object _cacheLock = new();
     private readonly LruCache _parseCache;
@@ -122,6 +123,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private ParsedCode? _selectedParseResult;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCadPreview))]
+    private CadGeometry? _selectedCad;
+
+    public bool IsCadPreview => SelectedCad is not null;
 
     [ObservableProperty]
     private ObservableCollection<TreeItemViewModel> _treeItems = new();
@@ -232,10 +239,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public MainViewModel(ILocalFileSystem fs, ICodeParser parser) : this(fs, new LocalArtifactRepo(fs), parser) { }
 
     public MainViewModel(ILocalFileSystem fs, IArtifactRepo repo, ICodeParser parser)
+        : this(fs, repo, parser, new UniffiCadParser()) { }
+
+    public MainViewModel(ILocalFileSystem fs, IArtifactRepo repo, ICodeParser parser, ICadParser cadParser)
     {
         _fs = fs;
         _repo = repo;
         _parser = parser;
+        _cadParser = cadParser;
         _parseCache = new LruCache(ParseCacheMax);
         _nativeAvailable = ProbeNative();
 #if !ANDROID
@@ -464,6 +475,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         HasSelection = false;
         SelectedContent = null;
         SelectedParseResult = null;
+        SelectedCad = null;
         IsLoadingPreview = false;
         MessageText = null;
         PreviewNotice = null;
@@ -492,6 +504,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         MessageText = null;
         SelectedContent = null;
         SelectedParseResult = null;
+        SelectedCad = null;
         PreviewNotice = null;
         IsLoadingPreview = true;
 
@@ -501,6 +514,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         IsLoadingPreview = false;
         if (loaded is null) return;
         SelectedParseResult = loaded.ParseResult;
+        SelectedCad = loaded.Cad;
         SelectedContent = loaded.Content;
         PreviewNotice = loaded.Notice;
         Trace.Mark("select.end", $"name={artifact.Name}");
@@ -536,6 +550,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             await Task.Run(async () =>
             {
                 ct.ThrowIfCancellationRequested();
+                if (FileProcessor.IsCadFile(artifact))
+                {
+                    Trace.Mark("istext", "cad=true");
+                    var bytes = (await _repo.TryReadBytesAsync(path)).GetOrNull();
+                    result = bytes is null ? null : BuildCadPreview(bytes, artifact);
+                    if (result is null) error = $"无法读取文件: {artifact.Name}";
+                    return;
+                }
                 if (!_fs.IsTextFile(path))
                 {
                     Trace.Mark("istext", "binary=true");
@@ -593,7 +615,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         LoadedFile? result = null;
         try
         {
-            if (!_fs.IsTextFile(path))
+            if (FileProcessor.IsCadFile(artifact))
+            {
+                Trace.Mark("istext", "cad=true");
+                var bytes = _repo.TryReadBytesAsync(path).GetAwaiter().GetResult().GetOrNull();
+                result = bytes is null ? null : BuildCadPreview(bytes, artifact);
+                if (result is null) error = $"无法读取文件: {artifact.Name}";
+            }
+            else if (!_fs.IsTextFile(path))
             {
                 Trace.Mark("istext", "binary=true");
                 error = $"[二进制文件] {artifact.Name} 无法预览";
@@ -642,6 +671,31 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             return null;
         }
         return result;
+    }
+
+    private LoadedFile BuildCadPreview(byte[] rawBytes, IArtifact artifact)
+    {
+        if (!_nativeAvailable)
+        {
+            return new LoadedFile(null, "", NativeUnavailableNotice);
+        }
+        try
+        {
+            var geometry = _cadParser.ParseGeometry(rawBytes, artifact.Name);
+            Trace.Mark("parse.ok", artifact.Name);
+            return new LoadedFile(null, "", Cad: geometry);
+        }
+        catch (Exception ex) when (IsNativeUnavailable(ex))
+        {
+            _nativeAvailable = false;
+            Trace.Mark("parse.native_unavailable", artifact.Name);
+            return new LoadedFile(null, "", NativeUnavailableNotice);
+        }
+        catch (Exception ex)
+        {
+            Trace.Mark("parse.fail", ex.Message);
+            return new LoadedFile(null, "", $"CAD 解析失败: {ex.Message}");
+        }
     }
 
     private LoadedFile BuildPreview(string normalizedContent, IArtifact artifact)
@@ -760,7 +814,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     }
 
     // 诊断基准模式：工作区加载完成后逐步展开目录并逐个打开受高亮支持文件
-    // 展开计时走 bench.expand.*（每目录），逐文件计时走 select.*；本序列只负责编排+分界标记
+    // 展开计时走bench.expand.*（每目录），逐文件计时走select.*；本序列只负责编排+分界标记
     // 逐步而非一次性铺开：避免整树ExpandAll+全量打开把UI/IO一次性打满，且可被新文件夹打开取消
     public async Task RunBenchmarkSequence()
     {
@@ -1042,7 +1096,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         _scopeCts.Dispose();
     }
 
-    private sealed record LoadedFile(ParsedCode? ParseResult, string Content, string? Notice = null);
+    private sealed record LoadedFile(ParsedCode? ParseResult, string Content, string? Notice = null, CadGeometry? Cad = null);
 
     /// <summary>访问序LRU（容量上限 = 解析缓存上限），基于"https://learn.microsoft.com/dotnet/api/system.collections.generic.linkedlist-1"</summary>
     private sealed class LruCache

@@ -20,4 +20,7 @@ public sealed class UniffiCadParser : ICadParser
                 native.Version),
             native.Diagnostics);
     }
+
+    public CadGeometry ParseGeometry(byte[] fileBytes, string filename) =>
+        UniffiCodeParserMethods.ParseCadGeometry(fileBytes, filename);
 }

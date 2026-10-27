@@ -12,7 +12,7 @@ macro_rules! debug_log {
     };
 }
 
-// UniFFI types
+// UniFFI类型
 
 /// kind是capture下标，出口才转成字符串
 #[derive(Clone, Copy)]
@@ -223,7 +223,7 @@ fn pack_highlights_by_line(
     (data, line_index)
 }
 
-//helpers
+// 辅助函数
 
 /// 标识符类节点，穷举常见的几种
 const IDENTIFIER_KINDS: &[&str] = &[
@@ -531,7 +531,7 @@ fn resolve_capture_conflicts(mut tokens: Vec<RawCapture>) -> Vec<Token> {
     out
 }
 
-//exported
+// 导出接口
 #[uniffi::export]
 pub fn parse_code(source: String, filename: String) -> CodeParseResult {
     let source_bytes = source.as_bytes();
@@ -665,12 +665,13 @@ use std::io::Cursor;
 use std::collections::HashMap;
 use acadrust::entities::EntityType;
 use acadrust::Entity;
-use acadrust::types::{Matrix3, Vector3};
+use acadrust::types::{Color, Matrix3, Vector3};
+use acadrust::tables::Layer;
 use acadrust::document::CadDocument;
 use acadrust::io::dxf::{DxfReader, DxfReaderConfiguration};
 use acadrust::io::dwg::{DwgReader, DwgReadOptions};
 
-// 几何层，每类型一条连续buffer
+// 几何层,每类型一条连续buffer
 #[derive(uniffi::Record, Default, Debug)]
 pub struct CadGeometry {
     // sx,sy,sz,ex,ey,ez,layer_idx
@@ -681,12 +682,20 @@ pub struct CadGeometry {
     pub arc_data: Vec<f64>,
     // cx,cy,cz,majx,majy,majz,ratio,start_param,end_param,nx,ny,nz,layer_idx
     pub ellipse_data: Vec<f64>,
-    // x,y,z,多段线顶点展平
+    // 每顶点x,y,z,bulge展平(bulge=tan(包含角/4),正为逆时针)
     pub polyline_data: Vec<f64>,
     // 每条多段线顶点数,与polyline_layers平行
     pub polyline_counts: Vec<u32>,
     // 每条多段线一个layer_idx
     pub polyline_layers: Vec<u32>,
+    // 每条多段线是否闭合,与polyline_counts平行
+    pub polyline_closed: Vec<bool>,
+    // 每条图元一个0xRRGGBB,0表示未定(按主题前景色)
+    pub line_colors: Vec<u32>,
+    pub circle_colors: Vec<u32>,
+    pub arc_colors: Vec<u32>,
+    pub ellipse_colors: Vec<u32>,
+    pub polyline_colors: Vec<u32>,
     pub layer_names: Vec<String>,
     // 整图包围盒
     pub bounds_min: Vec<f64>,
@@ -725,6 +734,38 @@ fn get_layer(map: &mut HashMap<String, u32>, names: &mut Vec<String>, layer: &st
     }
 }
 
+// ByLayer/ByBlock/None落到图层色,explode已把ByBlock继承成INSERT的颜色
+fn resolve_rgb(color: &Color, layer: Option<&Layer>) -> u32 {
+    fn pack((r, g, b): (u8, u8, u8)) -> u32 {
+        ((r as u32) << 16) | ((g as u32) << 8) | b as u32
+    }
+    // ACI7是白/黑自适应色,返回0让UI按主题取前景色,否则浅色主题下画成白色看不见
+    if color.index() == Some(7) {
+        return 0;
+    }
+    if let Some(rgb) = color.rgb() {
+        return pack(rgb);
+    }
+    if let Some(l) = layer {
+        if l.color.index() == Some(7) {
+            return 0;
+        }
+        if let Some(rgb) = l.color.rgb() {
+            return pack(rgb);
+        }
+    }
+    0
+}
+
+// 隐藏实体与关闭/冻结图层上的实体不该出现在预览里
+fn entity_visible(e: &EntityType, doc: &CadDocument) -> bool {
+    let common = e.as_entity().common();
+    if common.invisible {
+        return false;
+    }
+    doc.layers.get(&common.layer).map(|l| l.is_visible()).unwrap_or(true)
+}
+
 #[allow(clippy::too_many_arguments)]
 fn process_entity(
     e: &EntityType,
@@ -733,30 +774,36 @@ fn process_entity(
     g: &mut CadGeometry,
     b: &mut Bounds,
 ) {
+    if !entity_visible(e, doc) {
+        return;
+    }
     if let EntityType::Insert(insert) = e {
-        if insert.is_minsert() {
+        // explode()按array_transforms生成每个阵列单元,explode_from_document()按CAD的EXPLODE规则直接拒绝MINSERT
+        let Some(parts) = insert.block_entities_from_document(doc) else {
             return;
-        }
-        let expanded = insert.explode_from_document(doc);
-        for child in &expanded {
-            process_entity(child, doc, map, g, b);
+        };
+        for child in insert.explode(&parts) {
+            process_entity(&child, doc, map, g, b);
         }
         return;
     }
     let layer = e.as_entity().common().layer.clone();
     let li = get_layer(map, &mut g.layer_names, &layer);
+    let rgb = resolve_rgb(&e.as_entity().common().color, doc.layers.get(&layer));
 
     match e {
         EntityType::Line(l) => {
             let (sx, sy, sz) = (l.start.x, l.start.y, l.start.z);
             let (ex, ey, ez) = (l.end.x, l.end.y, l.end.z);
             g.line_data.extend_from_slice(&[sx, sy, sz, ex, ey, ez, li as f64]);
+            g.line_colors.push(rgb);
             b.expand(sx, sy, sz);
             b.expand(ex, ey, ez);
         }
         EntityType::Circle(c) => {
             let center = c.center_wcs();
             g.circle_data.extend_from_slice(&[center.x, center.y, center.z, c.radius, c.normal.x, c.normal.y, c.normal.z, li as f64]);
+            g.circle_colors.push(rgb);
             let bb = c.bounding_box();
             b.expand(bb.min.x, bb.min.y, bb.min.z);
             b.expand(bb.max.x, bb.max.y, bb.max.z);
@@ -766,18 +813,20 @@ fn process_entity(
             let e = a.end_point_wcs();
             let c = a.center_wcs();
             g.arc_data.extend_from_slice(&[s.x, s.y, s.z, e.x, e.y, e.z, c.x, c.y, c.z, a.radius, a.normal.x, a.normal.y, a.normal.z, li as f64]);
+            g.arc_colors.push(rgb);
             let bb = a.bounding_box();
             b.expand(bb.min.x, bb.min.y, bb.min.z);
             b.expand(bb.max.x, bb.max.y, bb.max.z);
         }
         EntityType::Ellipse(el) => {
-            let basis = Matrix3::arbitrary_axis(el.normal);
-            let center = basis * el.center;
-            let maj = basis * el.major_axis;
+            // acadrust的Ellipse存的就是WCS,再乘basis会二次变换
             g.ellipse_data.extend_from_slice(&[
-                center.x, center.y, center.z, maj.x, maj.y, maj.z, el.minor_axis_ratio,
-                el.start_parameter, el.end_parameter, el.normal.x, el.normal.y, el.normal.z, li as f64,
+                el.center.x, el.center.y, el.center.z,
+                el.major_axis.x, el.major_axis.y, el.major_axis.z,
+                el.minor_axis_ratio, el.start_parameter, el.end_parameter,
+                el.normal.x, el.normal.y, el.normal.z, li as f64,
             ]);
+            g.ellipse_colors.push(rgb);
             let bb = el.bounding_box();
             b.expand(bb.min.x, bb.min.y, bb.min.z);
             b.expand(bb.max.x, bb.max.y, bb.max.z);
@@ -787,11 +836,13 @@ fn process_entity(
             let count = p.vertices.len() as u32;
             for v in &p.vertices {
                 let loc = basis * Vector3::new(v.location.x, v.location.y, p.elevation);
-                g.polyline_data.extend_from_slice(&[loc.x, loc.y, loc.z]);
+                g.polyline_data.extend_from_slice(&[loc.x, loc.y, loc.z, v.bulge]);
                 b.expand(loc.x, loc.y, loc.z);
             }
             g.polyline_counts.push(count);
             g.polyline_layers.push(li);
+            g.polyline_closed.push(p.is_closed);
+            g.polyline_colors.push(rgb);
         }
         _ => {}
     }
@@ -828,7 +879,8 @@ pub fn parse_cad_geometry(file_bytes: Vec<u8>, filename: String) -> CadGeometry 
     let mut g = CadGeometry::default();
     let mut map: HashMap<String, u32> = HashMap::new();
     let mut b = Bounds::new();
-    for e in doc.entities() {
+    // 块定义内的实体不是图纸内容,一起画会和INSERT展开出的副本重复错位
+    for e in doc.model_space_entities() {
         process_entity(e, &doc, &mut map, &mut g, &mut b);
     }
     g.bounds_min = vec![b.min_x, b.min_y, b.min_z];
@@ -952,7 +1004,8 @@ pub fn parse_cad(file_bytes: Vec<u8>, filename: String) -> CadParseResult {
 
     let mut names: Vec<String> = Vec::new();
     let mut counts: Vec<u32> = Vec::new();
-    for e in doc.entities() {
+    // 与几何层保持同一口径:只统计图纸内容,不含块定义
+    for e in doc.model_space_entities() {
         let name = entity_type_name(e);
         if let Some(i) = names.iter().position(|n| n == name) {
             counts[i] += 1;

@@ -28,6 +28,7 @@ public sealed class FakeFileSystem : ILocalFileSystem
 
     public IReadOnlyList<LocalFileInfo> ListFiles(string path) => Array.Empty<LocalFileInfo>();
     public string? TryReadText(string path) => _text.TryGetValue(path, out var t) ? t : null;
+    public byte[]? TryReadBytes(string path) => null;
     public bool Delete(string path) => false;
     public string ToUri(string path) => path;
     public bool IsTextFile(string path) => true;
@@ -58,12 +59,42 @@ public sealed class FakeArtifactRepo : IArtifactRepo
         Task.FromResult<Result<string>>(_text.TryGetValue(id, out var t)
             ? new Success<string>(t)
             : new Failure<string>(new IOException(id)));
+
+    public Task<Result<byte[]>> TryReadBytesAsync(string id) =>
+        Task.FromResult<Result<byte[]>>(_text.TryGetValue(id, out var t)
+            ? new Success<byte[]>(System.Text.Encoding.UTF8.GetBytes(t))
+            : new Failure<byte[]>(new IOException(id)));
 }
 
 public sealed class FakeParser : ICodeParser
 {
     public ParsedCode ParseCode(string source, string filename) =>
         new(filename, source, HighlightIndex.Empty(), Array.Empty<Glance.Native.OutlineNode>());
+}
+
+public sealed class FakeCadParser : ICadParser
+{
+    public ParsedCad ParseCad(byte[] fileBytes, string filename) =>
+        throw new NotSupportedException();
+
+    public Glance.Native.CadGeometry ParseGeometry(byte[] fileBytes, string filename) =>
+        new(
+            LineData: Array.Empty<double>(),
+            CircleData: Array.Empty<double>(),
+            ArcData: Array.Empty<double>(),
+            EllipseData: Array.Empty<double>(),
+            PolylineData: Array.Empty<double>(),
+            PolylineCounts: Array.Empty<uint>(),
+            PolylineLayers: Array.Empty<uint>(),
+            PolylineClosed: Array.Empty<bool>(),
+            LineColors: Array.Empty<uint>(),
+            CircleColors: Array.Empty<uint>(),
+            ArcColors: Array.Empty<uint>(),
+            EllipseColors: Array.Empty<uint>(),
+            PolylineColors: Array.Empty<uint>(),
+            LayerNames: Array.Empty<string>(),
+            BoundsMin: new[] { 0.0, 0.0, 0.0 },
+            BoundsMax: new[] { 100.0, 100.0, 0.0 });
 }
 
 public static class Artifacts

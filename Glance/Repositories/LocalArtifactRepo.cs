@@ -86,6 +86,21 @@ public sealed class LocalArtifactRepo : IArtifactRepo
         }
     }
 
+    public Task<Result<byte[]>> TryReadBytesAsync(string id)
+    {
+        try
+        {
+            var bytes = _fs.TryReadBytes(id);
+            return bytes != null
+                ? Task.FromResult(Result<byte[]>.Success(bytes))
+                : Task.FromResult(Result<byte[]>.Failure(new IOException("无法读取文件内容")));
+        }
+        catch (Exception e) when (IsFileSystemException(e))
+        {
+            return Failure<byte[]>("无法读取文件内容", e);
+        }
+    }
+
     private static bool IsFileSystemException(Exception exception) =>
         exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException;
 

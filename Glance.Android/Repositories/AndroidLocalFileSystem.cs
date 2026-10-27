@@ -72,6 +72,24 @@ public sealed class AndroidLocalFileSystem : ILocalFileSystem
         catch (Exception) { return null; }
     }
 
+    public byte[]? TryReadBytes(string path)
+    {
+        try
+        {
+            var uri = global::Android.Net.Uri.Parse(path);
+            if (uri is null) return null;
+            var stream = Application.Context.ContentResolver?.OpenInputStream(uri);
+            if (stream is null) return null;
+            using (stream)
+            using (var ms = new MemoryStream())
+            {
+                stream.CopyTo(ms);
+                return ms.ToArray();
+            }
+        }
+        catch (Exception) { return null; }
+    }
+
     public bool Delete(string path)
     {
         try

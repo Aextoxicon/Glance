@@ -6,6 +6,7 @@ namespace Glance.Processing;
 public static class FileProcessor
 {
     private static readonly HashSet<string> TextExtensions = new() { "txt", "md", "markdown" };
+    private static readonly HashSet<string> CadExtensions = new() { "dwg", "dxf" };
     private static readonly Dictionary<string, string> FilenameToExt = new()
     {
         { "dockerfile", "dockerfile" },
@@ -16,6 +17,10 @@ public static class FileProcessor
 
     public static bool IsPlainText(IArtifact artifact) =>
         TextExtensions.Contains(CleanExtension(artifact.Extension));
+
+    // dxf也可能是纯文本，分支必须先于IsTextFile判断
+    public static bool IsCadFile(IArtifact artifact) =>
+        CadExtensions.Contains(CleanExtension(artifact.Extension));
 
     // 无扩展名但文件名命中已知映射时返回带点扩展名供native选grammar，否则返回文件名
     public static string ResolveParseName(IArtifact artifact)

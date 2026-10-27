@@ -9,6 +9,7 @@ public interface ILocalFileSystem
     IReadOnlyList<LocalFileInfo> ListFiles(string path);
     LocalFileInfo FileInfo(string path);
     string? TryReadText(string path);
+    byte[]? TryReadBytes(string path);
     bool Delete(string path);
     string ToUri(string path);
     bool IsTextFile(string path);
@@ -83,6 +84,17 @@ public sealed class LocalFileSystem : ILocalFileSystem
             if (!IsTextFile(path)) return null;
             var content = File.ReadAllText(path);
             return content.Contains('\0') ? null : content;
+        }
+        catch (UnauthorizedAccessException) { return null; }
+        catch (IOException) { return null; }
+    }
+
+    public byte[]? TryReadBytes(string path)
+    {
+        try
+        {
+            if (!File.Exists(path) || Directory.Exists(path)) return null;
+            return File.ReadAllBytes(path);
         }
         catch (UnauthorizedAccessException) { return null; }
         catch (IOException) { return null; }

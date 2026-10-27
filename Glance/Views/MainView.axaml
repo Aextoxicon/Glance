@@ -148,11 +148,17 @@
       <Grid Grid.Row="1">
         <ae:TextEditor x:Name="PreviewEditor"
                        ShowLineNumbers="{Binding ShowLineNumbers}"
+                       IsVisible="{Binding !IsCadPreview}"
                        IsReadOnly="True"
                        FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
                        FontSize="{Binding CodeFontSize}"
                        HorizontalScrollBarVisibility="Auto"
                        VerticalScrollBarVisibility="Auto" />
+        <views:CadCanvas Drawing="{Binding SelectedCad}"
+                         IsVisible="{Binding IsCadPreview}"
+                         HorizontalAlignment="Stretch"
+                         VerticalAlignment="Stretch"
+                         ZIndex="5" />
         <ProgressBar IsIndeterminate="True"
                      IsVisible="{Binding IsLoadingPreview}"
                      Height="3"

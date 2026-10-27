@@ -23,4 +23,6 @@ public sealed class BackendArtifactRepo : IArtifactRepo
         throw new System.NotImplementedException("TODO: 通过预签名URL获取文件下载地址");
     public Task<Result<string>> TryReadTextAsync(string id) =>
         throw new System.NotImplementedException("TODO: 通过预签名URL下载文件内容");
+    public Task<Result<byte[]>> TryReadBytesAsync(string id) =>
+        throw new System.NotImplementedException("TODO: 通过预签名URL下载文件内容");
 }

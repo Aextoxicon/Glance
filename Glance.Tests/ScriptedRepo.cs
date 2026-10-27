@@ -86,6 +86,11 @@ public sealed class ScriptedRepo : IArtifactRepo
             : new Failure<string>(new IOException(id));
     }
 
+    public Task<Result<byte[]>> TryReadBytesAsync(string id) =>
+        Task.FromResult<Result<byte[]>>(_text.TryGetValue(id, out var t)
+            ? new Success<byte[]>(System.Text.Encoding.UTF8.GetBytes(t))
+            : new Failure<byte[]>(new IOException(id)));
+
     public Task<Result<IReadOnlyList<IArtifact>>> SearchAsync(string query) => ListAsync(query);
     public Task<Result<IArtifact>> GetAsync(string id) =>
         Task.FromResult<Result<IArtifact>>(new Failure<IArtifact>(new IOException(id)));
@@ -107,7 +112,7 @@ public static class VmHarness
         {
             var repo = new ScriptedRepo();
             var fs = new FakeFileSystem();
-            var vm = new MainViewModel(fs, repo, new FakeParser());
+            var vm = new MainViewModel(fs, repo, new FakeParser(), new FakeCadParser());
             try { await body(vm, repo, fs); }
             finally { vm.Dispose(); }
         });

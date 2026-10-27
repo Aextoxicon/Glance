@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 生成 C# 绑定。必须在 native/ 下运行：bindgen 内部要走 cargo metadata 读 crate 元数据
+# 生成C#绑定。必须在native/下运行:bindgen内部要走cargo metadata读crate元数据
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -16,8 +16,9 @@ command -v uniffi-bindgen-cs >/dev/null 2>&1 || {
 
 uniffi-bindgen-cs --library "$LIB" -o "$OUT" -n
 
-# 都在 public 面上引用 OutlineNode，不改会 CS0051/CS0053
+# 这些类型在public面被引用,internal会CS0051/CS0053;CadGeometry供UI直接使用
 sed -i 's/^internal record CodeParseResult (/public record CodeParseResult (/' "$OUT/uniffi_code_parser.cs"
 sed -i 's/^internal record OutlineNode (/public record OutlineNode (/' "$OUT/uniffi_code_parser.cs"
+sed -i 's/^internal record CadGeometry (/public record CadGeometry (/' "$OUT/uniffi_code_parser.cs"
 
 echo "已生成 $OUT/uniffi_code_parser.cs"

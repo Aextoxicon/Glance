@@ -1516,6 +1516,32 @@ class FfiConverterDouble: FfiConverter<double, double> {
 
 
 
+class FfiConverterBoolean: FfiConverter<bool, sbyte> {
+    public static FfiConverterBoolean INSTANCE = new FfiConverterBoolean();
+
+    public override bool Lift(sbyte value) {
+        return value != 0;
+    }
+
+    public override bool Read(BigEndianStream stream) {
+        return Lift(stream.ReadSByte());
+    }
+
+    public override sbyte Lower(bool value) {
+        return value ? (sbyte)1 : (sbyte)0;
+    }
+
+    public override int AllocationSize(bool value) {
+        return (sbyte)1;
+    }
+
+    public override void Write(bool value, BigEndianStream stream) {
+        stream.WriteSByte(Lower(value));
+    }
+}
+
+
+
 class FfiConverterString: FfiConverter<string, RustBuffer> {
     public static FfiConverterString INSTANCE = new FfiConverterString();
 
@@ -1584,7 +1610,7 @@ class FfiConverterByteArray: FfiConverterRustBuffer<byte[]> {
 
 
 
-internal record CadGeometry (
+public record CadGeometry (
     double[] LineData, 
     double[] CircleData, 
     double[] ArcData, 
@@ -1592,6 +1618,12 @@ internal record CadGeometry (
     double[] PolylineData, 
     uint[] PolylineCounts, 
     uint[] PolylineLayers, 
+    bool[] PolylineClosed, 
+    uint[] LineColors, 
+    uint[] CircleColors, 
+    uint[] ArcColors, 
+    uint[] EllipseColors, 
+    uint[] PolylineColors, 
     string[] LayerNames, 
     double[] BoundsMin, 
     double[] BoundsMax
@@ -1610,6 +1642,12 @@ class FfiConverterTypeCadGeometry: FfiConverterRustBuffer<CadGeometry> {
             PolylineData: FfiConverterSequenceDouble.INSTANCE.Read(stream),
             PolylineCounts: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
             PolylineLayers: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
+            PolylineClosed: FfiConverterSequenceBoolean.INSTANCE.Read(stream),
+            LineColors: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
+            CircleColors: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
+            ArcColors: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
+            EllipseColors: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
+            PolylineColors: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
             LayerNames: FfiConverterSequenceString.INSTANCE.Read(stream),
             BoundsMin: FfiConverterSequenceDouble.INSTANCE.Read(stream),
             BoundsMax: FfiConverterSequenceDouble.INSTANCE.Read(stream)
@@ -1625,6 +1663,12 @@ class FfiConverterTypeCadGeometry: FfiConverterRustBuffer<CadGeometry> {
             + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.PolylineData)
             + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.PolylineCounts)
             + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.PolylineLayers)
+            + FfiConverterSequenceBoolean.INSTANCE.AllocationSize(value.PolylineClosed)
+            + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.LineColors)
+            + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.CircleColors)
+            + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.ArcColors)
+            + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.EllipseColors)
+            + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.PolylineColors)
             + FfiConverterSequenceString.INSTANCE.AllocationSize(value.LayerNames)
             + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.BoundsMin)
             + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.BoundsMax);
@@ -1638,6 +1682,12 @@ class FfiConverterTypeCadGeometry: FfiConverterRustBuffer<CadGeometry> {
             FfiConverterSequenceDouble.INSTANCE.Write(value.PolylineData, stream);
             FfiConverterSequenceUInt32.INSTANCE.Write(value.PolylineCounts, stream);
             FfiConverterSequenceUInt32.INSTANCE.Write(value.PolylineLayers, stream);
+            FfiConverterSequenceBoolean.INSTANCE.Write(value.PolylineClosed, stream);
+            FfiConverterSequenceUInt32.INSTANCE.Write(value.LineColors, stream);
+            FfiConverterSequenceUInt32.INSTANCE.Write(value.CircleColors, stream);
+            FfiConverterSequenceUInt32.INSTANCE.Write(value.ArcColors, stream);
+            FfiConverterSequenceUInt32.INSTANCE.Write(value.EllipseColors, stream);
+            FfiConverterSequenceUInt32.INSTANCE.Write(value.PolylineColors, stream);
             FfiConverterSequenceString.INSTANCE.Write(value.LayerNames, stream);
             FfiConverterSequenceDouble.INSTANCE.Write(value.BoundsMin, stream);
             FfiConverterSequenceDouble.INSTANCE.Write(value.BoundsMax, stream);
@@ -1874,6 +1924,52 @@ class FfiConverterSequenceDouble: FfiConverterRustBuffer<double[]> {
 
         stream.WriteInt(value.Length);
         var writerFn = FfiConverterDouble.INSTANCE.Write;
+        value.ForEach(item => writerFn(item, stream));
+    }
+}
+
+
+
+
+class FfiConverterSequenceBoolean: FfiConverterRustBuffer<bool[]> {
+    public static FfiConverterSequenceBoolean INSTANCE = new FfiConverterSequenceBoolean();
+
+    public override bool[]  Read(BigEndianStream stream) {
+        var length = stream.ReadInt();
+        if (length == 0) {
+            return [];
+        }
+
+        var result = new bool[length];
+        var readFn = FfiConverterBoolean.INSTANCE.Read;
+        for (int i = 0; i < length; i++) {
+            result[i] = readFn(stream);
+        }
+        return result;
+    }
+
+    public override int AllocationSize(bool[]  value) {
+        var sizeForLength = 4;
+
+        // details/1-empty-list-as-default-method-parameter.md
+        if (value == null) {
+            return sizeForLength;
+        }
+
+        var allocationSizeFn = FfiConverterBoolean.INSTANCE.AllocationSize;
+        var sizeForItems = value.Sum(item => allocationSizeFn(item));
+        return sizeForLength + sizeForItems;
+    }
+
+    public override void Write(bool[] value, BigEndianStream stream) {
+        // details/1-empty-list-as-default-method-parameter.md
+        if (value == null) {
+            stream.WriteInt(0);
+            return;
+        }
+
+        stream.WriteInt(value.Length);
+        var writerFn = FfiConverterBoolean.INSTANCE.Write;
         value.ForEach(item => writerFn(item, stream));
     }
 }

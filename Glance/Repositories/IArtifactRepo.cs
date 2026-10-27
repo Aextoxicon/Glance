@@ -13,4 +13,5 @@ public interface IArtifactRepo
     Task<Result<bool>> DeleteAsync(string id);
     Task<Result<string>> GetContentUriAsync(string id);
     Task<Result<string>> TryReadTextAsync(string id);
+    Task<Result<byte[]>> TryReadBytesAsync(string id);
 }
