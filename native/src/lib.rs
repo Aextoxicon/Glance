@@ -662,9 +662,179 @@ pub fn parse_code(source: String, filename: String) -> CodeParseResult {
 }
 
 use std::io::Cursor;
+use std::collections::HashMap;
 use acadrust::entities::EntityType;
+use acadrust::Entity;
+use acadrust::types::{Matrix3, Vector3};
+use acadrust::document::CadDocument;
 use acadrust::io::dxf::{DxfReader, DxfReaderConfiguration};
 use acadrust::io::dwg::{DwgReader, DwgReadOptions};
+
+// 几何层，每类型一条连续buffer
+#[derive(uniffi::Record, Default, Debug)]
+pub struct CadGeometry {
+    // sx,sy,sz,ex,ey,ez,layer_idx
+    pub line_data: Vec<f64>,
+    // cx,cy,cz,r,nx,ny,nz,layer_idx(WCS中心/半径/法向)
+    pub circle_data: Vec<f64>,
+    // sx,sy,sz,ex,ey,ez,cx,cy,cz,r,nx,ny,nz,layer_idx(起止点/圆心/半径/法向)
+    pub arc_data: Vec<f64>,
+    // cx,cy,cz,majx,majy,majz,ratio,start_param,end_param,nx,ny,nz,layer_idx
+    pub ellipse_data: Vec<f64>,
+    // x,y,z,多段线顶点展平
+    pub polyline_data: Vec<f64>,
+    // 每条多段线顶点数,与polyline_layers平行
+    pub polyline_counts: Vec<u32>,
+    // 每条多段线一个layer_idx
+    pub polyline_layers: Vec<u32>,
+    pub layer_names: Vec<String>,
+    // 整图包围盒
+    pub bounds_min: Vec<f64>,
+    pub bounds_max: Vec<f64>,
+}
+
+struct Bounds {
+    min_x: f64, min_y: f64, min_z: f64,
+    max_x: f64, max_y: f64, max_z: f64,
+    valid: bool,
+}
+impl Bounds {
+    fn new() -> Self {
+        Bounds { min_x:0.0,min_y:0.0,min_z:0.0,max_x:0.0,max_y:0.0,max_z:0.0,valid:false }
+    }
+    fn expand(&mut self, x: f64, y: f64, z: f64) {
+        if !self.valid {
+            self.min_x=x;self.min_y=y;self.min_z=z;
+            self.max_x=x;self.max_y=y;self.max_z=z;
+            self.valid=true;
+        } else {
+            self.min_x=self.min_x.min(x);self.min_y=self.min_y.min(y);self.min_z=self.min_z.min(z);
+            self.max_x=self.max_x.max(x);self.max_y=self.max_y.max(y);self.max_z=self.max_z.max(z);
+        }
+    }
+}
+
+fn get_layer(map: &mut HashMap<String, u32>, names: &mut Vec<String>, layer: &str) -> u32 {
+    if let Some(&i) = map.get(layer) {
+        i
+    } else {
+        let i = names.len() as u32;
+        names.push(layer.to_string());
+        map.insert(layer.to_string(), i);
+        i
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn process_entity(
+    e: &EntityType,
+    doc: &CadDocument,
+    map: &mut HashMap<String, u32>,
+    g: &mut CadGeometry,
+    b: &mut Bounds,
+) {
+    if let EntityType::Insert(insert) = e {
+        if insert.is_minsert() {
+            return;
+        }
+        let expanded = insert.explode_from_document(doc);
+        for child in &expanded {
+            process_entity(child, doc, map, g, b);
+        }
+        return;
+    }
+    let layer = e.as_entity().common().layer.clone();
+    let li = get_layer(map, &mut g.layer_names, &layer);
+
+    match e {
+        EntityType::Line(l) => {
+            let (sx, sy, sz) = (l.start.x, l.start.y, l.start.z);
+            let (ex, ey, ez) = (l.end.x, l.end.y, l.end.z);
+            g.line_data.extend_from_slice(&[sx, sy, sz, ex, ey, ez, li as f64]);
+            b.expand(sx, sy, sz);
+            b.expand(ex, ey, ez);
+        }
+        EntityType::Circle(c) => {
+            let center = c.center_wcs();
+            g.circle_data.extend_from_slice(&[center.x, center.y, center.z, c.radius, c.normal.x, c.normal.y, c.normal.z, li as f64]);
+            let bb = c.bounding_box();
+            b.expand(bb.min.x, bb.min.y, bb.min.z);
+            b.expand(bb.max.x, bb.max.y, bb.max.z);
+        }
+        EntityType::Arc(a) => {
+            let s = a.start_point_wcs();
+            let e = a.end_point_wcs();
+            let c = a.center_wcs();
+            g.arc_data.extend_from_slice(&[s.x, s.y, s.z, e.x, e.y, e.z, c.x, c.y, c.z, a.radius, a.normal.x, a.normal.y, a.normal.z, li as f64]);
+            let bb = a.bounding_box();
+            b.expand(bb.min.x, bb.min.y, bb.min.z);
+            b.expand(bb.max.x, bb.max.y, bb.max.z);
+        }
+        EntityType::Ellipse(el) => {
+            let basis = Matrix3::arbitrary_axis(el.normal);
+            let center = basis * el.center;
+            let maj = basis * el.major_axis;
+            g.ellipse_data.extend_from_slice(&[
+                center.x, center.y, center.z, maj.x, maj.y, maj.z, el.minor_axis_ratio,
+                el.start_parameter, el.end_parameter, el.normal.x, el.normal.y, el.normal.z, li as f64,
+            ]);
+            let bb = el.bounding_box();
+            b.expand(bb.min.x, bb.min.y, bb.min.z);
+            b.expand(bb.max.x, bb.max.y, bb.max.z);
+        }
+        EntityType::LwPolyline(p) => {
+            let basis = Matrix3::arbitrary_axis(p.normal);
+            let count = p.vertices.len() as u32;
+            for v in &p.vertices {
+                let loc = basis * Vector3::new(v.location.x, v.location.y, p.elevation);
+                g.polyline_data.extend_from_slice(&[loc.x, loc.y, loc.z]);
+                b.expand(loc.x, loc.y, loc.z);
+            }
+            g.polyline_counts.push(count);
+            g.polyline_layers.push(li);
+        }
+        _ => {}
+    }
+}
+
+#[uniffi::export]
+pub fn parse_cad_geometry(file_bytes: Vec<u8>, filename: String) -> CadGeometry {
+    let lower = filename.to_ascii_lowercase();
+    let is_dwg = lower.ends_with(".dwg");
+    let is_dxf = lower.ends_with(".dxf");
+    if !is_dwg && !is_dxf {
+        return CadGeometry::default();
+    }
+    let doc = if is_dwg {
+        let mut reader = DwgReader::from_stream_with_options(Cursor::new(file_bytes), DwgReadOptions::failsafe());
+        match reader.read_with_stats() {
+            Ok(o) => o.document,
+            Err(_) => return CadGeometry::default(),
+        }
+    } else {
+        let reader = match DxfReader::from_reader(Cursor::new(file_bytes)) {
+            Ok(r) => r,
+            Err(_) => return CadGeometry::default(),
+        };
+        let reader = reader.with_configuration(DxfReaderConfiguration {
+            failsafe: true,
+            default_encoding: None,
+        });
+        match reader.read_with_stats() {
+            Ok(o) => o.document,
+            Err(_) => return CadGeometry::default(),
+        }
+    };
+    let mut g = CadGeometry::default();
+    let mut map: HashMap<String, u32> = HashMap::new();
+    let mut b = Bounds::new();
+    for e in doc.entities() {
+        process_entity(e, &doc, &mut map, &mut g, &mut b);
+    }
+    g.bounds_min = vec![b.min_x, b.min_y, b.min_z];
+    g.bounds_max = vec![b.max_x, b.max_y, b.max_z];
+    g
+}
 
 #[derive(uniffi::Record, Debug, Default)]
 pub struct CadParseResult {

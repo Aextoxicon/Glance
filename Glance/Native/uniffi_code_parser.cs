@@ -743,6 +743,8 @@ static class _UniFFILib {
     
     
     
+    
+    
 
     static _UniFFILib() {
         _UniFFILib.uniffiCheckContractApiVersion();
@@ -759,6 +761,17 @@ static class _UniFFILib {
     public static extern
 #endif
      RustBuffer uniffi_uniffi_code_parser_fn_func_parse_cad(RustBuffer @fileBytes,RustBuffer @filename,ref UniffiRustCallStatus _uniffi_out_err
+    );
+
+    #if NET8_0_OR_GREATER
+    [LibraryImport("uniffi_code_parser")]
+    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static partial
+#else
+    [DllImport("uniffi_code_parser", CallingConvention = CallingConvention.Cdecl)]
+    public static extern
+#endif
+     RustBuffer uniffi_uniffi_code_parser_fn_func_parse_cad_geometry(RustBuffer @fileBytes,RustBuffer @filename,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     #if NET8_0_OR_GREATER
@@ -1363,6 +1376,17 @@ static class _UniFFILib {
     [DllImport("uniffi_code_parser", CallingConvention = CallingConvention.Cdecl)]
     public static extern
 #endif
+     ushort uniffi_uniffi_code_parser_checksum_func_parse_cad_geometry(
+    );
+
+    #if NET8_0_OR_GREATER
+    [LibraryImport("uniffi_code_parser")]
+    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static partial
+#else
+    [DllImport("uniffi_code_parser", CallingConvention = CallingConvention.Cdecl)]
+    public static extern
+#endif
      ushort uniffi_uniffi_code_parser_checksum_func_parse_code(
     );
 
@@ -1390,6 +1414,12 @@ static class _UniFFILib {
             var checksum = _UniFFILib.uniffi_uniffi_code_parser_checksum_func_parse_cad();
             if (checksum != 54400) {
                 throw new UniffiContractChecksumException($"Glance.Native: uniffi bindings expected function `uniffi_uniffi_code_parser_checksum_func_parse_cad` checksum `54400`, library returned `{checksum}`");
+            }
+        }
+        {
+            var checksum = _UniFFILib.uniffi_uniffi_code_parser_checksum_func_parse_cad_geometry();
+            if (checksum != 44327) {
+                throw new UniffiContractChecksumException($"Glance.Native: uniffi bindings expected function `uniffi_uniffi_code_parser_checksum_func_parse_cad_geometry` checksum `44327`, library returned `{checksum}`");
             }
         }
         {
@@ -1460,6 +1490,32 @@ class FfiConverterUInt64: FfiConverter<ulong, ulong> {
 
 
 
+class FfiConverterDouble: FfiConverter<double, double> {
+    public static FfiConverterDouble INSTANCE = new FfiConverterDouble();
+
+    public override double Lift(double value) {
+        return value;
+    }
+
+    public override double Read(BigEndianStream stream) {
+        return stream.ReadDouble();
+    }
+
+    public override double Lower(double value) {
+        return value;
+    }
+
+    public override int AllocationSize(double value) {
+        return 8;
+    }
+
+    public override void Write(double value, BigEndianStream stream) {
+        stream.WriteDouble(value);
+    }
+}
+
+
+
 class FfiConverterString: FfiConverter<string, RustBuffer> {
     public static FfiConverterString INSTANCE = new FfiConverterString();
 
@@ -1523,6 +1579,68 @@ class FfiConverterByteArray: FfiConverterRustBuffer<byte[]> {
     public override void Write(byte[] value, BigEndianStream stream) {
         stream.WriteInt(value.Length);
         stream.WriteBytes(value);
+    }
+}
+
+
+
+internal record CadGeometry (
+    double[] LineData, 
+    double[] CircleData, 
+    double[] ArcData, 
+    double[] EllipseData, 
+    double[] PolylineData, 
+    uint[] PolylineCounts, 
+    uint[] PolylineLayers, 
+    string[] LayerNames, 
+    double[] BoundsMin, 
+    double[] BoundsMax
+) {
+}
+
+class FfiConverterTypeCadGeometry: FfiConverterRustBuffer<CadGeometry> {
+    public static FfiConverterTypeCadGeometry INSTANCE = new FfiConverterTypeCadGeometry();
+
+    public override CadGeometry Read(BigEndianStream stream) {
+        return new CadGeometry(
+            LineData: FfiConverterSequenceDouble.INSTANCE.Read(stream),
+            CircleData: FfiConverterSequenceDouble.INSTANCE.Read(stream),
+            ArcData: FfiConverterSequenceDouble.INSTANCE.Read(stream),
+            EllipseData: FfiConverterSequenceDouble.INSTANCE.Read(stream),
+            PolylineData: FfiConverterSequenceDouble.INSTANCE.Read(stream),
+            PolylineCounts: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
+            PolylineLayers: FfiConverterSequenceUInt32.INSTANCE.Read(stream),
+            LayerNames: FfiConverterSequenceString.INSTANCE.Read(stream),
+            BoundsMin: FfiConverterSequenceDouble.INSTANCE.Read(stream),
+            BoundsMax: FfiConverterSequenceDouble.INSTANCE.Read(stream)
+        );
+    }
+
+    public override int AllocationSize(CadGeometry value) {
+        return 0
+            + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.LineData)
+            + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.CircleData)
+            + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.ArcData)
+            + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.EllipseData)
+            + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.PolylineData)
+            + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.PolylineCounts)
+            + FfiConverterSequenceUInt32.INSTANCE.AllocationSize(value.PolylineLayers)
+            + FfiConverterSequenceString.INSTANCE.AllocationSize(value.LayerNames)
+            + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.BoundsMin)
+            + FfiConverterSequenceDouble.INSTANCE.AllocationSize(value.BoundsMax);
+    }
+
+    public override void Write(CadGeometry value, BigEndianStream stream) {
+            FfiConverterSequenceDouble.INSTANCE.Write(value.LineData, stream);
+            FfiConverterSequenceDouble.INSTANCE.Write(value.CircleData, stream);
+            FfiConverterSequenceDouble.INSTANCE.Write(value.ArcData, stream);
+            FfiConverterSequenceDouble.INSTANCE.Write(value.EllipseData, stream);
+            FfiConverterSequenceDouble.INSTANCE.Write(value.PolylineData, stream);
+            FfiConverterSequenceUInt32.INSTANCE.Write(value.PolylineCounts, stream);
+            FfiConverterSequenceUInt32.INSTANCE.Write(value.PolylineLayers, stream);
+            FfiConverterSequenceString.INSTANCE.Write(value.LayerNames, stream);
+            FfiConverterSequenceDouble.INSTANCE.Write(value.BoundsMin, stream);
+            FfiConverterSequenceDouble.INSTANCE.Write(value.BoundsMax, stream);
     }
 }
 
@@ -1717,6 +1835,52 @@ class FfiConverterSequenceUInt32: FfiConverterRustBuffer<uint[]> {
 
 
 
+class FfiConverterSequenceDouble: FfiConverterRustBuffer<double[]> {
+    public static FfiConverterSequenceDouble INSTANCE = new FfiConverterSequenceDouble();
+
+    public override double[]  Read(BigEndianStream stream) {
+        var length = stream.ReadInt();
+        if (length == 0) {
+            return [];
+        }
+
+        var result = new double[length];
+        var readFn = FfiConverterDouble.INSTANCE.Read;
+        for (int i = 0; i < length; i++) {
+            result[i] = readFn(stream);
+        }
+        return result;
+    }
+
+    public override int AllocationSize(double[]  value) {
+        var sizeForLength = 4;
+
+        // details/1-empty-list-as-default-method-parameter.md
+        if (value == null) {
+            return sizeForLength;
+        }
+
+        var allocationSizeFn = FfiConverterDouble.INSTANCE.AllocationSize;
+        var sizeForItems = value.Sum(item => allocationSizeFn(item));
+        return sizeForLength + sizeForItems;
+    }
+
+    public override void Write(double[] value, BigEndianStream stream) {
+        // details/1-empty-list-as-default-method-parameter.md
+        if (value == null) {
+            stream.WriteInt(0);
+            return;
+        }
+
+        stream.WriteInt(value.Length);
+        var writerFn = FfiConverterDouble.INSTANCE.Write;
+        value.ForEach(item => writerFn(item, stream));
+    }
+}
+
+
+
+
 class FfiConverterSequenceString: FfiConverterRustBuffer<string[]> {
     public static FfiConverterSequenceString INSTANCE = new FfiConverterSequenceString();
 
@@ -1811,6 +1975,14 @@ internal static class UniffiCodeParserMethods {
         return FfiConverterTypeCadParseResult.INSTANCE.Lift(
     _UniffiHelpers.RustCall( (ref UniffiRustCallStatus _status) =>
     _UniFFILib.uniffi_uniffi_code_parser_fn_func_parse_cad(FfiConverterByteArray.INSTANCE.Lower(@fileBytes), FfiConverterString.INSTANCE.Lower(@filename), ref _status)
+));
+    }
+
+
+    public static CadGeometry ParseCadGeometry(byte[] @fileBytes, string @filename) {
+        return FfiConverterTypeCadGeometry.INSTANCE.Lift(
+    _UniffiHelpers.RustCall( (ref UniffiRustCallStatus _status) =>
+    _UniFFILib.uniffi_uniffi_code_parser_fn_func_parse_cad_geometry(FfiConverterByteArray.INSTANCE.Lower(@fileBytes), FfiConverterString.INSTANCE.Lower(@filename), ref _status)
 ));
     }
 
