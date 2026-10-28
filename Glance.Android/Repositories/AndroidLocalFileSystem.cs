@@ -22,15 +22,15 @@ public sealed class AndroidLocalFileSystem : ILocalFileSystem
 
     public IReadOnlyList<LocalFileInfo> ListFiles(string path)
     {
-        var treeUri = global::Android.Net.Uri.Parse(path);
-        if (treeUri is null) return Array.Empty<LocalFileInfo>();
-        var docFile = DocumentFile.FromTreeUri(Application.Context, treeUri);
-        if (docFile is null || !docFile.IsDirectory) return Array.Empty<LocalFileInfo>();
+        var uri = global::Android.Net.Uri.Parse(path)
+            ?? throw new InvalidOperationException($"路径不是合法URI: {path}");
+        var docFile = ResolveDirectory(uri)
+            ?? throw new InvalidOperationException($"无法打开目录: {path}");
 
-        var children = docFile.ListFiles();
-        if (children is null) return Array.Empty<LocalFileInfo>();
+        var children = docFile.ListFiles()
+            ?? throw new InvalidOperationException($"目录列举返回空: {path}");
 
-        var parentUri = treeUri.ToString()!;
+        var parentUri = uri.ToString()!;
         var result = new List<LocalFileInfo>(children.Length);
         foreach (var item in children)
         {
@@ -40,12 +40,40 @@ public sealed class AndroidLocalFileSystem : ILocalFileSystem
         return result;
     }
 
+    // content Uri有两种形态:tree和document
+    private static DocumentFile? ResolveDirectory(global::Android.Net.Uri uri)
+    {
+        var direct = DocumentFile.FromTreeUri(Application.Context, uri);
+        if (direct is { IsDirectory: true }) return direct;
+
+        var text = uri.ToString();
+        if (text is null) return direct;
+        var docIndex = text.IndexOf("/document/", StringComparison.Ordinal);
+        if (docIndex < 0) return direct;
+
+        var treeUri = global::Android.Net.Uri.Parse(text.Substring(0, docIndex));
+        if (treeUri is null) return direct;
+        var treeId = global::Android.Net.Uri.Decode(treeUri.LastPathSegment);
+        var docId = global::Android.Net.Uri.Decode(text.Substring(docIndex + "/document/".Length));
+        if (treeId is null || docId is null || !docId.StartsWith(treeId, StringComparison.Ordinal))
+            return direct;
+
+        var node = DocumentFile.FromTreeUri(Application.Context, treeUri);
+        var relative = docId.Substring(treeId.Length).TrimStart('/');
+        if (relative.Length == 0) return node;
+        foreach (var segment in relative.Split('/'))
+        {
+            node = node?.FindFile(segment);
+            if (node is null) return null;
+        }
+        return node;
+    }
+
     public LocalFileInfo FileInfo(string path)
     {
         var uri = global::Android.Net.Uri.Parse(path);
         if (uri is null) throw new FileNotFoundException($"文件或目录不存在: {path}");
-        // 工作区根是tree URI，FromSingleUri不认
-        var docFile = DocumentFile.FromTreeUri(Application.Context, uri)
+        var docFile = ResolveDirectory(uri)
             ?? DocumentFile.FromSingleUri(Application.Context, uri)
             ?? throw new FileNotFoundException($"文件或目录不存在: {path}");
         var info = MapDocumentFile(docFile, docFile.ParentFile?.Uri?.ToString() ?? "")

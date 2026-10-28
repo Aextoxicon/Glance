@@ -212,7 +212,7 @@
           <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
           <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
           <Setter Property="BorderThickness" Value="1,0,0,0" />
-          <Setter Property="RenderTransform" Value="translateX(240px)" />
+          <Setter Property="RenderTransform" Value="translateX(360px)" />
           <Setter Property="Transitions">
             <Transitions>
               <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" />
