@@ -146,21 +146,27 @@ public sealed class AndroidLocalFileSystem : ILocalFileSystem
         var text = uri.ToString();
         if (text is null) yield break;
 
+        var docIndex = text.IndexOf("/document/", StringComparison.Ordinal);
+
         if (DocumentsContract.IsTreeUri(uri))
         {
             var treeId = DocumentsContract.GetTreeDocumentId(uri);
             if (treeId is not null)
             {
                 // document uri必须用自身documentId列举,用treeId会查到tree根的子项
-                var docId = DocumentsContract.GetDocumentId(uri);
-                if (docId is not null && docId != treeId)
-                    yield return (uri, docId);
+                // 纯tree uri没有document段,GetDocumentId会抛Invalid URI
+                if (docIndex > 0)
+                {
+                    var docId = global::Android.Net.Uri.Decode(text.Substring(docIndex + "/document/".Length));
+                    if (docId is not null) yield return (uri, docId);
+                }
                 else
+                {
                     yield return (uri, treeId);
+                }
             }
         }
 
-        var docIndex = text.IndexOf("/document/", StringComparison.Ordinal);
         if (docIndex <= 0) yield break;
 
         var docId2 = global::Android.Net.Uri.Decode(text.Substring(docIndex + "/document/".Length));
