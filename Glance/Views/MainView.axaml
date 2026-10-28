@@ -79,9 +79,10 @@
           <Setter Property="RenderTransform" Value="translateX(0px)" />
         </Style>
       </Border.Styles>
-      <TreeView x:Name="FileTree"
-                ItemsSource="{Binding TreeItems}"
-                SelectionChanged="OnTreeSelectionChanged">
+      <Grid x:Name="TreeColumnInner">
+        <TreeView x:Name="FileTree"
+                  ItemsSource="{Binding TreeItems}"
+                  SelectionChanged="OnTreeSelectionChanged">
         <TreeView.Styles>
           <Style Selector="TreeViewItem" x:DataType="vm:TreeItemViewModel">
             <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
@@ -108,19 +109,18 @@
           </TreeDataTemplate>
         </TreeView.ItemTemplate>
         </TreeView>
-    </Border>
-
-    <Border Grid.Row="1" Grid.Column="0"
-            IsVisible="{Binding #FileTree.ItemCount, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={StaticResource Zero}}"
-            Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-            ZIndex="5">
-      <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
-        <TextBlock Text="空目录" IsVisible="{Binding !TreeLoadMessage}"
-                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-        <TextBlock Text="{Binding TreeLoadMessage}" IsVisible="{Binding TreeLoadMessage}"
-                   TextWrapping="Wrap" Margin="12"
-                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                   Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" />
+        <Border IsVisible="{Binding #FileTree.ItemCount, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={StaticResource Zero}}"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                ZIndex="5">
+          <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="空目录" IsVisible="{Binding !TreeLoadMessage}"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            <TextBlock Text="{Binding TreeLoadMessage}" IsVisible="{Binding TreeLoadMessage}"
+                       TextWrapping="Wrap" Margin="12"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" />
+          </Grid>
+        </Border>
       </Grid>
     </Border>
 

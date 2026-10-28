@@ -18,7 +18,7 @@ public class MainActivity : AvaloniaMainActivity
 {
     protected override void OnCreate(Bundle? savedInstanceState)
     {
-        // 在Avalonia启动前注册AndroidSAF文件系统实现，供共享MainViewModel经PlatformServices取用
+        // 在Avalonia启动前注册AndroidSAF文件系统实现，VM经DeferredFileSystem延迟解析到此处注册
         PlatformServices.FileSystem = new AndroidLocalFileSystem();
         base.OnCreate(savedInstanceState);
     }

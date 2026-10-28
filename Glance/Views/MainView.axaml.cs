@@ -302,7 +302,7 @@ public partial class MainView : UserControl
         if (ReferenceEquals(e.Source, SettingsOverlay)) SettingsOverlay.IsVisible = false;
     }
 
-    // 3行上下文 + 远距离先瞬跳再平滑滚动最后30行
+    // 3行上下文
     private void ScrollOutlineToLine(int line)
     {
         var target = Math.Max(1, line - OutlineScrollContextLines);

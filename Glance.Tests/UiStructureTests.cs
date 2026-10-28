@@ -94,16 +94,19 @@ public class UiStructureTests
         try
         {
             var tree = view.FindControl<TreeView>("FileTree")!;
+            var treeInner = view.FindControl<Grid>("TreeColumnInner")!;
             var outline = view.FindControl<Grid>("OutlineContent")!;
             var treeHost = view.FindControl<Border>("TreeColumnHost")!;
             var outlineHost = view.FindControl<Border>("OutlineColumnHost")!;
 
             vm.IsWide = true;
-            Assert.Same(treeHost, tree.Parent);
+            Assert.Same(treeInner, tree.Parent);
+            Assert.Same(treeHost, treeInner.Parent);
             Assert.Same(outlineHost, outline.Parent);
 
             vm.IsWide = false;
-            Assert.Same(treeHost, tree.Parent);
+            Assert.Same(treeInner, tree.Parent);
+            Assert.Same(treeHost, treeInner.Parent);
             Assert.Same(outlineHost, outline.Parent);
         }
         finally

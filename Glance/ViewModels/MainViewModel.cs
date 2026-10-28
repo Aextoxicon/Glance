@@ -440,7 +440,10 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             SyncWatcher();
 #endif
         }
-        catch (OperationCanceledException) { return; }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             var msg = $"加载失败: {ex.Message}";
@@ -463,6 +466,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
+            IsComputingSize = false;
             MessageText = $"计算大小失败: {ex.Message}";
         }
     }
@@ -756,6 +760,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         long total = 0;
         var queue = new Queue<string>();
         queue.Enqueue(path);
+        // provider返回异常数据时防止同一目录无限入队
+        var visited = new HashSet<string>(StringComparer.Ordinal) { path };
         while (queue.Count > 0)
         {
             ct.ThrowIfCancellationRequested();
@@ -772,7 +778,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             {
                 foreach (var item in GitIgnore.Filter(items, ignored))
                 {
-                    if (item.Payload is LocalPayload p && p.IsDir) queue.Enqueue(p.AbsolutePath);
+                    if (item.Payload is LocalPayload p && p.IsDir && visited.Add(p.AbsolutePath))
+                        queue.Enqueue(p.AbsolutePath);
                     else total += item.Size;
                 }
             }

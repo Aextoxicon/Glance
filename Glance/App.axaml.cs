@@ -44,8 +44,8 @@ public partial class App : Application
 #else
         if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            var fs = PlatformServices.FileSystem ?? new LocalFileSystem();
-            singleViewPlatform.MainView = NewMainView(() => new MainViewModel(fs, new UniffiCodeParser()));
+            // Android注册晚于此处的初始化，必须用代理延迟到调用时解析
+            singleViewPlatform.MainView = NewMainView(() => new MainViewModel(new DeferredFileSystem(), new UniffiCodeParser()));
         }
 #endif
         base.OnFrameworkInitializationCompleted();
