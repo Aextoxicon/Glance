@@ -543,8 +543,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         if (artifact.Size <= SyncLoadThresholdBytes)
         {
-            ct.ThrowIfCancellationRequested();
-            return LoadFileSync(artifact, path);
+            // 小文件也在后台跑
+            try
+            {
+                return await Task.Run(() => LoadFileSync(artifact, path), ct);
+            }
+            catch (OperationCanceledException) { return null; }
         }
 
         string? error = null;
