@@ -39,13 +39,17 @@
                 StrokeThickness="2" Data="M3 6h18M3 12h18M3 18h18" />
         </Button>
         <Button Content="打开文件夹" Click="OnOpenFolder" />
-        <Button Content="关闭工作区" Click="OnCloseWorkspace" IsVisible="{Binding HasWorkspace}" />
-        <Button Content="全展开" Click="OnExpandAll" />
-        <Button Content="全折叠" Click="OnCollapseAll" />
-        <Button Content="刷新" Click="OnRefresh" />
+        <Button Content="关闭工作区" Click="OnCloseWorkspace" IsVisible="{Binding ShowTopBarClose}" />
+        <Button Content="全展开" Click="OnExpandAll" IsVisible="{Binding IsWide}" />
+        <Button Content="全折叠" Click="OnCollapseAll" IsVisible="{Binding IsWide}" />
+        <Button Content="刷新" Click="OnRefresh" IsVisible="{Binding IsWide}" />
         <Button Content="设置" Click="OnOpenSettings" />
-        <TextBlock Text="{Binding CurrentFolderName}" VerticalAlignment="Center" Margin="8,0,0,0" />
-        <TextBlock Text="{Binding TotalSizeReadable}" VerticalAlignment="Center" />
+        <TextBlock x:Name="FolderTitle" Text="{Binding CurrentFolderName}" VerticalAlignment="Center" Margin="8,0,0,0"
+                   MinHeight="32" Background="Transparent"
+                   PointerPressed="OnTitlePointerPressed" PointerReleased="OnTitlePointerReleased"
+                   PointerMoved="OnTitlePointerMoved" />
+        <TextBlock Text="{Binding TotalSizeReadable}" VerticalAlignment="Center"
+                   IsVisible="{Binding IsWide}" />
         <TextBlock Text="{Binding SelectedArtifact.Name}" IsVisible="{Binding ShowNarrowFileName}"
                    VerticalAlignment="Center" Margin="8,0,0,0"
                    FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="240" />
@@ -78,9 +82,20 @@
         <Style Selector="Border#TreeColumnHost.drawer.open">
           <Setter Property="RenderTransform" Value="translateX(0px)" />
         </Style>
+        <Style Selector="Button.iconBtn">
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="BorderThickness" Value="0" />
+          <Setter Property="Padding" Value="12,8" />
+        </Style>
+        <Style Selector="Button.iconBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+          <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseLowBrush}" />
+        </Style>
+        <Style Selector="Button.iconBtn:pressed /template/ ContentPresenter#PART_ContentPresenter">
+          <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseMediumLowBrush}" />
+        </Style>
       </Border.Styles>
-      <Grid x:Name="TreeColumnInner">
-        <TreeView x:Name="FileTree"
+      <Grid x:Name="TreeColumnInner" RowDefinitions="*,Auto">
+        <TreeView Grid.Row="0" x:Name="FileTree"
                   ItemsSource="{Binding TreeItems}"
                   SelectionChanged="OnTreeSelectionChanged">
         <TreeView.Styles>
@@ -109,7 +124,7 @@
           </TreeDataTemplate>
         </TreeView.ItemTemplate>
         </TreeView>
-        <Border IsVisible="{Binding #FileTree.ItemCount, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={StaticResource Zero}}"
+        <Border Grid.Row="0" IsVisible="{Binding #FileTree.ItemCount, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={StaticResource Zero}}"
                 Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                 ZIndex="5">
           <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -119,6 +134,34 @@
                        TextWrapping="Wrap" Margin="12"
                        HorizontalAlignment="Center" VerticalAlignment="Center"
                        Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" />
+          </Grid>
+        </Border>
+        <!-- 窄屏树抽屉底栏：树操作收拢为图标，关闭工作区在右下角 -->
+        <Border Grid.Row="1" IsVisible="{Binding !IsWide}"
+                Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                BorderThickness="0,1,0,0">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+          <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2">
+
+            <Button Classes="iconBtn" Click="OnExpandAll" ToolTip.Tip="全展开">
+              <materialIcons:MaterialIcon Kind="UnfoldMoreHorizontal" Width="20" Height="20"
+                                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            </Button>
+            <Button Classes="iconBtn" Click="OnCollapseAll" ToolTip.Tip="全折叠">
+              <materialIcons:MaterialIcon Kind="UnfoldLessHorizontal" Width="20" Height="20"
+                                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            </Button>
+            <Button Classes="iconBtn" Click="OnRefresh" ToolTip.Tip="刷新">
+              <materialIcons:MaterialIcon Kind="Refresh" Width="20" Height="20"
+                                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            </Button>
+          </StackPanel>
+          <Button Grid.Column="2" Classes="iconBtn" Click="OnCloseWorkspace" ToolTip.Tip="关闭工作区"
+                  IsVisible="{Binding HasWorkspace}">
+            <materialIcons:MaterialIcon Kind="Close" Width="20" Height="20"
+                                        Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+          </Button>
           </Grid>
         </Border>
       </Grid>

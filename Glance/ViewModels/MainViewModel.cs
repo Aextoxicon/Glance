@@ -134,6 +134,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private ObservableCollection<TreeItemViewModel> _treeItems = new();
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowTopBarClose))]
     private bool _hasWorkspace;
 
     [ObservableProperty]
@@ -151,7 +152,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private bool _showNarrowFileName;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowTopBarClose))]
     private bool _isWide = true;
+
+    // 窄屏时关闭工作区挪到树抽屉底栏
+    public bool ShowTopBarClose => IsWide && HasWorkspace;
 
     [ObservableProperty]
     private int _codeFontSize = DefaultCodeFontSize;
@@ -378,11 +383,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
         try
         {
-            var dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Glance");
-            var path = Trace.ExportTo(dir);
-            MessageText = path is null ? "暂无可导出日志" : $"日志已导出: {path}";
-            return path;
+            var path = Trace.ExportTo(TraceDestination.StagingDirectory());
+            var published = path is null ? null : TraceDestination.Publish(path);
+            var shown = published ?? path;
+            MessageText = shown is null ? "暂无可导出日志" : $"日志已导出: {shown}";
+            return shown;
         }
         catch (Exception ex)
         {
@@ -833,9 +838,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         CancelAndDispose(ref _benchCts);
         _benchCts = new CancellationTokenSource();
         var ct = _benchCts.Token;
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Glance");
-        Trace.Start(dir);
+        Trace.Start(TraceDestination.StagingDirectory());
         try
         {
             Trace.Mark("bench.start");

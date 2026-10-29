@@ -57,6 +57,47 @@ public partial class MainView : UserControl
         // 闭包捕获this，不清空则VM会一直持有已离树的视图
         _vm.PickFolderAction = null;
         _vm = null;
+        StopTraceHoldTimer();
+    }
+
+    // 长按目录名1秒=桌面F12
+    private DispatcherTimer? _traceHoldTimer;
+    private Point? _traceHoldStart;
+
+    private void OnTitlePointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_vm is null) return;
+        _traceHoldStart = e.GetCurrentPoint(this).Position;
+        e.Pointer.Capture(sender as IInputElement);
+        StopTraceHoldTimer();
+        _traceHoldTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1000) };
+        _traceHoldTimer.Tick += (_, _) =>
+        {
+            StopTraceHoldTimer();
+            if (_vm is null) return;
+            _vm.ToggleBenchmarkMode();
+            if (_vm.BenchmarkMode && _vm.TreeItems.Count > 0)
+                _ = _vm.RunBenchmarkSequence();
+        };
+        _traceHoldTimer.Start();
+    }
+
+    private void OnTitlePointerReleased(object? sender, PointerReleasedEventArgs e) => StopTraceHoldTimer();
+
+    private void OnTitlePointerMoved(object? sender, PointerEventArgs e)
+    {
+        // 移动超20px视为滚动手势，取消长按
+        if (_traceHoldStart is not { } start) return;
+        var p = e.GetCurrentPoint(this).Position;
+        if (Math.Abs(p.X - start.X) > 20 || Math.Abs(p.Y - start.Y) > 20)
+            StopTraceHoldTimer();
+    }
+
+    private void StopTraceHoldTimer()
+    {
+        _traceHoldTimer?.Stop();
+        _traceHoldTimer = null;
+        _traceHoldStart = null;
     }
 
     private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
