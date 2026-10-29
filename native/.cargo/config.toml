@@ -1,2 +1,12 @@
 [build]
 rustflags = ["-W", "clippy::all", "-W", "clippy::perf"]
+
+# Android要求16KB页对齐，cargo不合并build与target的rustflags，clippy项需重复
+[target.aarch64-linux-android]
+rustflags = ["-W", "clippy::all", "-W", "clippy::perf", "-C", "link-arg=-Wl,-z,max-page-size=16384"]
+
+[target.armv7-linux-androideabi]
+rustflags = ["-W", "clippy::all", "-W", "clippy::perf", "-C", "link-arg=-Wl,-z,max-page-size=16384"]
+
+[target.x86_64-linux-android]
+rustflags = ["-W", "clippy::all", "-W", "clippy::perf", "-C", "link-arg=-Wl,-z,max-page-size=16384"]
