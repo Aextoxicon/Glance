@@ -9,7 +9,7 @@
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
-    <RuntimeIdentifiers>android-arm64;android-arm;android-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
     <!-- 让assemblies进APK且native库不压缩 -->
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
     <AndroidStoreUncompressedFileExtensions>so;dll</AndroidStoreUncompressedFileExtensions>
@@ -38,15 +38,6 @@
   <ItemGroup>
     <AndroidNativeLibrary Include="$(_NativeAndroidRoot)\aarch64-linux-android\release\libuniffi_code_parser.so" Condition="Exists('$(_NativeAndroidRoot)\aarch64-linux-android\release\libuniffi_code_parser.so')">
       <Abi>arm64-v8a</Abi>
-    </AndroidNativeLibrary>
-    <AndroidNativeLibrary Include="$(_NativeAndroidRoot)\armv7-linux-androideabi\release\libuniffi_code_parser.so" Condition="Exists('$(_NativeAndroidRoot)\armv7-linux-androideabi\release\libuniffi_code_parser.so')">
-      <Abi>armeabi-v7a</Abi>
-    </AndroidNativeLibrary>
-    <AndroidNativeLibrary Include="$(_NativeAndroidRoot)\x86_64-linux-android\release\libuniffi_code_parser.so" Condition="Exists('$(_NativeAndroidRoot)\x86_64-linux-android\release\libuniffi_code_parser.so')">
-      <Abi>x86_64</Abi>
-    </AndroidNativeLibrary>
-    <AndroidNativeLibrary Include="$(_NativeAndroidRoot)\i686-linux-android\release\libuniffi_code_parser.so" Condition="Exists('$(_NativeAndroidRoot)\i686-linux-android\release\libuniffi_code_parser.so')">
-      <Abi>x86</Abi>
     </AndroidNativeLibrary>
   </ItemGroup>
 
