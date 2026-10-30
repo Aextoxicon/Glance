@@ -70,6 +70,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     public Action? OnWorkspaceOpened { get; set; }
     public Action? OnTreeDirsChanged { get; set; }
+    public Action? BenchmarkScrollToEnd { get; set; }
 
     public Func<Task<string?>>? PickFolderAction { get; set; }
 
@@ -846,6 +847,16 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             var files = 0;
             var queue = new Queue<TreeItemViewModel>();
             foreach (var root in TreeItems) queue.Enqueue(root);
+            async Task OpenAndScroll(TreeItemViewModel node)
+            {
+                await SelectItem(node);
+                await WaitRenderFrame(ct);
+                Trace.Mark("bench.scroll.start", $"name={node.Name}");
+                BenchmarkScrollToEnd?.Invoke();
+                await WaitRenderFrame(ct);
+                Trace.Mark("bench.scroll.end", $"name={node.Name}");
+                files++;
+            }
             while (queue.Count > 0)
             {
                 if (ct.IsCancellationRequested) break;
@@ -861,18 +872,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                         if (ct.IsCancellationRequested) break;
                         if (child.IsDir) queue.Enqueue(child);
                         else if (IsHighlightable(child.Artifact))
-                        {
-                            await SelectItem(child);
-                            await WaitRenderFrame(ct);
-                            files++;
-                        }
+                            await OpenAndScroll(child);
                     }
                 }
                 else if (IsHighlightable(item.Artifact))
                 {
-                    await SelectItem(item);
-                    await WaitRenderFrame(ct);
-                    files++;
+                    await OpenAndScroll(item);
                 }
             }
             Trace.Mark("bench.end", $"dirs={dirs} files={files}");

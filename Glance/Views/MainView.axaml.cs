@@ -115,10 +115,11 @@ public partial class MainView : UserControl
     private void AttachVm(MainViewModel vm)
     {
         if (_vm == vm) return;
-        if (_vm is not null) { _vm.PropertyChanged -= OnVmPropertyChanged; _vm.OnWorkspaceOpened -= OnWorkspaceOpened; }
+        if (_vm is not null) { _vm.PropertyChanged -= OnVmPropertyChanged; _vm.OnWorkspaceOpened -= OnWorkspaceOpened; _vm.BenchmarkScrollToEnd -= ScrollEditorToEnd; }
         _vm = vm;
         _vm.PropertyChanged += OnVmPropertyChanged;
         _vm.OnWorkspaceOpened += OnWorkspaceOpened;
+        _vm.BenchmarkScrollToEnd += ScrollEditorToEnd;
         UpdateDocument(_vm.SelectedContent);
         UpdateHighlighter(_vm.SelectedParseResult);
         PreviewEditor.FontSize = _vm.CodeFontSize;
@@ -381,5 +382,14 @@ public partial class MainView : UserControl
             sv.Offset = new Vector(sv.Offset.X, startOffset + (targetOffset - startOffset) * eased);
         };
         _scrollTimer.Start();
+    }
+
+    // 基准模式：跳到文本末尾，逼出整篇滚动+重绘耗时（CAD路径不调用）
+    private void ScrollEditorToEnd()
+    {
+        if (_editorScroll is null) return;
+        var maxY = _editorScroll.Extent.Height - _editorScroll.Viewport.Height;
+        if (maxY <= 0) return;
+        _editorScroll.Offset = new Vector(_editorScroll.Offset.X, maxY);
     }
 }

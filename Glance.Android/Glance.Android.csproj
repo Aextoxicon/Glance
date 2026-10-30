@@ -13,6 +13,8 @@
     <!-- 让assemblies进APK且native库不压缩 -->
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
     <AndroidStoreUncompressedFileExtensions>so;dll</AndroidStoreUncompressedFileExtensions>
+    <!-- Java互操作走marshal methods，降调用开销与启动时间 -->
+    <AndroidEnableMarshalMethods>true</AndroidEnableMarshalMethods>
   </PropertyGroup>
 
   <ItemGroup>
