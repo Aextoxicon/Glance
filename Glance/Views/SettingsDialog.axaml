@@ -25,6 +25,7 @@
     <StackPanel Spacing="6">
       <TextBlock Text="诊断" />
       <CheckBox Content="启用诊断追踪（环形缓冲，release 亦可产日志）" IsChecked="{Binding TraceEnabled, Mode=TwoWay}" />
+      <CheckBox Content="启用诊断基准（打开文件夹后自动遍历并逐文件计时）" IsChecked="{Binding BenchmarkMode, Mode=TwoWay}" IsCheckedChanged="OnBenchmarkChecked" />
       <Button Content="导出日志" HorizontalAlignment="Left" Click="OnExportTrace" />
     </StackPanel>
     <Button Content="关闭" HorizontalAlignment="Right" Click="OnClose" />

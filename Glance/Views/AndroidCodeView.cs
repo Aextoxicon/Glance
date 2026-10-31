@@ -24,9 +24,11 @@ public class AndroidCodeView : NativeControlHost
     private const double FontSizeSp = 14;
     private const string FontFamilyName = "monospace";
 
-    private HorizontalScrollView? _scroll;
+    private ScrollView? _vScroll;
+    private HorizontalScrollView? _hScroll;
     private TextView? _text;
     private double _codeFontSize = FontSizeSp;
+    private (string? Text, HighlightIndex? Highlights, bool IsDark)? _pending;
 
     public double CodeFontSize
     {
@@ -35,12 +37,16 @@ public class AndroidCodeView : NativeControlHost
         {
             _codeFontSize = value;
             if (_text is not null && value > 0)
+            {
                 _text.SetTextSize(ComplexUnitType.Sp, (float)value);
+                MeasureMinWidth(_text, _text.Text ?? string.Empty);
+            }
         }
     }
 
     protected override IPlatformHandle CreateNativeControlCore(IPlatformHandle parent)
     {
+        Android.Util.Log.Info("GlanceNative", "CreateNativeControlCore");
         var ctx = (parent as AndroidViewControlHandle)?.View.Context
                   ?? Android.App.Application.Context;
 
@@ -51,31 +57,56 @@ public class AndroidCodeView : NativeControlHost
         };
         text.SetTextIsSelectable(true);
         text.SetTextSize(ComplexUnitType.Sp, (float)_codeFontSize);
-        text.SetPadding(0, 0, 0, 0);
+        text.SetPadding(8, 8, 8, 8);
+        text.ViewAttachedToWindow += (_, _) => Android.Util.Log.Info("GlanceNative", "TextView.ViewAttachedToWindow");
+        text.LayoutChange += (_, e) => Android.Util.Log.Info("GlanceNative",
+            $"TextView.LayoutChange {e.Left},{e.Top},{e.Right},{e.Bottom}");
 
-        // 横向也用原生滚动
-        _scroll = new HorizontalScrollView(ctx)
+        // 双轴都走原生touch
+        var hScroll = new HorizontalScrollView(ctx) { HorizontalScrollBarEnabled = true };
+        hScroll.AddView(text, new ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.WrapContent, ViewGroup.LayoutParams.WrapContent));
+
+        var vScroll = new ScrollView(ctx) { VerticalScrollBarEnabled = true };
+        vScroll.AddView(hScroll, new ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
+
+        _text = text;
+        _hScroll = hScroll;
+        _vScroll = vScroll;
+
+        // 原生控件创建晚于首次SetContent，补投递缓存的内容
+        if (_pending is { } p)
         {
-            HorizontalScrollBarEnabled = true,
-            VerticalScrollBarEnabled = true
-        };
-        _scroll.AddView(text, new ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent));
+            _pending = null;
+            ApplyContent(text, p.Text, p.Highlights, p.IsDark);
+        }
 
-        return new AndroidViewControlHandle(_scroll);
+        return new AndroidViewControlHandle(vScroll);
     }
 
     protected override void DestroyNativeControlCore(IPlatformHandle control)
     {
         _text = null;
-        _scroll = null;
+        _hScroll = null;
+        _vScroll = null;
         base.DestroyNativeControlCore(control);
     }
 
     public void SetContent(string? text, HighlightIndex? highlights, bool isDark)
     {
         var tv = _text;
-        if (tv is null) return;
+        Android.Util.Log.Info("GlanceNative", $"SetContent len={text?.Length ?? -1} hasTv={tv is not null}");
+        if (tv is null)
+        {
+            _pending = (text, highlights, isDark);
+            return;
+        }
+        ApplyContent(tv, text, highlights, isDark);
+    }
+
+    private void ApplyContent(TextView tv, string? text, HighlightIndex? highlights, bool isDark)
+    {
         text ??= string.Empty;
 
         tv.SetTextColor(new NativeColor(ToArgb(HighlightColor.ColorFor(string.Empty, isDark))));
@@ -83,6 +114,7 @@ public class AndroidCodeView : NativeControlHost
         if (highlights is null || text.Length == 0)
         {
             tv.Text = text;
+            MeasureMinWidth(tv, text);
             return;
         }
 
@@ -91,16 +123,39 @@ public class AndroidCodeView : NativeControlHost
         foreach (var (start, end, argb) in runs)
             spannable.SetSpan(new ForegroundColorSpan(new NativeColor(argb)), start, end, SpanTypes.ExclusiveExclusive);
         tv.TextFormatted = spannable;
+        tv.SetTextIsSelectable(true);
+        MeasureMinWidth(tv, text);
+        Android.Util.Log.Info("GlanceNative", $"Applied len={text.Length} runs={runs.Count} attached={tv.IsAttachedToWindow}");
+    }
+
+    // 按最长行宽度定位TextView最小宽度
+    private static void MeasureMinWidth(TextView tv, string text)
+    {
+        if (text.Length == 0) { tv.SetMinWidth(0); return; }
+        var paint = tv.Paint;
+        float max = 0f;
+        var start = 0;
+        while (start < text.Length)
+        {
+            var nl = text.IndexOf('\n', start);
+            var end = nl < 0 ? text.Length : nl;
+            var w = paint.MeasureText(text, start, end);
+            if (w > max) max = w;
+            if (nl < 0) break;
+            start = nl + 1;
+        }
+        tv.SetMinWidth((int)Math.Ceiling(max) + tv.PaddingLeft + tv.PaddingRight);
     }
 
     public void ScrollToEnd()
     {
-        var sv = _scroll;
-        if (sv is null) return;
-        sv.Post(() =>
+        var v = _vScroll;
+        var h = _hScroll;
+        if (v is null) return;
+        v.Post(() =>
         {
-            sv.FullScroll(FocusSearchDirection.Down);
-            sv.FullScroll(FocusSearchDirection.Right);
+            v.FullScroll(FocusSearchDirection.Down);
+            h?.FullScroll(FocusSearchDirection.Right);
         });
     }
 

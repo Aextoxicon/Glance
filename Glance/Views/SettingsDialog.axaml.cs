@@ -47,4 +47,11 @@ public partial class SettingsDialog : UserControl
     {
         if (DataContext is MainViewModel vm) vm.ExportTraceLog();
     }
+
+    private void OnBenchmarkChecked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        if (vm.BenchmarkMode && vm.TreeItems.Count > 0)
+            _ = vm.RunBenchmarkSequence();
+    }
 }

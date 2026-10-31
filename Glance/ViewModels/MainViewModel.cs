@@ -127,9 +127,15 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCadPreview))]
+    [NotifyPropertyChangedFor(nameof(ShowAvaloniaEditor))]
     private CadGeometry? _selectedCad;
 
     public bool IsCadPreview => SelectedCad is not null;
+
+    // Android预览走原生TextView
+    public static bool UseNativeAndroidPreview => OperatingSystem.IsAndroid();
+
+    public bool ShowAvaloniaEditor => !IsCadPreview && !UseNativeAndroidPreview;
 
     [ObservableProperty]
     private ObservableCollection<TreeItemViewModel> _treeItems = new();
@@ -170,23 +176,29 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     partial void OnTraceEnabledChanged(bool value) => Trace.Enabled = value;
 
-    public bool BenchmarkMode { get; private set; }
+    private bool _benchmarkMode;
 
-    // F12打开即开启trace并清基线，关闭即关trace
-    public void ToggleBenchmarkMode()
+    public bool BenchmarkMode
     {
-        BenchmarkMode = !BenchmarkMode;
-        TraceEnabled = BenchmarkMode;
-        MessageText = BenchmarkMode
-            ? "诊断基准模式：开启（打开文件夹将自动展开全部+逐文件计时，跑完自动导出日志，Esc取消）"
-            : "诊断基准模式：关闭";
+        get => _benchmarkMode;
+        set
+        {
+            if (_benchmarkMode == value) return;
+            _benchmarkMode = value;
+            OnPropertyChanged();
+            TraceEnabled = value;
+            MessageText = value
+                ? "诊断基准模式：开启（打开文件夹将自动展开全部+逐文件计时，跑完自动导出日志，Esc取消）"
+                : "诊断基准模式：关闭";
+        }
     }
+
+    public void ToggleBenchmarkMode() => BenchmarkMode = !BenchmarkMode;
 
     public void StopBenchmark()
     {
         _benchCts?.Cancel();
         BenchmarkMode = false;
-        TraceEnabled = false;
         MessageText = "诊断基准模式：已取消";
     }
 

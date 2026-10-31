@@ -45,9 +45,7 @@
         <Button Content="刷新" Click="OnRefresh" IsVisible="{Binding IsWide}" />
         <Button Content="设置" Click="OnOpenSettings" />
         <TextBlock x:Name="FolderTitle" Text="{Binding CurrentFolderName}" VerticalAlignment="Center" Margin="8,0,0,0"
-                   MinHeight="32" Background="Transparent"
-                   PointerPressed="OnTitlePointerPressed" PointerReleased="OnTitlePointerReleased"
-                   PointerMoved="OnTitlePointerMoved" />
+                   MinHeight="32" Background="Transparent" />
         <TextBlock Text="{Binding TotalSizeReadable}" VerticalAlignment="Center"
                    IsVisible="{Binding IsWide}" />
         <TextBlock Text="{Binding SelectedArtifact.Name}" IsVisible="{Binding ShowNarrowFileName}"
@@ -63,24 +61,10 @@
     <Border Grid.Row="1" Grid.Column="0" x:Name="TreeColumnHost">
       <Border.Styles>
         <Style Selector="Border#TreeColumnHost">
-          <Setter Property="Padding" Value="2" />
-        </Style>
-        <Style Selector="Border#TreeColumnHost.drawer">
-          <Setter Property="Width" Value="280" />
-          <Setter Property="HorizontalAlignment" Value="Left" />
-          <Setter Property="Padding" Value="0" />
           <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
           <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
           <Setter Property="BorderThickness" Value="0,0,1,0" />
-          <Setter Property="RenderTransform" Value="translateX(-280px)" />
-          <Setter Property="Transitions">
-            <Transitions>
-              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" />
-            </Transitions>
-          </Setter>
-        </Style>
-        <Style Selector="Border#TreeColumnHost.drawer.open">
-          <Setter Property="RenderTransform" Value="translateX(0px)" />
+          <Setter Property="Padding" Value="2" />
         </Style>
         <Style Selector="Button.iconBtn">
           <Setter Property="Background" Value="Transparent" />
@@ -152,7 +136,7 @@
               <materialIcons:MaterialIcon Kind="UnfoldLessHorizontal" Width="20" Height="20"
                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
             </Button>
-            <Button Classes="iconBtn" Click="OnRefresh" ToolTip.Tip="刷新">
+            <Button Classes="iconBtn" Click="OnRefresh">
               <materialIcons:MaterialIcon Kind="Refresh" Width="20" Height="20"
                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
             </Button>
@@ -188,10 +172,10 @@
           </StackPanel>
         </Grid>
       </Border>
-      <Grid Grid.Row="1">
+      <Grid Grid.Row="1" x:Name="PreviewHost">
         <ae:TextEditor x:Name="PreviewEditor"
                        ShowLineNumbers="{Binding ShowLineNumbers}"
-                       IsVisible="{Binding !IsCadPreview}"
+                       IsVisible="{Binding ShowAvaloniaEditor}"
                        IsReadOnly="True"
                        FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
                        FontSize="{Binding CodeFontSize}"
@@ -246,24 +230,10 @@
     <Border Grid.Row="1" Grid.Column="2" x:Name="OutlineColumnHost">
       <Border.Styles>
         <Style Selector="Border#OutlineColumnHost">
-          <Setter Property="Margin" Value="4" />
-        </Style>
-        <Style Selector="Border#OutlineColumnHost.drawer">
-          <Setter Property="Width" Value="360" />
-          <Setter Property="HorizontalAlignment" Value="Right" />
-          <Setter Property="Margin" Value="0" />
           <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
           <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
           <Setter Property="BorderThickness" Value="1,0,0,0" />
-          <Setter Property="RenderTransform" Value="translateX(360px)" />
-          <Setter Property="Transitions">
-            <Transitions>
-              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" />
-            </Transitions>
-          </Setter>
-        </Style>
-        <Style Selector="Border#OutlineColumnHost.drawer.open">
-          <Setter Property="RenderTransform" Value="translateX(0px)" />
+          <Setter Property="Padding" Value="4" />
         </Style>
       </Border.Styles>
       <Grid x:Name="OutlineContent" RowDefinitions="Auto,*">
