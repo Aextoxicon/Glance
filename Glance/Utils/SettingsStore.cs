@@ -25,7 +25,7 @@ public static class SettingsStore
     {
         try
         {
-            if (File.Exists(FilePath) && JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath)) is { } s)
+            if (File.Exists(FilePath) && JsonSerializer.Deserialize(File.ReadAllText(FilePath), AppSettingsJsonContext.Default.AppSettings) is { } s)
                 return s;
         }
         catch { }
@@ -37,7 +37,7 @@ public static class SettingsStore
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(FilePath, JsonSerializer.Serialize(settings, AppSettingsJsonContext.Default.AppSettings));
         }
         catch { }
     }

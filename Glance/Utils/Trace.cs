@@ -138,14 +138,10 @@ public static class Trace
             : sorted[sorted.Count / 2];
         var summary = new TraceSummary(
             sorted.Count, avg, median, sorted[0], sorted[^1], sorted.ToArray());
-        var json = JsonSerializer.Serialize(summary, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = true
-        });
+        var json = JsonSerializer.Serialize(summary, TraceJsonContext.Default.TraceSummary);
         File.WriteAllText(Path.ChangeExtension(csvPath, ".summary.json"), json);
     }
 
-    private sealed record TraceSummary(
+    internal sealed record TraceSummary(
         int opens, double averageMs, double medianMs, long fastestMs, long slowestMs, long[] allMs);
 }
