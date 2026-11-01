@@ -58,7 +58,7 @@
                    Margin="0,2,0,0" />
     </StackPanel>
 
-    <Border Grid.Row="1" Grid.Column="0" x:Name="TreeColumnHost">
+    <Border Grid.Row="1" Grid.Column="0" x:Name="TreeColumnHost" ClipToBounds="True">
       <Border.Styles>
         <Style Selector="Border#TreeColumnHost">
           <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
@@ -227,7 +227,7 @@
       </Grid>
     </Grid>
 
-    <Border Grid.Row="1" Grid.Column="2" x:Name="OutlineColumnHost">
+    <Border Grid.Row="1" Grid.Column="2" x:Name="OutlineColumnHost" ClipToBounds="True">
       <Border.Styles>
         <Style Selector="Border#OutlineColumnHost">
           <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />

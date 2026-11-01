@@ -24,20 +24,20 @@
   <Target Name="BuildAll">
     <Message Text="BuildAll: config=$(BuildAllConfig) dest=$(BuildAllDest) jdk=$(BuildAllJdk)" Importance="high" />
 
-    <Exec Command="dotnet publish Glance.Desktop/Glance.Desktop.csproj -c $(BuildAllConfig) -r win-x64 --self-contained -p:PublishAot=true --nologo"
+    <RemoveDir Directories="$(BuildAllDest)/Desktop" Condition="Exists('$(BuildAllDest)/Desktop')" />
+
+    <Exec Command="dotnet publish Glance.Desktop/Glance.Desktop.csproj -c $(BuildAllConfig) -r win-x64 --self-contained -p:PublishAot=true -p:PublishDir=$(BuildAllDest)/Desktop/ --nologo"
           WorkingDirectory="$(MSBuildThisFileDirectory)" />
+
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)native/target/release/uniffi_code_parser.dll"
+          DestinationFiles="$(BuildAllDest)/Desktop/uniffi_code_parser.dll"
+          Condition="Exists('$(MSBuildThisFileDirectory)native/target/release/uniffi_code_parser.dll')" />
+    <Warning Text="BuildAll: native lib missing at $(MSBuildThisFileDirectory)native/target/release/uniffi_code_parser.dll; run 'cargo build --release' in native/ first."
+          Condition="!Exists('$(MSBuildThisFileDirectory)native/target/release/uniffi_code_parser.dll')" />
 
     <Exec Command="dotnet build Glance.Android/Glance.Android.csproj -c $(BuildAllConfig) --nologo"
           WorkingDirectory="$(MSBuildThisFileDirectory)"
           EnvironmentVariables="JAVA_HOME=$(BuildAllJdk)" />
-
-    <ItemGroup>
-      <_DesktopBin Include="$(MSBuildThisFileDirectory)Glance.Desktop/bin/$(BuildAllConfig)/net10.0/**/*" />
-    </ItemGroup>
-    <MakeDir Directories="$(BuildAllDest)/Desktop" />
-    <Copy SourceFiles="@(_DesktopBin)"
-          DestinationFiles="$(BuildAllDest)/Desktop/%(RecursiveDir)%(Filename)%(Extension)"
-          SkipUnchangedFiles="true" />
 
     <ItemGroup>
       <_AndroidApk Include="$(MSBuildThisFileDirectory)Glance.Android/bin/$(BuildAllConfig)/net10.0-android/*.apk" />
