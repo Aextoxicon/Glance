@@ -4,17 +4,24 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'file_tree.dart';
+import 'generated/flutter_api.dart';
+import 'generated/lib.dart' as rust;
 import 'models.dart';
 import 'utils.dart';
 
 enum AppThemeMode { light, dark, system }
 
+class ThemeListenable extends ChangeNotifier {
+  void changed() => notifyListeners();
+}
+
 class MainViewModel extends ChangeNotifier {
-  MainViewModel() : _source = createSource();
+  MainViewModel([FileTreeSource? source]) : _source = source ?? createSource();
 
   final FileTreeSource _source;
 
   AppThemeMode themeMode = AppThemeMode.system;
+  final ThemeListenable themeListenable = ThemeListenable();
   int codeFontSize = 13;
   static const List<int> codeFontSizes = [11, 12, 13, 14, 15, 16, 18, 20];
 
@@ -28,6 +35,7 @@ class MainViewModel extends ChangeNotifier {
   Artifact? selectedArtifact;
   String? selectedContent;
   List<OutlineNode>? currentOutline;
+  rust.CodeParseResult? codeParseResult;
   String? messageText;
   String? previewNotice;
 
@@ -37,6 +45,7 @@ class MainViewModel extends ChangeNotifier {
 
   String? _rootId;
   int _sizeToken = 0;
+  int _loadToken = 0;
 
   Future<void> restoreWorkspace() async {
     try {
@@ -111,21 +120,53 @@ class MainViewModel extends ChangeNotifier {
       selectedArtifact = null;
       selectedContent = null;
       currentOutline = null;
+      codeParseResult = null;
       messageText = '已选择目录：${item.artifact.name}';
     } else {
       selectedArtifact = item.artifact;
-      selectedContent = _mockContent(item.artifact);
-      currentOutline = _mockOutline();
+      currentOutline = null;
       messageText = null;
+      final token = ++_loadToken;
+      unawaited(_loadFile(item.artifact, token));
     }
     notifyListeners();
   }
+
+  Future<void> _loadFile(Artifact a, int token) async {
+    try {
+      final content = await _source.readFile(a.id);
+      if (token != _loadToken) return;
+      final result = parseCodeFrb(source: content, filename: a.name);
+      if (token != _loadToken) return;
+      codeParseResult = result;
+      selectedContent = content;
+      currentOutline = result.outline.map(_toModelNode).toList();
+      messageText = null;
+    } catch (e) {
+      if (token != _loadToken) return;
+      codeParseResult = null;
+      selectedContent = null;
+      currentOutline = null;
+      messageText = '读取/解析失败：$e';
+    }
+    notifyListeners();
+  }
+
+  OutlineNode _toModelNode(rust.OutlineNode n) => OutlineNode(
+        kind: n.kind,
+        name: n.name,
+        detail: n.detail,
+        startByte: n.startByte.toInt(),
+        endByte: n.endByte.toInt(),
+        children: n.children.map(_toModelNode).toList(),
+      );
 
   Future<void> expandAll() async {
     await _expandDirs(treeItems, <String>{});
     notifyListeners();
   }
 
+  // 展开过程中不逐目录notifyListeners，大目录树会触发数百次全量重建导致
   Future<void> _expandDirs(List<TreeItem> items, Set<String> visited) async {
     for (final it in items) {
       if (!it.artifact.isDirectory) continue;
@@ -139,7 +180,6 @@ class MainViewModel extends ChangeNotifier {
       } catch (_) {
         continue;
       }
-      notifyListeners();
       await _expandDirs(it.children, visited);
     }
   }
@@ -176,6 +216,7 @@ class MainViewModel extends ChangeNotifier {
   void selectThemeMode(AppThemeMode mode) {
     themeMode = mode;
     notifyListeners();
+    themeListenable.changed();
   }
 
   void selectCodeFontSize(int size) {
@@ -230,25 +271,6 @@ class MainViewModel extends ChangeNotifier {
     final parts = id.split(Platform.pathSeparator).where((s) => s.isNotEmpty).toList();
     return parts.isNotEmpty ? parts.last : id;
   }
-
-  String _mockContent(Artifact a) {
-    final ext = a.name.contains('.') ? a.name.split('.').last : '';
-    return [
-      '// 占位内容（骨架版未接入 Rust 解析）',
-      '// 文件：${a.name}  (${formatSize(a.size)}, 类型: $ext)',
-      '',
-      'void main() {',
-      '  print("Glance Flutter 布局骨架");',
-      '}',
-      '',
-      '// 接入 parseCodeFrb 后即可显示真实高亮与大纲',
-    ].join('\n');
-  }
-
-  List<OutlineNode> _mockOutline() => const [
-        OutlineNode(kind: 'function', name: 'main', startByte: 40),
-        OutlineNode(kind: 'class', name: 'GlanceApp', startByte: 120),
-      ];
 }
 
 final mainViewModel = MainViewModel();

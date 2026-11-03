@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -14,6 +15,7 @@ abstract class FileTreeSource {
   Future<int> folderSize(String rootId);
   Future<String?> restoreRoot();
   Future<void> forgetRoot();
+  Future<String> readFile(String id);
 }
 
 FileTreeSource createSource() {
@@ -74,6 +76,9 @@ class DesktopIoSource implements FileTreeSource {
     }
     return out;
   }
+
+  @override
+  Future<String> readFile(String id) => File(id).readAsString();
 }
 
 class AndroidSafSource implements FileTreeSource {
@@ -138,5 +143,11 @@ class AndroidSafSource implements FileTreeSource {
       return a.name.compareTo(b.name);
     });
     return out;
+  }
+
+  @override
+  Future<String> readFile(String id) async {
+    final bytes = await _saf.readFileBytes(id);
+    return utf8.decode(bytes, allowMalformed: true);
   }
 }

@@ -1,8 +1,8 @@
-// 性能基线测parse_code全链路（黑盒）。
+// 性能基线测parse_code全链路（黑盒）
 // 必须显式指定profile：
 //   cargo test --release --test perf -- --ignored --nocapture
 //   cargo test --test perf -- --ignored --nocapture   # debug对照（C代码opt-level=0，只作参照）
-// 样本自包含（内联基片段重复生成），不再依赖已移除的 shared/ 目录。
+// 样本自包含（内联基片段重复生成），不再依赖已移除的 shared/ 目录
 use std::time::Instant;
 use uniffi_code_parser::parse_code;
 
