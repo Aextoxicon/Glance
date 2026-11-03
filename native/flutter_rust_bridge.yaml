@@ -1,0 +1,7 @@
+rust_input: crate::flutter_api
+rust_root: .
+rust_output: src/bridge_generated.rs
+dart_output: ../flutter/lib/generated
+deps_check: false
+dart_format: false
+dart_fix: false

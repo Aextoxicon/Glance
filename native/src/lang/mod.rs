@@ -28,7 +28,7 @@ pub fn build_grammar(language: tree_sitter::Language, segments: &[&str]) -> Gram
     }
 }
 
-// 数出query文本里的节点模式个数：语法里 `(` 只开节点模式，开谓词时紧跟 `#`
+// 数出query文本里的节点模式个数：语法里(只开节点模式，开谓词时紧跟#
 fn count_pattern_nodes(text: &str) -> usize {
     let bytes = text.as_bytes();
     let mut nodes = 0usize;
@@ -150,6 +150,29 @@ pub fn get_grammar_by_filename(filename: &str) -> Option<&'static LazyLock<Gramm
         "Makefile" | "makefile" | "GNUmakefile" => Some(&make::GRAMMAR),
         "Dockerfile" | "Containerfile" => Some(&containerfile::GRAMMAR),
         _ => None,
+    }
+}
+
+/// 先按文件名（Makefile/Dockerfile等无扩展名），再按扩展名路由grammar
+pub fn resolve_grammar(filename: &str) -> Option<&'static LazyLock<GrammarDef>> {
+    let base = basename(filename);
+    if let Some(g) = get_grammar_by_filename(base) {
+        return Some(g);
+    }
+    get_grammar(&extension_of(base))
+}
+
+/// 取路径最后一段（去目录分隔符）
+fn basename(path: &str) -> &str {
+    let s = path.rsplit('/').next().unwrap_or(path);
+    s.rsplit('\\').next().unwrap_or(s)
+}
+
+/// 返回带前导点的扩展名（统一小写）；无扩展名返回空串
+fn extension_of(name: &str) -> String {
+    match name.rfind('.') {
+        Some(i) if i + 1 < name.len() => name[i..].to_ascii_lowercase(),
+        _ => String::new(),
     }
 }
 

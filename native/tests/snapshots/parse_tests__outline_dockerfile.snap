@@ -1,0 +1,94 @@
+---
+source: tests/parse_tests.rs
+expression: snapshot_of(&result)
+---
+Snapshot {
+    highlights: [
+        [
+            (
+                0,
+                4,
+                "keyword",
+            ),
+            (
+                12,
+                14,
+                "keyword",
+            ),
+        ],
+        [
+            (
+                0,
+                3,
+                "keyword",
+            ),
+        ],
+        [],
+        [
+            (
+                0,
+                4,
+                "keyword",
+            ),
+            (
+                10,
+                12,
+                "keyword",
+            ),
+        ],
+        [
+            (
+                0,
+                3,
+                "keyword",
+            ),
+        ],
+        [],
+        [
+            (
+                0,
+                4,
+                "keyword",
+            ),
+            (
+                10,
+                12,
+                "keyword",
+            ),
+        ],
+        [
+            (
+                0,
+                4,
+                "keyword",
+            ),
+        ],
+        [],
+    ],
+    outline: [
+        OutlineNode {
+            kind: "from_instruction",
+            name: "base",
+            detail: "",
+            start_byte: 0,
+            end_byte: 19,
+            children: [],
+        },
+        OutlineNode {
+            kind: "from_instruction",
+            name: "builder",
+            detail: "",
+            start_byte: 40,
+            end_byte: 60,
+            children: [],
+        },
+        OutlineNode {
+            kind: "from_instruction",
+            name: "runtime",
+            detail: "",
+            start_byte: 77,
+            end_byte: 97,
+            children: [],
+        },
+    ],
+}
