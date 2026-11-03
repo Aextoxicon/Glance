@@ -29,8 +29,8 @@
   </UserControl.Resources>
 
   <!-- 列宽初值仅供设计器预览，运行期由ApplyLayout按OutlineOpen重设 -->
-  <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="260,*,330" x:Name="RootGrid">
-    <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Margin="6" Spacing="4">
+  <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*" x:Name="RootGrid" ClipToBounds="True">
+    <StackPanel Grid.Row="0" Grid.ColumnSpan="1" Margin="6" Spacing="4">
       <StackPanel Orientation="Horizontal" Spacing="6">
         <Button x:Name="DrawerToggle" Click="OnToggleTreeDrawer" IsVisible="{Binding !IsWide}"
                 ToolTip.Tip="文件树">
@@ -58,7 +58,11 @@
                    Margin="0,2,0,0" />
     </StackPanel>
 
-    <Border Grid.Row="1" Grid.Column="0" x:Name="TreeColumnHost" ClipToBounds="True">
+    <Border Grid.Row="1" Grid.Column="0" x:Name="TreeColumnHost" ClipToBounds="True"
+            HorizontalAlignment="Left" Width="280" ZIndex="40">
+      <Border.RenderTransform>
+        <TranslateTransform X="-280" />
+      </Border.RenderTransform>
       <Border.Styles>
         <Style Selector="Border#TreeColumnHost">
           <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
@@ -151,7 +155,10 @@
       </Grid>
     </Border>
 
-    <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="Auto,*">
+    <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*" x:Name="ContentArea">
+      <Grid.RenderTransform>
+        <TranslateTransform X="0" />
+      </Grid.RenderTransform>
       <Border Grid.Row="0" IsVisible="{Binding HasSelection}"
               Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
               BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
@@ -227,7 +234,11 @@
       </Grid>
     </Grid>
 
-    <Border Grid.Row="1" Grid.Column="2" x:Name="OutlineColumnHost" ClipToBounds="True">
+    <Border Grid.Row="1" Grid.Column="0" x:Name="OutlineColumnHost" ClipToBounds="True"
+            HorizontalAlignment="Right" Width="360" ZIndex="42">
+      <Border.RenderTransform>
+        <TranslateTransform X="360" />
+      </Border.RenderTransform>
       <Border.Styles>
         <Style Selector="Border#OutlineColumnHost">
           <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
@@ -291,14 +302,14 @@
       </Grid>
     </Border>
 
-    <Border Grid.Row="2" Grid.ColumnSpan="3" Padding="6"
+    <Border Grid.Row="2" Grid.ColumnSpan="1" Padding="6"
             IsVisible="{Binding HasMessage}"
             Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
       <TextBlock Text="{Binding MessageText}"
                  Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" />
     </Border>
 
-    <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+    <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="1"
             x:Name="TreeDrawerScrim" Background="#80000000" ZIndex="39"
             IsVisible="False" PointerPressed="OnTreeDrawerScrimPressed">
       <Border.Styles>
@@ -313,7 +324,7 @@
       </Border.Styles>
     </Border>
 
-    <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+    <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="1"
             x:Name="OutlineDrawerScrim" Background="#80000000" ZIndex="41"
             IsVisible="False" PointerPressed="OnOutlineDrawerScrimPressed">
       <Border.Styles>
@@ -328,7 +339,7 @@
       </Border.Styles>
     </Border>
 
-    <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="3"
+    <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="1"
           x:Name="WelcomePanel" IsVisible="{Binding !HasWorkspace}"
           Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
           ZIndex="50">
@@ -345,7 +356,7 @@
       </StackPanel>
     </Grid>
 
-    <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="3"
+    <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="1"
           x:Name="SettingsOverlay" IsVisible="False"
           Background="#80000000" ZIndex="100"
           PointerPressed="OnSettingsOverlayPointerPressed">

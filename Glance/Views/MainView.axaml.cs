@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Trace = Glance.Utils.Trace;
 using System.Linq;
@@ -8,6 +9,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -47,12 +49,11 @@ public partial class MainView : UserControl
     private const int OutlineScrollPreJumpLines = 30;
     private static readonly TimeSpan OutlineScrollDuration = TimeSpan.FromMilliseconds(250);
 
-    // Avalonia无内置GridLength过渡，手动插值
-    private bool _firstLayout = true;
-    private readonly DispatcherTimer _treeColAnim = new() { Interval = TimeSpan.FromMilliseconds(16) };
-    private readonly DispatcherTimer _outlineColAnim = new() { Interval = TimeSpan.FromMilliseconds(16) };
-    private double _treeColFrom, _treeColTo, _outlineColFrom, _outlineColTo;
-    private DateTime _treeColStart, _outlineColStart;
+    // 整体平移（非列宽挤压，避免PC端编辑器重排）
+    private readonly DispatcherTimer _treeSlideAnim = new() { Interval = TimeSpan.FromMilliseconds(16) };
+    private readonly DispatcherTimer _outlineSlideAnim = new() { Interval = TimeSpan.FromMilliseconds(16) };
+    private readonly DispatcherTimer _contentSlideAnim = new() { Interval = TimeSpan.FromMilliseconds(16) };
+    private readonly Dictionary<DispatcherTimer, (double from, double to, DateTime start, TranslateTransform t, int dur)> _pushState = new();
 
     public MainView()
     {
@@ -311,28 +312,17 @@ public partial class MainView : UserControl
         UpdateAndroidVisibility();
 #endif
         var wide = _vm.IsWide;
-        // 抽屉占真实列宽，主内容(*)被挤窄，而非浮层盖在上面
-        var col0Target = wide ? 260 : (_treeDrawerOpen ? 280 : 0);
-        var col2Target = _vm.OutlineOpen ? (wide ? 330 : 360) : 0;
+        var treeWidth = wide ? 260 : 280;
+        var outlineWidth = wide ? 330 : 360;
+        var treeShown = wide || _treeDrawerOpen;
+        var outlineShown = _vm.OutlineOpen;
 
-        var cols = RootGrid.ColumnDefinitions;
-        if (_firstLayout)
-        {
-            cols[0].Width = new GridLength(col0Target, GridUnitType.Pixel);
-            cols[2].Width = new GridLength(col2Target, GridUnitType.Pixel);
-            _firstLayout = false;
-        }
-        else
-        {
-            AnimateColumnWidth(cols[0], col0Target, true);
-            AnimateColumnWidth(cols[2], col2Target, false);
-        }
+        AnimateTranslate((TranslateTransform)TreeColumnHost.RenderTransform, treeShown ? 0 : -treeWidth, _treeSlideAnim);
+        AnimateTranslate((TranslateTransform)OutlineColumnHost.RenderTransform, outlineShown ? 0 : outlineWidth, _outlineSlideAnim);
+        var contentX = (treeShown ? treeWidth : 0) - (outlineShown ? outlineWidth : 0);
+        AnimateTranslate((TranslateTransform)ContentArea.RenderTransform, contentX, _contentSlideAnim);
 
-        // 抽屉宿主待在自己列内填满，由列宽控制显隐/挤压
-        Grid.SetColumnSpan(TreeColumnHost, 1);
-        Grid.SetColumnSpan(OutlineColumnHost, 1);
-        TreeColumnHost.SetValue(Panel.ZIndexProperty, wide ? 0 : 40);
-        OutlineColumnHost.SetValue(Panel.ZIndexProperty, wide ? 0 : 42);
+        TreeColumnHost.IsVisible = true;
         OutlineColumnHost.IsVisible = !wide || _vm.OutlineOpen;
         TreeDrawerScrim.IsVisible = false;
         TreeDrawerScrim.IsHitTestVisible = false;
@@ -340,41 +330,32 @@ public partial class MainView : UserControl
         OutlineDrawerScrim.IsHitTestVisible = false;
     }
 
-    private void AnimateColumnWidth(ColumnDefinition col, double to, bool isTree)
+    private void AnimateTranslate(TranslateTransform t, double to, DispatcherTimer timer)
     {
-        var from = col.Width.IsAbsolute ? col.Width.Value : 0;
-        if (Math.Abs(from - to) < 0.5)
-        {
-            col.Width = new GridLength(to, GridUnitType.Pixel);
-            return;
-        }
-        var timer = isTree ? _treeColAnim : _outlineColAnim;
-        if (isTree) { _treeColFrom = from; _treeColTo = to; _treeColStart = DateTime.Now; }
-        else { _outlineColFrom = from; _outlineColTo = to; _outlineColStart = DateTime.Now; }
-        timer.Tick -= OnColAnimTick;
-        timer.Tick += OnColAnimTick;
+        var from = t.X;
+        if (Math.Abs(from - to) < 0.5) { t.X = to; return; }
+        _pushState[timer] = (from, to, DateTime.Now, t, 250);
+        timer.Tick -= OnPushTick;
+        timer.Tick += OnPushTick;
         timer.Stop();
         timer.Start();
     }
 
-    private void OnColAnimTick(object? sender, EventArgs e)
+    private void OnPushTick(object? sender, EventArgs e)
     {
         var timer = (DispatcherTimer)sender!;
-        var isTree = ReferenceEquals(timer, _treeColAnim);
-        var col = isTree ? RootGrid.ColumnDefinitions[0] : RootGrid.ColumnDefinitions[2];
-        var from = isTree ? _treeColFrom : _outlineColFrom;
-        var to = isTree ? _treeColTo : _outlineColTo;
-        var start = isTree ? _treeColStart : _outlineColStart;
-        var t = (DateTime.Now - start).TotalMilliseconds / 250.0;
-        if (t >= 1)
+        if (!_pushState.TryGetValue(timer, out var s)) return;
+        var elapsed = (DateTime.Now - s.start).TotalMilliseconds / s.dur;
+        if (elapsed >= 1)
         {
-            col.Width = new GridLength(to, GridUnitType.Pixel);
+            s.t.X = s.to;
             timer.Stop();
+            _pushState.Remove(timer);
         }
         else
         {
-            var k = 1 - Math.Pow(1 - t, 3);
-            col.Width = new GridLength(from + (to - from) * k, GridUnitType.Pixel);
+            var k = 1 - Math.Pow(1 - elapsed, 3);
+            s.t.X = s.from + (s.to - s.from) * k;
         }
     }
 
@@ -477,7 +458,9 @@ public partial class MainView : UserControl
         var visible = _vm.HasSelection && !_vm.IsCadPreview && !_vm.IsLoadingPreview
             && !_vm.HasPreviewMessage && !_vm.HasPreviewNotice
             && !_treeDrawerOpen && !(_vm.OutlineOpen && !_vm.IsWide) && !_drawerAnimating;
-        _androidCode.Margin = visible ? default : new Thickness(0, -100000, 0, 0);
+        // 原生控件不跟随祖先RenderTransform，用Margin按内容平移量对齐
+        var x = ((TranslateTransform)ContentArea.RenderTransform).X;
+        _androidCode.Margin = visible ? new Thickness(x, 0, 0, 0) : new Thickness(0, -100000, 0, 0);
         _androidCode.InvalidateMeasure();
         _androidCode.InvalidateArrange();
         // 变可见时重推一次内容，兜住控件创建前丢掉的推送
