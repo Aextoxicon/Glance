@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -208,9 +209,27 @@ class MainViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void requestScrollToOutline(OutlineNode node) {
+    final content = selectedContent;
+    if (content == null) return;
+    final lines = content.split('\n');
+    var acc = 0;
+    var target = lines.length - 1;
+    for (var i = 0; i < lines.length; i++) {
+      if (node.startByte < acc + utf8.encode(lines[i]).length + 1) {
+        target = i;
+        break;
+      }
+      acc += utf8.encode(lines[i]).length + 1;
+    }
+    if (target > 0 && lines[target].isEmpty) target--;
+    outlineScrollTargetLine = target;
+    notifyListeners();
+  }
+
+  // 避免在构建期间触发markNeedsBuild
   void consumeScrollTargetLine() {
     outlineScrollTargetLine = null;
-    notifyListeners();
   }
 
   void selectThemeMode(AppThemeMode mode) {

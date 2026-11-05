@@ -58,7 +58,7 @@ class WideLayout extends StatelessWidget {
     return Scaffold(
       endDrawer: OutlineDrawer(
         outline: vm.currentOutline ?? [],
-        onSelectNode: (_) => vm.requestScrollToLine(0),
+        onSelectNode: vm.requestScrollToOutline,
       ),
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -121,7 +121,7 @@ class NarrowLayout extends StatelessWidget {
       ),
       endDrawer: OutlineDrawer(
         outline: vm.currentOutline ?? [],
-        onSelectNode: (_) => vm.requestScrollToLine(0),
+        onSelectNode: vm.requestScrollToOutline,
       ),
       body: CodePreviewPanel(vm: vm),
     );

@@ -175,6 +175,62 @@ void main() {
       }
     }
   });
+  test('requestScrollToOutline 按 UTF-8 字节偏移换算行号', () {
+    final vm = MainViewModel(FakeSource(fakeTree));
+    // 三个中文字符各3字节, 第二行含多字节字符
+    vm.selectedContent = 'fn a() {}\nlet s = "中文中";\nfn b() {}\n';
+    vm.requestScrollToOutline(const OutlineNode(
+        kind: '', name: '', detail: '', startByte: 15, children: []));
+    // "fn a() {}\n" = 10字节, 第二行前缀 'let s = "' 9字节 => 19 > 15, 命中第二行
+    expect(vm.outlineScrollTargetLine, 1);
+
+    vm.selectedContent = 'a\nb\nc\n';
+    vm.requestScrollToOutline(const OutlineNode(
+        kind: '', name: '', detail: '', startByte: 4, children: []));
+    expect(vm.outlineScrollTargetLine, 2);
+
+    vm.selectedContent = 'a\nb\nc\n';
+    vm.requestScrollToOutline(const OutlineNode(
+        kind: '', name: '', detail: '', startByte: 999, children: []));
+    expect(vm.outlineScrollTargetLine, 2);
+  });
+
+  testWidgets('点大纲节点后 CodeContentView 滚动到对应行', (tester) async {
+    final lines = List.generate(200, (i) => 'line $i');
+    final src = FakeSource(fakeTree, {
+      'main.rs': '${lines.join('\n')}\n',
+    });
+    final vm = MainViewModel(src);
+    await vm.restoreWorkspace();
+    vm.selectItem(vm.treeItems[0]);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true),
+      home: Scaffold(
+        body: ListenableBuilder(
+          listenable: vm,
+          builder: (context, _) => CodePreviewPanel(vm: vm),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // 设定滚动目标后重建, 应跳到第150行
+    vm.requestScrollToLine(150);
+    await tester.pumpAndSettle();
+
+    // 第150行应出现在视口内(视口约几十行, 距目标行的行号差应很小)
+    expect(vm.outlineScrollTargetLine, isNull, reason: '目标行应被消费');
+    final textWidgets = tester.widgetList<Text>(find.byType(Text));
+    var found = false;
+    for (final t in textWidgets) {
+      if (t.data == 'line 150' ||
+          t.textSpan?.toPlainText() == 'line 150') {
+        found = true;
+      }
+    }
+    expect(found, isTrue, reason: '视口内应出现 line 150');
+  });
 }
 
 void _checkStyle(TextStyle? style, String label) {

@@ -111,12 +111,39 @@ class CodePreviewToolbar extends StatelessWidget {
   }
 }
 
-class CodeContentView extends StatelessWidget {
+class CodeContentView extends StatefulWidget {
   final MainViewModel vm;
   const CodeContentView({required this.vm, super.key});
 
   @override
+  State<CodeContentView> createState() => _CodeContentViewState();
+}
+
+class _CodeContentViewState extends State<CodeContentView> {
+  final ScrollController _controller = ScrollController();
+
+  double get _lineExtent => widget.vm.codeFontSize * 1.5;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant CodeContentView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final target = widget.vm.outlineScrollTargetLine;
+    if (target != null && _controller.hasClients) {
+      final maxOffset = _controller.position.maxScrollExtent;
+      _controller.jumpTo((target * _lineExtent).clamp(0.0, maxOffset));
+      widget.vm.consumeScrollTargetLine();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final vm = widget.vm;
     final cs = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final style = TextStyle(
@@ -132,7 +159,9 @@ class CodeContentView extends StatelessWidget {
       color: cs.surface,
       child: SelectionArea(
         child: ListView.builder(
+          controller: _controller,
           padding: const EdgeInsets.fromLTRB(8, 8, 16, 16),
+          itemExtent: _lineExtent,
           itemCount: lines.length,
           itemBuilder: (context, i) => Text.rich(
             _lineSpan(vm, i, lines[i], style, dark),
