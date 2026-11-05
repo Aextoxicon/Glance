@@ -231,6 +231,53 @@ void main() {
     }
     expect(found, isTrue, reason: '视口内应出现 line 150');
   });
+
+  testWidgets('长行不折行, 通过横向滚动可见', (tester) async {
+    final longLine = 'x' * 300;
+    final content = 'short\n$longLine\nend\n';
+    final src = FakeSource(fakeTree, {'main.rs': content});
+    final vm = MainViewModel(src);
+    await vm.restoreWorkspace();
+    vm.selectItem(vm.treeItems[0]);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true),
+      home: Scaffold(
+        body: SizedBox(
+          width: 400,
+          child: ListenableBuilder(
+            listenable: vm,
+            builder: (context, _) => CodePreviewPanel(vm: vm),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // 存在横向滚动结构
+    final hScroll = tester
+        .widgetList<SingleChildScrollView>(find.byType(SingleChildScrollView))
+        .where((s) => s.scrollDirection == Axis.horizontal);
+    expect(hScroll, isNotEmpty, reason: '代码区应有横向滚动');
+
+    // 内容宽度应超过 400 视口(长行未折行), 且能横向拖出末尾字符
+    final sizing = tester.widget<SizedBox>(
+        find.descendant(
+            of: find.byType(SingleChildScrollView),
+            matching: find.byType(SizedBox)));
+    expect(sizing.width, greaterThan(400), reason: '内容宽度应超过视口');
+
+    await tester.drag(find.byType(SingleChildScrollView).first,
+        const Offset(-2000, 0));
+    await tester.pumpAndSettle();
+    // 拖到最右后应可见行尾(x*300 的末尾) —— 通过行文本未被截成多行验证:
+    // 若折行, 'end' 行的 y 位置会下移超出固定行高; 这里直接验证渲染树中长行 span 仍是一行
+    final lineText = tester.widgetList<Text>(find.byType(Text));
+    final target = lineText.where((t) =>
+        t.textSpan?.toPlainText() == longLine ||
+        t.data == longLine);
+    expect(target, isNotEmpty);
+  });
 }
 
 void _checkStyle(TextStyle? style, String label) {

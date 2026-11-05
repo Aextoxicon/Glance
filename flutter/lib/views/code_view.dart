@@ -141,6 +141,33 @@ class _CodeContentViewState extends State<CodeContentView> {
     }
   }
 
+  double _measureCharWidth(TextStyle style, String sample) {
+    final tp = TextPainter(
+      text: TextSpan(text: sample, style: style),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final w = tp.width;
+    tp.dispose();
+    return w;
+  }
+
+  // 等宽字体下逐行按字符宽度估最长行宽
+  double _contentWidth(List<String> lines, TextStyle style) {
+    if (lines.isEmpty) return 0;
+    final latin = _measureCharWidth(style, 'M');
+    final cjk = _measureCharWidth(style, '中');
+    if (latin <= 0) return 0;
+    var maxW = 0.0;
+    for (final line in lines) {
+      var w = 0.0;
+      for (final rune in line.runes) {
+        w += rune > 0x2E7F ? cjk : latin;
+      }
+      if (w > maxW) maxW = w;
+    }
+    return maxW;
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = widget.vm;
@@ -155,17 +182,26 @@ class _CodeContentViewState extends State<CodeContentView> {
       decoration: TextDecoration.none,
     );
     final lines = (vm.selectedContent ?? '').split('\n');
+    final contentWidth = _contentWidth(lines, style);
     return Material(
       color: cs.surface,
       child: SelectionArea(
-        child: ListView.builder(
-          controller: _controller,
-          padding: const EdgeInsets.fromLTRB(8, 8, 16, 16),
-          itemExtent: _lineExtent,
-          itemCount: lines.length,
-          itemBuilder: (context, i) => Text.rich(
-            _lineSpan(vm, i, lines[i], style, dark),
-            style: style,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: contentWidth + 24,
+            child: ListView.builder(
+              controller: _controller,
+              padding: const EdgeInsets.fromLTRB(8, 8, 16, 16),
+              itemExtent: _lineExtent,
+              itemCount: lines.length,
+              itemBuilder: (context, i) => Text.rich(
+                _lineSpan(vm, i, lines[i], style, dark),
+                style: style,
+                softWrap: false,
+                overflow: TextOverflow.clip,
+              ),
+            ),
           ),
         ),
       ),
