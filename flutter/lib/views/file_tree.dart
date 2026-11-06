@@ -19,7 +19,12 @@ class FileTreePanel extends StatelessWidget {
       itemCount: flat.length,
       itemBuilder: (context, i) {
         final (depth, item) = flat[i];
-        return TreeItemRow(vm: vm, item: item, depth: depth);
+        return TreeItemRow(
+          key: ValueKey(item.artifact.id),
+          vm: vm,
+          item: item,
+          depth: depth,
+        );
       },
     );
   }
