@@ -26,6 +26,7 @@ class TreeItem {
   bool isSelected;
   List<TreeItem> children;
   bool loaded;
+  bool isLoading;
 
   TreeItem({
     required this.artifact,
@@ -33,6 +34,7 @@ class TreeItem {
     this.isSelected = false,
     this.children = const [],
     this.loaded = false,
+    this.isLoading = false,
   });
 
   String get sizeDisplay => formatSize(artifact.size);

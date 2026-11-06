@@ -99,15 +99,21 @@ class MainViewModel extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    try {
-      if (item.children.isEmpty && !item.loaded) {
+    if (!item.loaded) {
+      item.isExpanded = true;
+      item.isLoading = true;
+      notifyListeners();
+      try {
         item.children = await _childrenToItems(item.artifact.id);
         item.loaded = true;
+      } catch (e) {
+        messageText = '读取目录失败：$e';
       }
-      item.isExpanded = true;
-    } catch (e) {
-      messageText = '读取目录失败：$e';
+      item.isLoading = false;
+      notifyListeners();
+      return;
     }
+    item.isExpanded = true;
     notifyListeners();
   }
 
