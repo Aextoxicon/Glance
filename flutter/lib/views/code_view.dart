@@ -121,6 +121,7 @@ class CodeContentView extends StatefulWidget {
 
 class _CodeContentViewState extends State<CodeContentView> {
   final ScrollController _controller = ScrollController();
+  static const int _outlineScrollContextLines = 3;
 
   double get _lineExtent => widget.vm.codeFontSize * 1.5;
 
@@ -136,7 +137,8 @@ class _CodeContentViewState extends State<CodeContentView> {
     final target = widget.vm.outlineScrollTargetLine;
     if (target != null && _controller.hasClients) {
       final maxOffset = _controller.position.maxScrollExtent;
-      _controller.jumpTo((target * _lineExtent).clamp(0.0, maxOffset));
+      _controller.jumpTo(
+          ((target - _outlineScrollContextLines) * _lineExtent).clamp(0.0, maxOffset));
       widget.vm.consumeScrollTargetLine();
     }
   }
