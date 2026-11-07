@@ -9,7 +9,7 @@ class FileTreePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final flat = flattenTree(vm.treeItems);
+    final flat = _flattenTree(vm.treeItems);
     if (vm.treeItems.isEmpty) {
       return const Center(
         child: Text('空目录', style: TextStyle(color: Colors.grey)),
@@ -47,7 +47,7 @@ class _LoadingRow extends _FlatRow {
   _LoadingRow(this.depth);
 }
 
-List<_FlatRow> flattenTree(List<TreeItem> items, [int depth = 0]) {
+List<_FlatRow> _flattenTree(List<TreeItem> items, [int depth = 0]) {
   final out = <_FlatRow>[];
   for (final item in items) {
     out.add(_ItemRow(depth, item));
@@ -55,7 +55,7 @@ List<_FlatRow> flattenTree(List<TreeItem> items, [int depth = 0]) {
       if (item.isLoading) {
         out.add(_LoadingRow(depth + 1));
       } else if (item.loaded && item.children.isNotEmpty) {
-        out.addAll(flattenTree(item.children, depth + 1));
+        out.addAll(_flattenTree(item.children, depth + 1));
       }
     }
   }
