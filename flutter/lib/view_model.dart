@@ -202,12 +202,48 @@ class MainViewModel extends ChangeNotifier {
     final rootId = _rootId;
     if (rootId == null) return;
     try {
-      treeItems = await _childrenToItems(rootId);
+      final oldById = <String, TreeItem>{};
+      for (final it in _flatten(treeItems)) {
+        oldById[it.artifact.id] = it;
+      }
+      treeItems = await _refreshLevel(rootId, oldById);
+      if (selectedItem != null) {
+        selectedItem = _findById(treeItems, selectedItem!.artifact.id) ?? selectedItem;
+        selectedArtifact = selectedItem?.artifact;
+      }
     } catch (e) {
       messageText = '读取目录失败：$e';
     }
     notifyListeners();
     unawaited(_computeTotalSize(rootId));
+  }
+
+  Future<List<TreeItem>> _refreshLevel(String parentId, Map<String, TreeItem> oldById) async {
+    final artifacts = await _source.listChildren(parentId);
+    final out = <TreeItem>[];
+    for (final a in artifacts) {
+      final item = TreeItem(artifact: a);
+      final old = oldById[a.id];
+      if (old != null) {
+        item.isExpanded = old.isExpanded;
+        item.isSelected = old.isSelected;
+        if (old.loaded) {
+          item.loaded = true;
+          item.children = await _refreshLevel(a.id, oldById);
+        }
+      }
+      out.add(item);
+    }
+    return out;
+  }
+
+  TreeItem? _findById(List<TreeItem> items, String id) {
+    for (final it in items) {
+      if (it.artifact.id == id) return it;
+      final found = _findById(it.children, id);
+      if (found != null) return found;
+    }
+    return null;
   }
 
   void requestScrollToLine(int line) {

@@ -75,6 +75,48 @@ void main() {
     expect(dirB.children, hasLength(1));
   });
 
+  test('refreshTree 保留已展开目录态并反映子目录文件变化', () async {
+    final tree = <String, List<Artifact>>{
+      'root': [file('main.rs'), dir('dirA')],
+      'dirA': [file('fileB'), dir('dirB')],
+      'dirB': [file('fileC')],
+    };
+    final vm = MainViewModel(FakeSource(tree));
+    await vm.restoreWorkspace();
+    await vm.expandAll();
+
+    final dirA = vm.treeItems[1];
+    expect(dirA.isExpanded, isTrue);
+    expect(dirA.loaded, isTrue);
+
+    // 在已展开目录 dirA 下新增文件, 刷新后应可见(证明深刷新生效)
+    tree['dirA'] = [...tree['dirA']!, file('newFile')];
+    await vm.refreshTree();
+
+    final dirA2 = vm.treeItems[1];
+    expect(dirA2.isExpanded, isTrue, reason: '刷新后 dirA 应保持展开');
+    expect(dirA2.loaded, isTrue, reason: '刷新后 dirA 应保持已加载');
+    expect(dirA2.children.any((c) => c.artifact.id == 'newFile'), isTrue,
+        reason: '新增文件应出现在刷新后的子列表');
+    final dirB2 = dirA2.children.firstWhere((c) => c.artifact.id == 'dirB');
+    expect(dirB2.isExpanded, isTrue, reason: '嵌套目录 dirB 应保持展开');
+    expect(dirB2.loaded, isTrue, reason: '嵌套目录 dirB 应保持已加载');
+  });
+
+  test('refreshTree 保留选中态并重新挂接 selectedItem', () async {
+    final vm = MainViewModel(FakeSource(fakeTree));
+    await vm.restoreWorkspace();
+    vm.selectItem(vm.treeItems[0]); // 选中 main.rs
+    expect(vm.selectedItem?.artifact.id, 'main.rs');
+
+    await vm.refreshTree();
+
+    final mainRs = vm.treeItems[0];
+    expect(mainRs.isSelected, isTrue, reason: '选中态应按 id 保留');
+    expect(vm.selectedItem, same(mainRs), reason: 'selectedItem 应挂回新树对象');
+    expect(vm.selectedItem?.artifact.id, 'main.rs');
+  });
+
   testWidgets('点开文件后 CodeContentView 无主题色块/下划线装饰', (tester) async {
     final vm = MainViewModel(FakeSource(fakeTree));
     await vm.restoreWorkspace();
