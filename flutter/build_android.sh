@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+export PATH="/Users/lwhs/flutter-3.38.1/flutter/bin:$PATH"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 pushd "$SCRIPT_DIR/../native" >/dev/null
