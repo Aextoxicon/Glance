@@ -122,6 +122,7 @@ class CodeContentView extends StatefulWidget {
 class _CodeContentViewState extends State<CodeContentView> {
   final ScrollController _controller = ScrollController();
   final ScrollController _gutterController = ScrollController();
+  final ScrollController _hController = ScrollController();
   static const int _outlineScrollContextLines = 3;
 
   double get _lineExtent => widget.vm.codeFontSize * 1.5;
@@ -130,6 +131,7 @@ class _CodeContentViewState extends State<CodeContentView> {
   void dispose() {
     _controller.dispose();
     _gutterController.dispose();
+    _hController.dispose();
     super.dispose();
   }
 
@@ -214,28 +216,41 @@ class _CodeContentViewState extends State<CodeContentView> {
             ),
           ),
           Expanded(
-            child: NotificationListener<ScrollNotification>(
-              onNotification: (n) {
-                if (_gutterController.hasClients) {
-                  _gutterController.jumpTo(n.metrics.pixels);
-                }
-                return false;
-              },
-              child: SelectionArea(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SizedBox(
-                    width: contentWidth + 24,
-                    child: ListView.builder(
-                      controller: _controller,
-                      padding: const EdgeInsets.fromLTRB(8, 8, 16, 16),
-                      itemExtent: _lineExtent,
-                      itemCount: lines.length,
-                      itemBuilder: (context, i) => Text.rich(
-                        _lineSpan(vm, i, lines[i], style, dark),
-                        style: style,
-                        softWrap: false,
-                        overflow: TextOverflow.clip,
+            child: SelectionArea(
+              child: Scrollbar(
+                controller: _controller,
+                thumbVisibility: true,
+                radius: const Radius.circular(3),
+                child: Scrollbar(
+                  controller: _hController,
+                  scrollbarOrientation: ScrollbarOrientation.bottom,
+                  thumbVisibility: true,
+                  radius: const Radius.circular(3),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    controller: _hController,
+                    child: SizedBox(
+                      width: contentWidth + 24,
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: (n) {
+                          if (n.metrics.axis == Axis.vertical &&
+                              _gutterController.hasClients) {
+                            _gutterController.jumpTo(n.metrics.pixels);
+                          }
+                          return false;
+                        },
+                        child: ListView.builder(
+                          controller: _controller,
+                          padding: const EdgeInsets.fromLTRB(8, 8, 16, 16),
+                          itemExtent: _lineExtent,
+                          itemCount: lines.length,
+                          itemBuilder: (context, i) => Text.rich(
+                            _lineSpan(vm, i, lines[i], style, dark),
+                            style: style,
+                            softWrap: false,
+                            overflow: TextOverflow.clip,
+                          ),
+                        ),
                       ),
                     ),
                   ),

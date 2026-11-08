@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -354,6 +356,40 @@ void main() {
         t.textSpan?.toPlainText() == longLine ||
         t.data == longLine);
     expect(target, isNotEmpty);
+  });
+
+  test('诊断基准模式开启后开文件夹自动遍历并逐文件计时并导出日志', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final vm = MainViewModel(FakeSource(fakeTree));
+    vm.traceDirOverride = Directory.systemTemp.path;
+    vm.toggleBenchmarkMode();
+    await vm.restoreWorkspace(); // _openRoot末尾自动触发runBenchmarkSequence
+
+    // 自动序列跑完会调用exportTraceLog, 将messageText置为 "日志已导出: ..."
+    final deadline = DateTime.now().add(const Duration(seconds: 15));
+    while (!(vm.messageText ?? '').startsWith('日志已导出') &&
+        DateTime.now().isBefore(deadline)) {
+      await Future.delayed(const Duration(milliseconds: 20));
+    }
+    expect(vm.messageText, startsWith('日志已导出'),
+        reason: '诊断基准序列跑完并自动导出');
+
+    final path = vm.messageText!.substring('日志已导出: '.length);
+    final log = File(path).readAsStringSync();
+    for (final need in [
+      'bench.start',
+      'bench.expand.start',
+      'bench.expand.end',
+      'bench.end',
+      'select.start',
+      'select.painted',
+    ]) {
+      expect(log, contains(need), reason: '日志应含标记 $need');
+    }
+
+    final jsonPath = path.replaceAll('.csv', '.summary.json');
+    final summary = File(jsonPath).readAsStringSync();
+    expect(summary, contains('"opens"'), reason: '应导出汇总json');
   });
 }
 

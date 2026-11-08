@@ -268,6 +268,29 @@ class SettingsDialog extends StatelessWidget {
                 DropdownMenuEntry(value: s, label: fontSizeLabel(s)),
             ],
           ),
+          const Divider(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '诊断基准（打开文件夹后自动遍历并逐文件计时）',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ),
+              Switch(
+                value: vm.benchmarkMode,
+                onChanged: (_) => vm.toggleBenchmarkMode(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.tonal(
+              onPressed: () => vm.exportTraceLog(),
+              child: const Text('导出诊断日志'),
+            ),
+          ),
         ],
       ),
       actions: [

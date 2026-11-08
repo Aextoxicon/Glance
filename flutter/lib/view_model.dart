@@ -8,6 +8,8 @@ import 'file_tree.dart';
 import 'generated/flutter_api.dart';
 import 'generated/lib.dart' as rust;
 import 'models.dart';
+import 'package:path_provider/path_provider.dart';
+import 'trace.dart';
 import 'utils.dart';
 
 enum AppThemeMode { light, dark, system }
@@ -40,13 +42,39 @@ class MainViewModel extends ChangeNotifier {
   String? messageText;
   String? previewNotice;
 
+  bool _benchmarkMode = false;
+  bool get benchmarkMode => _benchmarkMode;
+  set benchmarkMode(bool v) {
+    if (_benchmarkMode == v) return;
+    _benchmarkMode = v;
+    Trace.enabled = v;
+    messageText = v
+        ? '诊断基准模式：开启（打开文件夹将自动展开全部+逐文件计时，跑完自动导出日志）'
+        : '诊断基准模式：关闭';
+    notifyListeners();
+  }
+
+  void toggleBenchmarkMode() => benchmarkMode = !benchmarkMode;
+
+  void stopBenchmark() {
+    _benchCancel = true;
+    benchmarkMode = false;
+    messageText = '诊断基准模式：已取消';
+    notifyListeners();
+  }
+
+  bool _benchCancel = false;
+  // 测试可注入导出目录, 避免path_provider在纯VM测试环境无平台实现
+  String? traceDirOverride;
+
   int? outlineScrollTargetLine;
 
   bool get hasSelection => selectedArtifact != null;
 
-  String? _rootId;
-  int _sizeToken = 0;
-  int _loadToken = 0;
+    String? _rootId;
+    int _sizeToken = 0;
+    int _loadToken = 0;
+    Future<void>? _pendingLoad;
 
   Future<void> restoreWorkspace() async {
     try {
@@ -76,6 +104,7 @@ class MainViewModel extends ChangeNotifier {
     }
     notifyListeners();
     unawaited(_computeTotalSize(rootId));
+    if (_benchmarkMode) unawaited(runBenchmarkSequence());
   }
 
   Future<void> _computeTotalSize(String rootId) async {
@@ -133,8 +162,10 @@ class MainViewModel extends ChangeNotifier {
       selectedArtifact = item.artifact;
       currentOutline = null;
       messageText = null;
+      Trace.mark('select.start', 'name=${item.artifact.name}');
       final token = ++_loadToken;
-      unawaited(_loadFile(item.artifact, token));
+      _pendingLoad = _loadFile(item.artifact, token);
+      unawaited(_pendingLoad);
     }
     notifyListeners();
   }
@@ -167,6 +198,7 @@ class MainViewModel extends ChangeNotifier {
       selectedContent = content;
       currentOutline = result.outline.map(_toModelNode).toList();
       messageText = null;
+      Trace.mark('select.painted', 'name=${a.name}');
     } catch (e) {
       if (token != _loadToken) return;
       codeParseResult = null;
@@ -326,6 +358,75 @@ class MainViewModel extends ChangeNotifier {
     unawaited(_source.forgetRoot());
     clearSelection();
     notifyListeners();
+  }
+
+  // 诊断基准模式: 工作区加载完成后逐步展开目录并逐个打开可高亮文件
+  // 逐步而非一次性铺开, 避免整树ExpandAll+全量打开把UI/IO一次性打满
+  Future<void> runBenchmarkSequence() async {
+    if (!_benchmarkMode) return;
+    _benchCancel = false;
+    final dir = await _traceDir();
+    Trace.start(dir);
+    try {
+      Trace.mark('bench.start');
+      var dirs = 0;
+      var files = 0;
+      final queue = <TreeItem>[];
+      for (final root in treeItems) {
+        queue.add(root);
+      }
+      Future<void> openAndScroll(TreeItem node) async {
+        selectItem(node);
+        await _pendingLoad;
+        Trace.mark('bench.scroll.start', 'name=${node.artifact.name}');
+        final lineCount = (selectedContent ?? '').split('\n').length;
+        requestScrollToLine(lineCount > 0 ? lineCount - 1 : 0);
+        await Future.delayed(const Duration(milliseconds: 16));
+        Trace.mark('bench.scroll.end', 'name=${node.artifact.name}');
+        files++;
+      }
+
+      while (queue.isNotEmpty) {
+        if (_benchCancel) break;
+        final item = queue.removeAt(0);
+        if (item.artifact.isDirectory) {
+          Trace.mark('bench.expand.start', 'name=${item.artifact.name}');
+          await toggleExpand(item);
+          Trace.mark('bench.expand.end', 'name=${item.artifact.name}');
+          dirs++;
+          for (final child in item.children) {
+            if (_benchCancel) break;
+            if (child.artifact.isDirectory) {
+              queue.add(child);
+            } else if (!await _source.isBinary(child.artifact.id)) {
+              await openAndScroll(child);
+            }
+          }
+        } else if (!await _source.isBinary(item.artifact.id)) {
+          await openAndScroll(item);
+        }
+      }
+      Trace.mark('bench.end', 'dirs=$dirs files=$files');
+    } finally {
+      await exportTraceLog();
+    }
+  }
+
+  // 导出诊断追踪日志到应用文档目录下的Glance/, 返回文件路径; 无可导出时返回null
+  Future<String?> exportTraceLog() async {
+    final path = Trace.exportTo(await _traceDir());
+    messageText =
+        path == null ? '暂无可导出日志' : '日志已导出: $path';
+    notifyListeners();
+    return path;
+  }
+
+  Future<String> _traceDir() async {
+    if (traceDirOverride != null) return traceDirOverride!;
+    final base = await getApplicationDocumentsDirectory();
+    final dir = Directory('${base.path}/Glance');
+    await dir.create(recursive: true);
+    return dir.path;
   }
 
   Future<List<TreeItem>> _childrenToItems(String parentId) async {
