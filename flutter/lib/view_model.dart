@@ -5,11 +5,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'file_tree.dart';
+import 'settings_store.dart';
 import 'generated/flutter_api.dart';
 import 'generated/lib.dart' as rust;
 import 'models.dart';
-import 'package:path_provider/path_provider.dart';
 import 'trace.dart';
+import 'trace_destination.dart';
 import 'utils.dart';
 
 enum AppThemeMode { light, dark, system }
@@ -19,7 +20,9 @@ class ThemeListenable extends ChangeNotifier {
 }
 
 class MainViewModel extends ChangeNotifier {
-  MainViewModel([FileTreeSource? source]) : _source = source ?? createSource();
+  MainViewModel([FileTreeSource? source, SettingsStore? settings])
+      : _source = source ?? createSource(),
+        settingsStore = settings ?? SettingsStore();
 
   final FileTreeSource _source;
 
@@ -27,6 +30,28 @@ class MainViewModel extends ChangeNotifier {
   final ThemeListenable themeListenable = ThemeListenable();
   int codeFontSize = 13;
   static const List<int> codeFontSizes = [11, 12, 13, 14, 15, 16, 18, 20];
+
+  bool rememberLastDir = true;
+  final SettingsStore settingsStore;
+
+  // 启动时在runApp前调用, 避免首帧闪默认主题
+  Future<void> loadSettings() async {
+    final s = await settingsStore.load();
+    for (final m in AppThemeMode.values) {
+      if (m.name == s.themeMode) themeMode = m;
+    }
+    if (codeFontSizes.contains(s.codeFontSize)) codeFontSize = s.codeFontSize;
+    rememberLastDir = s.rememberLastDir;
+    themeListenable.changed();
+  }
+
+  Future<void> _persistSettings() {
+    return settingsStore.save(AppSettings(
+      themeMode: themeMode.name,
+      codeFontSize: codeFontSize,
+      rememberLastDir: rememberLastDir,
+    ));
+  }
 
   bool hasWorkspace = false;
   String currentFolderName = '';
@@ -100,6 +125,7 @@ class MainViewModel extends ChangeNotifier {
     Future<void>? _pendingLoad;
 
   Future<void> restoreWorkspace() async {
+    if (!rememberLastDir) return;
     try {
       final rootId = await _source.restoreRoot();
       if (rootId != null) await _openRoot(rootId);
@@ -127,7 +153,11 @@ class MainViewModel extends ChangeNotifier {
     }
     notifyListeners();
     unawaited(_computeTotalSize(rootId));
-    if (_benchmarkMode) unawaited(runBenchmarkSequence());
+    if (_benchmarkMode) {
+      // 基准序列与目录大小统计严格串行, 避免隔离线程抢占UI干扰计时
+      await _computeTotalSize(rootId);
+      unawaited(runBenchmarkSequence());
+    }
   }
 
   Future<void> _computeTotalSize(String rootId) async {
@@ -351,11 +381,22 @@ class MainViewModel extends ChangeNotifier {
     themeMode = mode;
     notifyListeners();
     themeListenable.changed();
+    unawaited(_persistSettings());
   }
 
   void selectCodeFontSize(int size) {
     codeFontSize = size;
     notifyListeners();
+    unawaited(_persistSettings());
+  }
+
+  void selectRememberLastDir(bool value) {
+    if (rememberLastDir == value) return;
+    rememberLastDir = value;
+    notifyListeners();
+    // 关闭时丢弃已记住的目录授权, 下次启动不再恢复
+    if (!value) unawaited(_source.forgetRoot());
+    unawaited(_persistSettings());
   }
 
   void clearSelection() {
@@ -401,6 +442,10 @@ class MainViewModel extends ChangeNotifier {
       Future<void> openAndScroll(TreeItem node) async {
         selectItem(node);
         await _pendingLoad;
+        // 等新内容那一帧真正绘制完再开始滚动, 保证打开与滚动逐个串行
+        // 测试环境无帧调度, 超时兜底直接继续
+        await WidgetsBinding.instance.endOfFrame
+            .timeout(const Duration(milliseconds: 100), onTimeout: () {});
         Trace.mark('bench.scroll.start', 'name=${node.artifact.name}');
         await requestDiagnosticScrollToBottom();
         Trace.mark('bench.scroll.end', 'name=${node.artifact.name}');
@@ -433,21 +478,27 @@ class MainViewModel extends ChangeNotifier {
     }
   }
 
-  // 导出诊断追踪日志到应用文档目录下的Glance/, 返回文件路径; 无可导出时返回null
+  // 导出诊断追踪日志: Android先落私有目录再经MediaStore发布到公共Download/Glance-trace, 桌面直接写下载目录
   Future<String?> exportTraceLog() async {
     final path = Trace.exportTo(await _traceDir());
-    messageText =
-        path == null ? '暂无可导出日志' : '日志已导出: $path';
+    if (path == null) {
+      messageText = '暂无可导出日志';
+    } else {
+      try {
+        final published = await TraceDestination.publish(path);
+        messageText = '日志已导出: ${published ?? path}';
+      } catch (_) {
+        messageText = '日志已导出: $path';
+      }
+    }
     notifyListeners();
     return path;
   }
 
   Future<String> _traceDir() async {
     if (traceDirOverride != null) return traceDirOverride!;
-    final base = await getApplicationDocumentsDirectory();
-    final dir = Directory('${base.path}/Glance');
-    await dir.create(recursive: true);
-    return dir.path;
+    if (Platform.isAndroid) return TraceDestination.stagingDirectory();
+    return TraceDestination.downloadsDirectory();
   }
 
   Future<List<TreeItem>> _childrenToItems(String parentId) async {

@@ -275,19 +275,20 @@ class SettingsDialog extends StatelessWidget {
             ],
           ),
           const Divider(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '诊断基准（打开文件夹后自动遍历并逐文件计时）',
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-              ),
-              Switch(
-                value: vm.benchmarkMode,
-                onChanged: (_) => vm.toggleBenchmarkMode(),
-              ),
-            ],
+          Text('通用', style: Theme.of(context).textTheme.labelLarge),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('记住上次打开的目录'),
+            value: vm.rememberLastDir,
+            onChanged: (v) => vm.selectRememberLastDir(v),
+          ),
+          const Divider(height: 24),
+          Text('诊断', style: Theme.of(context).textTheme.labelLarge),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('诊断基准（打开文件夹后自动遍历并逐文件计时）'),
+            value: vm.benchmarkMode,
+            onChanged: (_) => vm.toggleBenchmarkMode(),
           ),
           const SizedBox(height: 8),
           Align(

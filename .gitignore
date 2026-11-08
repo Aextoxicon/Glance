@@ -73,3 +73,4 @@ TODO.md
 **/test-results/
 **/tmp/
 **/test-output/
+/flutter/trace_out

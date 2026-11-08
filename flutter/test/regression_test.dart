@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glance/file_tree.dart';
 import 'package:glance/generated/frb_generated.dart';
 import 'package:glance/models.dart';
+import 'package:glance/settings_store.dart';
 import 'package:glance/view_model.dart';
 import 'package:glance/views/code_view.dart';
 import 'package:glance/views/file_tree.dart';
@@ -392,6 +393,32 @@ void main() {
     final jsonPath = path.replaceAll('.csv', '.summary.json');
     final summary = File(jsonPath).readAsStringSync();
     expect(summary, contains('"opens"'), reason: '应导出汇总json');
+  });
+
+  test('设置持久化: JSON文件保存后loadSettings恢复主题/字号/记住目录, 关闭后不恢复工作区', () async {
+    final dir = await Directory.systemTemp.createTemp('glance_settings');
+    final store = SettingsStore(directoryOverride: dir.path);
+    final vm = MainViewModel(FakeSource(fakeTree), store);
+    await vm.loadSettings();
+    expect(vm.themeMode, AppThemeMode.system);
+    expect(vm.rememberLastDir, isTrue);
+
+    vm.selectThemeMode(AppThemeMode.dark);
+    vm.selectCodeFontSize(16);
+    vm.selectRememberLastDir(false);
+    await vm.settingsStore.save(AppSettings(
+      themeMode: vm.themeMode.name,
+      codeFontSize: vm.codeFontSize,
+      rememberLastDir: vm.rememberLastDir,
+    ));
+
+    final vm2 = MainViewModel(FakeSource(fakeTree), store);
+    await vm2.loadSettings();
+    expect(vm2.themeMode, AppThemeMode.dark);
+    expect(vm2.codeFontSize, 16);
+    expect(vm2.rememberLastDir, isFalse);
+    await vm2.restoreWorkspace();
+    expect(vm2.hasWorkspace, isFalse, reason: '关闭记住目录后不应恢复工作区');
   });
 
   test('SAF目录名解码: URL编码的tree uri取末段目录名', () {

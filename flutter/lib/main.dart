@@ -22,6 +22,7 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('RustLib.init failed, fallback to mock content: $e');
   }
+  await mainViewModel.loadSettings();
   unawaited(mainViewModel.restoreWorkspace());
   runApp(const GlanceApp());
 }
