@@ -138,6 +138,18 @@ class _CodeContentViewState extends State<CodeContentView> {
   @override
   void didUpdateWidget(covariant CodeContentView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.vm.consumeDiagnosticScrollToBottom() && _controller.hasClients) {
+      final maxOffset = _controller.position.maxScrollExtent;
+      final distance = (maxOffset - _controller.offset).abs();
+      final duration = Duration(
+          milliseconds: distance > 0
+              ? (distance / 3).clamp(60, 1500).round()
+              : 0);
+      _controller
+          .animateTo(maxOffset, duration: duration, curve: Curves.linear)
+          .then((_) => widget.vm.notifyDiagnosticScrollDone());
+      return;
+    }
     final target = widget.vm.outlineScrollTargetLine;
     if (target != null && _controller.hasClients) {
       final maxOffset = _controller.position.maxScrollExtent;

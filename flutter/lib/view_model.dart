@@ -67,6 +67,29 @@ class MainViewModel extends ChangeNotifier {
   // 测试可注入导出目录, 避免path_provider在纯VM测试环境无平台实现
   String? traceDirOverride;
 
+  // 诊断滚动标志: benchmark序列要求代码区匀速滚到底部, 与大纲定位的瞬跳区分
+  bool _diagnosticScrollToBottom = false;
+  Completer<void>? _diagnosticScrollCompleter;
+
+  bool consumeDiagnosticScrollToBottom() {
+    final v = _diagnosticScrollToBottom;
+    _diagnosticScrollToBottom = false;
+    return v;
+  }
+
+  // 置标志并通知UI, 滚动动画完成时complete对应future
+  Future<void> requestDiagnosticScrollToBottom() {
+    _diagnosticScrollToBottom = true;
+    _diagnosticScrollCompleter = Completer<void>();
+    notifyListeners();
+    return _diagnosticScrollCompleter!.future;
+  }
+
+  void notifyDiagnosticScrollDone() {
+    _diagnosticScrollCompleter?.complete();
+    _diagnosticScrollCompleter = null;
+  }
+
   int? outlineScrollTargetLine;
 
   bool get hasSelection => selectedArtifact != null;
@@ -379,9 +402,7 @@ class MainViewModel extends ChangeNotifier {
         selectItem(node);
         await _pendingLoad;
         Trace.mark('bench.scroll.start', 'name=${node.artifact.name}');
-        final lineCount = (selectedContent ?? '').split('\n').length;
-        requestScrollToLine(lineCount > 0 ? lineCount - 1 : 0);
-        await Future.delayed(const Duration(milliseconds: 16));
+        await requestDiagnosticScrollToBottom();
         Trace.mark('bench.scroll.end', 'name=${node.artifact.name}');
         files++;
       }

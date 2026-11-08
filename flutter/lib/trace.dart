@@ -1,7 +1,6 @@
 import 'dart:io';
 
-// 环形缓冲 + 导出CSV + 汇总
-// 仅记录label/extra与相对耗时
+// 环形缓冲诊断追踪: 记录label/extra与相对耗时, 导出CSV+同名.summary.json
 
 class TraceEvent {
   TraceEvent(this.totalMs, this.deltaMs, this.label, this.extra);
@@ -43,8 +42,7 @@ class Trace {
     return _streamPath!;
   }
 
-  // 导出到指定目录, 返回文件路径; 无事件时返回null
-  // 与Avalonia同款: 写出CSV(表头total_ms,delta_ms,label,extra) + 同名的 .summary.json
+  // 导出至指定目录CSV(表头total_ms,delta_ms,label,extra)+同名.summary.json, 无事件返回null
   static String? exportTo(String directory) {
     if (_events.isEmpty) return null;
     final path = _streamPath ?? '$directory/glance_trace_${_timestamp()}.csv';

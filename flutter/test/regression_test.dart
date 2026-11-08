@@ -229,7 +229,7 @@ void main() {
     vm.selectedContent = 'fn a() {}\nlet s = "中文中";\nfn b() {}\n';
     vm.requestScrollToOutline(const OutlineNode(
         kind: '', name: '', detail: '', startByte: 15, children: []));
-    // "fn a() {}\n" = 10字节, 第二行前缀 'let s = "' 9字节 => 19 > 15, 命中第二行
+    // "fn a() {}\n" = 10字节, 第二行前缀 'let s= "' 9字节 => 19 > 15, 命中第二行
     expect(vm.outlineScrollTargetLine, 1);
 
     vm.selectedContent = 'a\nb\nc\n';
@@ -244,7 +244,7 @@ void main() {
   });
 
   testWidgets('二进制文件被探针拦截并显示无法预览', (tester) async {
-    // 把main.rs标记为二进制, 验证探针拦截 + 不喂给解析
+    // 把main.rs标记为二进制(这是故意为之), 验证探针拦截+不喂给解析
     final vm = MainViewModel(FakeSource(fakeTree, const {}, {'main.rs'}));
     await vm.restoreWorkspace();
     vm.selectItem(vm.treeItems[0]); // main.rs
@@ -369,6 +369,8 @@ void main() {
     final deadline = DateTime.now().add(const Duration(seconds: 15));
     while (!(vm.messageText ?? '').startsWith('日志已导出') &&
         DateTime.now().isBefore(deadline)) {
+      // 测试无 UI 消费者, 手动驱动诊断滚动完成以推进序列
+      vm.notifyDiagnosticScrollDone();
       await Future.delayed(const Duration(milliseconds: 20));
     }
     expect(vm.messageText, startsWith('日志已导出'),
