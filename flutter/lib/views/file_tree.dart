@@ -9,20 +9,21 @@ class FileTreePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final flat = _flattenTree(vm.treeItems);
+    final flat = flattenTree(vm.treeItems);
     if (vm.treeItems.isEmpty) {
       return const Center(
         child: Text('空目录', style: TextStyle(color: Colors.grey)),
       );
     }
     return ListView.builder(
+      padding: EdgeInsets.zero,
       itemCount: flat.length,
       itemBuilder: (context, i) {
         final row = flat[i];
-        if (row is _LoadingRow) {
+        if (row is LoadingTreeRow) {
           return _LoadingRowWidget(depth: row.depth);
         }
-        final itemRow = row as _ItemRow;
+        final itemRow = row as ItemTreeRow;
         return TreeItemRow(
           key: ValueKey(itemRow.item.artifact.id),
           vm: vm,
@@ -32,34 +33,6 @@ class FileTreePanel extends StatelessWidget {
       },
     );
   }
-}
-
-sealed class _FlatRow {}
-
-class _ItemRow extends _FlatRow {
-  final int depth;
-  final TreeItem item;
-  _ItemRow(this.depth, this.item);
-}
-
-class _LoadingRow extends _FlatRow {
-  final int depth;
-  _LoadingRow(this.depth);
-}
-
-List<_FlatRow> _flattenTree(List<TreeItem> items, [int depth = 0]) {
-  final out = <_FlatRow>[];
-  for (final item in items) {
-    out.add(_ItemRow(depth, item));
-    if (item.isExpanded) {
-      if (item.isLoading) {
-        out.add(_LoadingRow(depth + 1));
-      } else if (item.loaded && item.children.isNotEmpty) {
-        out.addAll(_flattenTree(item.children, depth + 1));
-      }
-    }
-  }
-  return out;
 }
 
 class TreeItemRow extends StatelessWidget {

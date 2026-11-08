@@ -47,6 +47,35 @@ class TreeItem {
   }
 }
 
+sealed class FlatTreeRow {
+  final int depth;
+  const FlatTreeRow(this.depth);
+}
+
+class ItemTreeRow extends FlatTreeRow {
+  final TreeItem item;
+  const ItemTreeRow(super.depth, this.item);
+}
+
+class LoadingTreeRow extends FlatTreeRow {
+  const LoadingTreeRow(super.depth);
+}
+
+List<FlatTreeRow> flattenTree(List<TreeItem> items, [int depth = 0]) {
+  final out = <FlatTreeRow>[];
+  for (final item in items) {
+    out.add(ItemTreeRow(depth, item));
+    if (item.isExpanded) {
+      if (item.isLoading) {
+        out.add(LoadingTreeRow(depth + 1));
+      } else if (item.loaded && item.children.isNotEmpty) {
+        out.addAll(flattenTree(item.children, depth + 1));
+      }
+    }
+  }
+  return out;
+}
+
 class OutlineNode {
   final String kind;
   final String name;

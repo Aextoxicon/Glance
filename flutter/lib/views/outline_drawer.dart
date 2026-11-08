@@ -47,6 +47,7 @@ class OutlineDrawer extends StatelessWidget {
                     child: Text('该文件没有大纲',
                         style: TextStyle(color: Colors.grey)))
                 : ListView.builder(
+                    padding: EdgeInsets.zero,
                     itemCount: flat.length,
                     itemBuilder: (context, i) {
                       final (depth, node) = flat[i];

@@ -9,6 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models.dart';
 
+const int kSniffBytes = 16384;
+
 abstract class FileTreeSource {
   Future<String?> pickRoot();
   Future<List<Artifact>> listChildren(String parentId);
@@ -26,8 +28,6 @@ FileTreeSource createSource() {
 }
 
 class DesktopIoSource implements FileTreeSource {
-  static const int _sniffBytes = 16384;
-
   @override
   Future<String?> pickRoot() => FilePicker.platform.getDirectoryPath();
 
@@ -90,7 +90,7 @@ class DesktopIoSource implements FileTreeSource {
       final file = File(id);
       if (!await file.exists()) return false;
       final len = await file.length();
-      final count = len > _sniffBytes ? _sniffBytes : len;
+      final count = len > kSniffBytes ? kSniffBytes : len;
       if (count <= 0) return false;
       final bytes = await file.openRead(0, count).first;
       return bytes.contains(0);
@@ -102,7 +102,6 @@ class DesktopIoSource implements FileTreeSource {
 
 class AndroidSafSource implements FileTreeSource {
   static const _rootKey = 'saf_root_uri';
-  static const int _sniffBytes = 16384;
 
   final Saf _saf = Saf();
 
@@ -121,12 +120,26 @@ class AndroidSafSource implements FileTreeSource {
     final saved = prefs.getString(_rootKey);
     if (saved == null) return null;
     final grants = await _saf.persistedPermissions();
-    final granted = grants.any((g) => g.uri == saved && g.read);
+    // pickDirectory持久化的是裸tree URI, 返回的却是tree/<id>/document/<id>规范化形式所以比对前先把保存的uri归约回裸tree URI
+    final bare = _bareTreeUri(saved);
+    final granted = grants.any((g) => g.uri == bare && g.read);
     if (!granted) {
       await prefs.remove(_rootKey);
       return null;
     }
     return saved;
+  }
+
+  String _bareTreeUri(String uriStr) {
+    final segs = Uri.parse(uriStr).pathSegments;
+    if (segs.length == 4 &&
+        segs[0] == 'tree' &&
+        segs[2] == 'document' &&
+        segs[3] == segs[1]) {
+      final idx = uriStr.indexOf('/document/');
+      if (idx > 0) return uriStr.substring(0, idx);
+    }
+    return uriStr;
   }
 
   @override
@@ -175,7 +188,7 @@ class AndroidSafSource implements FileTreeSource {
   Future<bool> isBinary(String id) async {
     try {
       final bytes =
-          await _saf.readFileBytes(id, start: 0, count: _sniffBytes);
+          await _saf.readFileBytes(id, start: 0, count: kSniffBytes);
       return bytes.contains(0);
     } catch (_) {
       return false;

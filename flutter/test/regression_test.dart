@@ -393,6 +393,17 @@ void main() {
     final summary = File(jsonPath).readAsStringSync();
     expect(summary, contains('"opens"'), reason: '应导出汇总json');
   });
+
+  test('SAF目录名解码: URL编码的tree uri取末段目录名', () {
+    expect(
+        nameOfId(
+            'content://com.android.externalstorage.documents/tree/primary%3ADownload%2Fcollisions-kmp-src'),
+        'collisions-kmp-src');
+    expect(
+        nameOfId(
+            'content://com.android.externalstorage.documents/tree/primary%3A%E5%86%99%E5%AD%98'),
+        '写存');
+  });
 }
 
 void _checkStyle(TextStyle? style, String label) {

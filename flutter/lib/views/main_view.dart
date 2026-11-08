@@ -137,75 +137,79 @@ class WorkspaceHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    vm.currentFolderName.isEmpty ? '工作区' : vm.currentFolderName,
+                    style: Theme.of(context).textTheme.titleSmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (vm.isComputingSize)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                IconButton(
+                  iconSize: 14,
+                  constraints:
+                      const BoxConstraints(minWidth: 28, minHeight: 28),
+                  tooltip: '关闭工作区',
+                  onPressed: vm.closeWorkspace,
+                  icon: const Icon(Icons.close, size: 14),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
             children: [
-              Expanded(
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
                 child: Text(
-                  vm.currentFolderName.isEmpty ? '工作区' : vm.currentFolderName,
-                  style: Theme.of(context).textTheme.titleSmall,
-                  overflow: TextOverflow.ellipsis,
+                  vm.totalSizeReadable,
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelSmall
+                      ?.copyWith(color: cs.onSurfaceVariant),
                 ),
               ),
-              if (vm.isComputingSize)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+              const Spacer(),
+              TextButton(
+                onPressed: vm.expandAll,
+                child: Text('展开', style: Theme.of(context).textTheme.bodySmall),
+              ),
+              TextButton(
+                onPressed: vm.collapseAll,
+                child: Text('折叠', style: Theme.of(context).textTheme.bodySmall),
+              ),
               IconButton(
                 iconSize: 14,
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                tooltip: '关闭工作区',
-                onPressed: vm.closeWorkspace,
-                icon: const Icon(Icons.close, size: 14),
+                tooltip: '刷新',
+                onPressed: vm.refreshTree,
+                icon: const Icon(Icons.refresh, size: 14),
+              ),
+              IconButton(
+                iconSize: 14,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                tooltip: '设置',
+                onPressed: () => showSettingsDialog(context),
+                icon: const Icon(Icons.settings, size: 14),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Text(
-                vm.totalSizeReadable,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(color: cs.onSurfaceVariant),
-              ),
-            ),
-            const Spacer(),
-            TextButton(
-              onPressed: vm.expandAll,
-              child: Text('展开', style: Theme.of(context).textTheme.bodySmall),
-            ),
-            TextButton(
-              onPressed: vm.collapseAll,
-              child: Text('折叠', style: Theme.of(context).textTheme.bodySmall),
-            ),
-            IconButton(
-              iconSize: 14,
-              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-              tooltip: '刷新',
-              onPressed: vm.refreshTree,
-              icon: const Icon(Icons.refresh, size: 14),
-            ),
-            IconButton(
-              iconSize: 14,
-              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-              tooltip: '设置',
-              onPressed: () => showSettingsDialog(context),
-              icon: const Icon(Icons.settings, size: 14),
-            ),
-          ],
-        ),
-        const Divider(height: 1),
-      ],
+          const Divider(height: 1),
+        ],
+      ),
     );
   }
 }

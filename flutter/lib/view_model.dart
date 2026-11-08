@@ -114,7 +114,7 @@ class MainViewModel extends ChangeNotifier {
 
   Future<void> _openRoot(String rootId) async {
     _rootId = rootId;
-    currentFolderName = _nameOf(rootId);
+    currentFolderName = nameOfId(rootId);
     hasWorkspace = true;
     messageText = null;
     totalSizeReadable = '';
@@ -455,23 +455,22 @@ class MainViewModel extends ChangeNotifier {
     return [for (final a in artifacts) TreeItem(artifact: a)];
   }
 
-  List<TreeItem> _flatten(List<TreeItem> items) {
-    final out = <TreeItem>[];
-    for (final it in items) {
-      out.add(it);
-      if (it.isExpanded) out.addAll(_flatten(it.children));
-    }
-    return out;
-  }
+  List<TreeItem> _flatten(List<TreeItem> items) =>
+      flattenTree(items).whereType<ItemTreeRow>().map((r) => r.item).toList();
 
-  String _nameOf(String id) {
-    if (id.startsWith('content://')) {
-      final seg = id.split('/').where((s) => s.isNotEmpty).toList();
-      return seg.isNotEmpty ? seg.last : id;
-    }
-    final parts = id.split(Platform.pathSeparator).where((s) => s.isNotEmpty).toList();
-    return parts.isNotEmpty ? parts.last : id;
+}
+
+String nameOfId(String id) {
+  if (id.startsWith('content://')) {
+    final decoded = Uri.decodeComponent(id);
+    final seg = decoded.split('/').where((s) => s.isNotEmpty).toList();
+    var name = seg.isNotEmpty ? seg.last : id;
+    final colon = name.indexOf(':');
+    if (colon >= 0 && colon < name.length - 1) name = name.substring(colon + 1);
+    return name;
   }
+  final parts = id.split(Platform.pathSeparator).where((s) => s.isNotEmpty).toList();
+  return parts.isNotEmpty ? parts.last : id;
 }
 
 final mainViewModel = MainViewModel();
