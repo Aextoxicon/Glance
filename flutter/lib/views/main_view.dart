@@ -31,16 +31,18 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: FilledButton.tonal(
-          onPressed: onOpenFolder,
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.folder_open, size: 18),
-              SizedBox(width: 8),
-              Text('打开文件夹'),
-            ],
+      body: SafeArea(
+        child: Center(
+          child: FilledButton.tonal(
+            onPressed: onOpenFolder,
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.folder_open, size: 18),
+                SizedBox(width: 8),
+                Text('打开文件夹'),
+              ],
+            ),
           ),
         ),
       ),
@@ -60,24 +62,26 @@ class WideLayout extends StatelessWidget {
         outline: vm.currentOutline ?? [],
         onSelectNode: vm.requestScrollToOutline,
       ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: 300,
-            child: Material(
-              color: cs.surfaceContainerHighest,
-              child: Column(
-                children: [
-                  WorkspaceHeader(vm: vm),
-                  Expanded(child: FileTreePanel(vm: vm)),
-                ],
+      body: SafeArea(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: 300,
+              child: Material(
+                color: cs.surfaceContainerHighest,
+                child: Column(
+                  children: [
+                    WorkspaceHeader(vm: vm),
+                    Expanded(child: FileTreePanel(vm: vm)),
+                  ],
+                ),
               ),
             ),
-          ),
-          VerticalDivider(width: 1, color: cs.outlineVariant),
-          Expanded(child: CodePreviewPanel(vm: vm)),
-        ],
+            VerticalDivider(width: 1, color: cs.outlineVariant),
+            Expanded(child: CodePreviewPanel(vm: vm)),
+          ],
+        ),
       ),
     );
   }
@@ -102,10 +106,8 @@ class NarrowLayout extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(
                 vm.totalSizeReadable,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelMedium
-                    ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
         ],
