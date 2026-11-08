@@ -121,6 +121,7 @@ class CodeContentView extends StatefulWidget {
 
 class _CodeContentViewState extends State<CodeContentView> {
   final ScrollController _controller = ScrollController();
+  final ScrollController _gutterController = ScrollController();
   static const int _outlineScrollContextLines = 3;
 
   double get _lineExtent => widget.vm.codeFontSize * 1.5;
@@ -128,6 +129,7 @@ class _CodeContentViewState extends State<CodeContentView> {
   @override
   void dispose() {
     _controller.dispose();
+    _gutterController.dispose();
     super.dispose();
   }
 
@@ -185,27 +187,63 @@ class _CodeContentViewState extends State<CodeContentView> {
     );
     final lines = (vm.selectedContent ?? '').split('\n');
     final contentWidth = _contentWidth(lines, style);
+    final gutterDigits = lines.isEmpty ? 1 : lines.length.toString().length;
+    final gutterWidth = gutterDigits * vm.codeFontSize * 0.55 + 16;
+    final gutterStyle = style.copyWith(
+      fontSize: vm.codeFontSize * 0.85,
+      color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+    );
     return Material(
       color: cs.surface,
-      child: SelectionArea(
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: contentWidth + 24,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: gutterWidth,
             child: ListView.builder(
-              controller: _controller,
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 16),
+              controller: _gutterController,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(8, 8, 0, 16),
               itemExtent: _lineExtent,
               itemCount: lines.length,
-              itemBuilder: (context, i) => Text.rich(
-                _lineSpan(vm, i, lines[i], style, dark),
-                style: style,
-                softWrap: false,
-                overflow: TextOverflow.clip,
+              itemBuilder: (context, i) => Container(
+                alignment: Alignment.topRight,
+                padding: const EdgeInsets.only(right: 8),
+                child: Text('${i + 1}', style: gutterStyle),
               ),
             ),
           ),
-        ),
+          Expanded(
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (n) {
+                if (_gutterController.hasClients) {
+                  _gutterController.jumpTo(n.metrics.pixels);
+                }
+                return false;
+              },
+              child: SelectionArea(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: contentWidth + 24,
+                    child: ListView.builder(
+                      controller: _controller,
+                      padding: const EdgeInsets.fromLTRB(8, 8, 16, 16),
+                      itemExtent: _lineExtent,
+                      itemCount: lines.length,
+                      itemBuilder: (context, i) => Text.rich(
+                        _lineSpan(vm, i, lines[i], style, dark),
+                        style: style,
+                        softWrap: false,
+                        overflow: TextOverflow.clip,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -16,6 +16,8 @@ abstract class FileTreeSource {
   Future<String?> restoreRoot();
   Future<void> forgetRoot();
   Future<String> readFile(String id);
+  // 读前16KB查NUL字节
+  Future<bool> isBinary(String id);
 }
 
 FileTreeSource createSource() {
@@ -24,6 +26,8 @@ FileTreeSource createSource() {
 }
 
 class DesktopIoSource implements FileTreeSource {
+  static const int _sniffBytes = 16384;
+
   @override
   Future<String?> pickRoot() => FilePicker.platform.getDirectoryPath();
 
@@ -79,10 +83,26 @@ class DesktopIoSource implements FileTreeSource {
 
   @override
   Future<String> readFile(String id) => File(id).readAsString();
+
+  @override
+  Future<bool> isBinary(String id) async {
+    try {
+      final file = File(id);
+      if (!await file.exists()) return false;
+      final len = await file.length();
+      final count = len > _sniffBytes ? _sniffBytes : len;
+      if (count <= 0) return false;
+      final bytes = await file.openRead(0, count).first;
+      return bytes.contains(0);
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 class AndroidSafSource implements FileTreeSource {
   static const _rootKey = 'saf_root_uri';
+  static const int _sniffBytes = 16384;
 
   final Saf _saf = Saf();
 
@@ -149,5 +169,16 @@ class AndroidSafSource implements FileTreeSource {
   Future<String> readFile(String id) async {
     final bytes = await _saf.readFileBytes(id);
     return utf8.decode(bytes, allowMalformed: true);
+  }
+
+  @override
+  Future<bool> isBinary(String id) async {
+    try {
+      final bytes =
+          await _saf.readFileBytes(id, start: 0, count: _sniffBytes);
+      return bytes.contains(0);
+    } catch (_) {
+      return false;
+    }
   }
 }

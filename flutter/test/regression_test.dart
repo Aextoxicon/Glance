@@ -14,8 +14,9 @@ import 'package:glance/views/main_view.dart';
 class FakeSource implements FileTreeSource {
   final Map<String, List<Artifact>> _tree;
   final Map<String, String> _files;
+  final Set<String> _binary;
 
-  FakeSource(this._tree, [this._files = const {}]);
+  FakeSource(this._tree, [this._files = const {}, this._binary = const {}]);
 
   @override
   Future<String?> pickRoot() async => 'root';
@@ -33,6 +34,9 @@ class FakeSource implements FileTreeSource {
 
   @override
   Future<String> readFile(String id) async => _files[id] ?? 'fn main() {}\n';
+
+  @override
+  Future<bool> isBinary(String id) async => _binary.contains(id);
 }
 
 Artifact file(String id) =>
@@ -52,7 +56,7 @@ void main() {
     'dirB': [file('fileC')],
   };
 
-  test('expandAll 展开从未手动展开过的目录', () async {
+  test('expandAll展开从未手动展开过的目录', () async {
     final vm = MainViewModel(FakeSource(fakeTree));
     await vm.restoreWorkspace();
 
@@ -75,7 +79,7 @@ void main() {
     expect(dirB.children, hasLength(1));
   });
 
-  test('refreshTree 保留已展开目录态并反映子目录文件变化', () async {
+  test('refreshTree保留已展开目录态并反映子目录文件变化', () async {
     final tree = <String, List<Artifact>>{
       'root': [file('main.rs'), dir('dirA')],
       'dirA': [file('fileB'), dir('dirB')],
@@ -89,35 +93,35 @@ void main() {
     expect(dirA.isExpanded, isTrue);
     expect(dirA.loaded, isTrue);
 
-    // 在已展开目录 dirA 下新增文件, 刷新后应可见(证明深刷新生效)
+    // 在已展开目录dirA下新增文件, 刷新后应可见(证明深刷新生效)
     tree['dirA'] = [...tree['dirA']!, file('newFile')];
     await vm.refreshTree();
 
     final dirA2 = vm.treeItems[1];
-    expect(dirA2.isExpanded, isTrue, reason: '刷新后 dirA 应保持展开');
-    expect(dirA2.loaded, isTrue, reason: '刷新后 dirA 应保持已加载');
+    expect(dirA2.isExpanded, isTrue, reason: '刷新后dirA应保持展开');
+    expect(dirA2.loaded, isTrue, reason: '刷新后dirA应保持已加载');
     expect(dirA2.children.any((c) => c.artifact.id == 'newFile'), isTrue,
         reason: '新增文件应出现在刷新后的子列表');
     final dirB2 = dirA2.children.firstWhere((c) => c.artifact.id == 'dirB');
-    expect(dirB2.isExpanded, isTrue, reason: '嵌套目录 dirB 应保持展开');
-    expect(dirB2.loaded, isTrue, reason: '嵌套目录 dirB 应保持已加载');
+    expect(dirB2.isExpanded, isTrue, reason: '嵌套目录dirB应保持展开');
+    expect(dirB2.loaded, isTrue, reason: '嵌套目录dirB应保持已加载');
   });
 
-  test('refreshTree 保留选中态并重新挂接 selectedItem', () async {
+  test('refreshTree保留选中态并重新挂接selectedItem', () async {
     final vm = MainViewModel(FakeSource(fakeTree));
     await vm.restoreWorkspace();
-    vm.selectItem(vm.treeItems[0]); // 选中 main.rs
+    vm.selectItem(vm.treeItems[0]); // 选中main.rs
     expect(vm.selectedItem?.artifact.id, 'main.rs');
 
     await vm.refreshTree();
 
     final mainRs = vm.treeItems[0];
-    expect(mainRs.isSelected, isTrue, reason: '选中态应按 id 保留');
-    expect(vm.selectedItem, same(mainRs), reason: 'selectedItem 应挂回新树对象');
+    expect(mainRs.isSelected, isTrue, reason: '选中态应按id保留');
+    expect(vm.selectedItem, same(mainRs), reason: 'selectedItem应挂回新树对象');
     expect(vm.selectedItem?.artifact.id, 'main.rs');
   });
 
-  testWidgets('点开文件后 CodeContentView 无主题色块/下划线装饰', (tester) async {
+  testWidgets('点开文件后CodeContentView无主题色块/下划线装饰', (tester) async {
     final vm = MainViewModel(FakeSource(fakeTree));
     await vm.restoreWorkspace();
     // 选中一个文件
@@ -132,7 +136,7 @@ void main() {
     // 应显示真实解析内容(fn main)
     expect(find.textContaining('fn main'), findsOneWidget);
 
-    // 检查是否存在带颜色背景的 DecoratedBox/Container(主题色块)
+    // 检查是否存在带颜色背景的DecoratedBox/Container(主题色块)
     final colored = tester.widgetList<Container>(find.byType(Container)).where((c) {
       final deco = c.decoration;
       return deco is BoxDecoration && deco.color != null && deco.color != Colors.transparent;
@@ -148,7 +152,7 @@ void main() {
     expect(underlined, isEmpty, reason: '代码区不应出现下划线装饰文字');
   });
 
-  testWidgets('高亮渲染: fn 关键字与 main 函数出现非默认颜色 span', (tester) async {
+  testWidgets('高亮渲染: fn关键字与main函数出现非默认颜色span', (tester) async {
     final vm = MainViewModel(FakeSource(fakeTree));
     await vm.restoreWorkspace();
     vm.selectItem(vm.treeItems[0]); // fileA -> 'fn main() {}\n'
@@ -159,7 +163,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // 至少应有一个 span 的颜色不同于该 Text 的基础色(证明高亮生效)
+    // 至少应有一个span的颜色不同于该Text的基础色(证明高亮生效)
     final texts = tester.widgetList<Text>(find.byType(Text));
     var colored = false;
     for (final t in texts) {
@@ -171,10 +175,10 @@ void main() {
         if (c != null && c != base) colored = true;
       }
     }
-    expect(colored, isTrue, reason: '应出现高亮颜色 span');
+    expect(colored, isTrue, reason: '应出现高亮颜色span');
   });
 
-  testWidgets('expandAll 后文件树 UI 显示出从未展开过的目录内容', (tester) async {
+  testWidgets('expandAll后文件树UI显示出从未展开过的目录内容', (tester) async {
     final vm = MainViewModel(FakeSource(fakeTree));
     await vm.restoreWorkspace();
     await vm.expandAll();
@@ -185,7 +189,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // dirA 展开后应看到 fileB 与 dirB；dirB 展开后应看到 fileC
+    // dirA展开后应看到fileB与dirB；dirB展开后应看到fileC
     expect(find.text('main.rs'), findsOneWidget);
     expect(find.text('dirA'), findsOneWidget);
     expect(find.text('fileB'), findsOneWidget);
@@ -193,7 +197,7 @@ void main() {
     expect(find.text('fileC'), findsOneWidget);
   });
 
-  testWidgets('WideLayout 选中文件后无黄色下划线装饰文字', (tester) async {
+  testWidgets('WideLayout选中文件后无黄色下划线装饰文字', (tester) async {
     final vm = MainViewModel(FakeSource(fakeTree));
     await vm.restoreWorkspace();
     vm.selectItem(vm.treeItems[0]);
@@ -205,7 +209,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 全界面检查: 不应有黄色(amber/yellow)系颜色的文字或下划线装饰
-    // 遍历 Text 的 textSpan 树(高亮 span 在 children 里), 基础 style 也要查
+    // 遍历Text的textSpan树(高亮span在children里), 基础style也要查
     final texts = tester.widgetList<Text>(find.byType(Text));
     for (final t in texts) {
       _checkStyle(t.style, '${t.data}');
@@ -217,7 +221,7 @@ void main() {
       }
     }
   });
-  test('requestScrollToOutline 按 UTF-8 字节偏移换算行号', () {
+  test('requestScrollToOutline按UTF-8字节偏移换算行号', () {
     final vm = MainViewModel(FakeSource(fakeTree));
     // 三个中文字符各3字节, 第二行含多字节字符
     vm.selectedContent = 'fn a() {}\nlet s = "中文中";\nfn b() {}\n';
@@ -237,7 +241,38 @@ void main() {
     expect(vm.outlineScrollTargetLine, 2);
   });
 
-  testWidgets('点大纲节点后 CodeContentView 滚动到对应行', (tester) async {
+  testWidgets('二进制文件被探针拦截并显示无法预览', (tester) async {
+    // 把main.rs标记为二进制, 验证探针拦截 + 不喂给解析
+    final vm = MainViewModel(FakeSource(fakeTree, const {}, {'main.rs'}));
+    await vm.restoreWorkspace();
+    vm.selectItem(vm.treeItems[0]); // main.rs
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true),
+      home: Scaffold(body: CodePreviewPanel(vm: vm)),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('二进制文件，无法预览'), findsOneWidget,
+        reason: '应显示无法预览提示而非代码内容');
+    expect(vm.selectedContent, isNull, reason: '二进制文件不应被读入内容');
+    expect(vm.codeParseResult, isNull, reason: '二进制文件不应喂给解析');
+    expect(vm.currentOutline, isNull, reason: '二进制文件不应生成大纲');
+
+    // 选中普通文本文件后仍可正常预览(fn main)
+    final textVm = MainViewModel(FakeSource(fakeTree));
+    await textVm.restoreWorkspace();
+    textVm.selectItem(textVm.treeItems[0]);
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true),
+      home: Scaffold(body: CodePreviewPanel(vm: textVm)),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('fn main'), findsOneWidget,
+        reason: '普通文本文件应正常预览');
+  });
+
+  testWidgets('点大纲节点后CodeContentView滚动到对应行', (tester) async {
     final lines = List.generate(200, (i) => 'line $i');
     final src = FakeSource(fakeTree, {
       'main.rs': '${lines.join('\n')}\n',
@@ -271,7 +306,7 @@ void main() {
         found = true;
       }
     }
-    expect(found, isTrue, reason: '视口内应出现 line 150');
+    expect(found, isTrue, reason: '视口内应出现line 150');
   });
 
   testWidgets('长行不折行, 通过横向滚动可见', (tester) async {
@@ -313,7 +348,7 @@ void main() {
         const Offset(-2000, 0));
     await tester.pumpAndSettle();
     // 拖到最右后应可见行尾(x*300 的末尾) —— 通过行文本未被截成多行验证:
-    // 若折行, 'end' 行的 y 位置会下移超出固定行高; 这里直接验证渲染树中长行 span 仍是一行
+    // 若折行, 'end' 行的y位置会下移超出固定行高; 这里直接验证渲染树中长行span仍是一行
     final lineText = tester.widgetList<Text>(find.byType(Text));
     final target = lineText.where((t) =>
         t.textSpan?.toPlainText() == longLine ||

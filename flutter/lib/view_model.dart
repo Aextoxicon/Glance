@@ -141,8 +141,26 @@ class MainViewModel extends ChangeNotifier {
 
   Future<void> _loadFile(Artifact a, int token) async {
     try {
+      if (await _source.isBinary(a.id)) {
+        if (token != _loadToken) return;
+        codeParseResult = null;
+        selectedContent = null;
+        currentOutline = null;
+        messageText = '二进制文件，无法预览';
+        notifyListeners();
+        return;
+      }
       final content = await _source.readFile(a.id);
       if (token != _loadToken) return;
+      if (content.contains('\u0000')) {
+        // 前16KB嗅探未命中但全文含NUL(极少见), 仍按二进制处理
+        codeParseResult = null;
+        selectedContent = null;
+        currentOutline = null;
+        messageText = '二进制文件，无法预览';
+        notifyListeners();
+        return;
+      }
       final result = parseCodeFrb(source: content, filename: a.name);
       if (token != _loadToken) return;
       codeParseResult = result;
