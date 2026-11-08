@@ -9,3 +9,7 @@ cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o "$SCRIPT_DIR/android/app/src/
 popd >/dev/null
 
 flutter build apk --release --split-per-abi
+
+DESKTOP_APK_DIR="$HOME/Desktop/Glance/Android"
+mkdir -p "$DESKTOP_APK_DIR"
+cp -f "$SCRIPT_DIR/build/app/outputs/flutter-apk"/*.apk "$DESKTOP_APK_DIR"
