@@ -12,6 +12,7 @@ import 'models.dart';
 import 'trace.dart';
 import 'trace_destination.dart';
 import 'utils.dart';
+import 'views/cad_view.dart';
 
 enum AppThemeMode { light, dark, system }
 
@@ -64,6 +65,8 @@ class MainViewModel extends ChangeNotifier {
   String? selectedContent;
   List<OutlineNode>? currentOutline;
   rust.CodeParseResult? codeParseResult;
+  rust.CadGeometry? selectedCad;
+  bool get isCadPreview => selectedCad != null;
   String? messageText;
   String? previewNotice;
 
@@ -210,8 +213,10 @@ class MainViewModel extends ChangeNotifier {
       selectedContent = null;
       currentOutline = null;
       codeParseResult = null;
+      selectedCad = null;
       messageText = '已选择目录：${item.artifact.name}';
     } else {
+      selectedCad = null;
       selectedArtifact = item.artifact;
       currentOutline = null;
       messageText = null;
@@ -223,13 +228,32 @@ class MainViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 按扩展名分流: CAD文件(dwg/dxf)读字节走Rust几何解析不做二进制嗅探, 其余读文本走代码解析
   Future<void> _loadFile(Artifact a, int token) async {
     try {
+      if (isCadFileName(a.name)) {
+        final bytes = await _source.readFileBytes(a.id);
+        if (token != _loadToken) return;
+        final geometry = parseCadGeometryFrb(
+          fileBytes: bytes,
+          filename: a.name,
+        );
+        if (token != _loadToken) return;
+        selectedCad = geometry;
+        codeParseResult = null;
+        selectedContent = null;
+        currentOutline = null;
+        messageText = null;
+        Trace.mark('select.painted', 'name=${a.name} cad=true');
+        notifyListeners();
+        return;
+      }
       if (await _source.isBinary(a.id)) {
         if (token != _loadToken) return;
         codeParseResult = null;
         selectedContent = null;
         currentOutline = null;
+        selectedCad = null;
         messageText = '二进制文件，无法预览';
         notifyListeners();
         return;
@@ -241,6 +265,7 @@ class MainViewModel extends ChangeNotifier {
         codeParseResult = null;
         selectedContent = null;
         currentOutline = null;
+        selectedCad = null;
         messageText = '二进制文件，无法预览';
         notifyListeners();
         return;
@@ -257,6 +282,7 @@ class MainViewModel extends ChangeNotifier {
       codeParseResult = null;
       selectedContent = null;
       currentOutline = null;
+      selectedCad = null;
       messageText = '读取/解析失败：$e';
     }
     notifyListeners();
@@ -407,6 +433,7 @@ class MainViewModel extends ChangeNotifier {
     selectedArtifact = null;
     selectedContent = null;
     currentOutline = null;
+    selectedCad = null;
     messageText = null;
     notifyListeners();
   }

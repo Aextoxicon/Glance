@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../view_model.dart';
 import '../utils.dart';
+import 'cad_view.dart';
 
 class CodePreviewPanel extends StatelessWidget {
   final MainViewModel vm;
@@ -31,9 +32,11 @@ class CodePreviewPanel extends StatelessWidget {
         CodePreviewToolbar(vm: vm),
         const Divider(height: 1),
         Expanded(
-          child: vm.selectedContent != null
-              ? CodeContentView(vm: vm)
-              : const Center(child: CircularProgressIndicator()),
+          child: vm.isCadPreview
+              ? CadView(geometry: vm.selectedCad!)
+              : vm.selectedContent != null
+                  ? CodeContentView(vm: vm)
+                  : const Center(child: CircularProgressIndicator()),
         ),
         if (vm.previewNotice != null)
           Column(

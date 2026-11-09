@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
@@ -18,6 +19,7 @@ abstract class FileTreeSource {
   Future<String?> restoreRoot();
   Future<void> forgetRoot();
   Future<String> readFile(String id);
+  Future<Uint8List> readFileBytes(String id);
   // 读前16KB查NUL字节
   Future<bool> isBinary(String id);
 }
@@ -85,6 +87,9 @@ class DesktopIoSource implements FileTreeSource {
   Future<String> readFile(String id) => File(id).readAsString();
 
   @override
+  Future<Uint8List> readFileBytes(String id) => File(id).readAsBytes();
+
+  @override
   Future<bool> isBinary(String id) async {
     try {
       final file = File(id);
@@ -120,7 +125,6 @@ class AndroidSafSource implements FileTreeSource {
     final saved = prefs.getString(_rootKey);
     if (saved == null) return null;
     final grants = await _saf.persistedPermissions();
-    // pickDirectory持久化的是裸tree URI, 返回的却是tree/<id>/document/<id>规范化形式所以比对前先把保存的uri归约回裸tree URI
     final bare = _bareTreeUri(saved);
     final granted = grants.any((g) => g.uri == bare && g.read);
     if (!granted) {
@@ -130,6 +134,7 @@ class AndroidSafSource implements FileTreeSource {
     return saved;
   }
 
+  // pickDirectory持久化的是裸tree URI, 返回的却是tree/<id>/document/<id>规范化形式, 比对授权前归约回裸tree URI
   String _bareTreeUri(String uriStr) {
     final segs = Uri.parse(uriStr).pathSegments;
     if (segs.length == 4 &&
@@ -183,6 +188,9 @@ class AndroidSafSource implements FileTreeSource {
     final bytes = await _saf.readFileBytes(id);
     return utf8.decode(bytes, allowMalformed: true);
   }
+
+  @override
+  Future<Uint8List> readFileBytes(String id) => _saf.readFileBytes(id);
 
   @override
   Future<bool> isBinary(String id) async {

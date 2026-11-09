@@ -1,13 +1,16 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:glance/file_tree.dart';
 import 'package:glance/generated/frb_generated.dart';
+import 'package:glance/generated/lib.dart' as rust;
 import 'package:glance/models.dart';
 import 'package:glance/settings_store.dart';
 import 'package:glance/view_model.dart';
+import 'package:glance/views/cad_view.dart';
 import 'package:glance/views/code_view.dart';
 import 'package:glance/views/file_tree.dart';
 import 'package:glance/views/main_view.dart';
@@ -37,6 +40,10 @@ class FakeSource implements FileTreeSource {
 
   @override
   Future<String> readFile(String id) async => _files[id] ?? 'fn main() {}\n';
+
+  @override
+  Future<Uint8List> readFileBytes(String id) async =>
+      Uint8List.fromList((_files[id] ?? 'fn main() {}\n').codeUnits);
 
   @override
   Future<bool> isBinary(String id) async => _binary.contains(id);
@@ -419,6 +426,57 @@ void main() {
     expect(vm2.rememberLastDir, isFalse);
     await vm2.restoreWorkspace();
     expect(vm2.hasWorkspace, isFalse, reason: '关闭记住目录后不应恢复工作区');
+  });
+
+  test('CAD文件判定: dwg/dxf命中, 其余不命中', () {
+    expect(isCadFileName('part.dxf'), isTrue);
+    expect(isCadFileName('PART.DWG'), isTrue);
+    expect(isCadFileName('main.rs'), isFalse);
+    expect(isCadFileName('noext'), isFalse);
+    expect(isCadFileName('archive.dwg.bak'), isFalse);
+  });
+
+  testWidgets('CAD画布: 用合成几何绘制不抛异常', (tester) async {
+    final geometry = rust.CadGeometry(
+      lineData: Float64List.fromList([
+        0, 0, 0, 10, 10, 0, 1, // 起点/终点/颜色
+        10, 0, 0, 10, 10, 0, 2,
+      ]),
+      circleData: Float64List.fromList([5, 5, 0, 4, 3]),
+      arcData: Float64List.fromList([
+        9, 5, 0, // 起点
+        5, 9, 0, // 终点
+        5, 5, 0, // 圆心
+        4, // 半径
+        0, 0, 1, // 法向
+        0,
+      ]),
+      ellipseData: Float64List.fromList([5, 5, 0, 4, 0, 0, 0.5, 0, 0, 0, 0, 1, 0]),
+      polylineData: Float64List.fromList([0, 0, 0, 0, 10, 0, 0, 0, 10, 10, 0, 1]),
+      polylineCounts: Uint32List.fromList([3]),
+      polylineLayers: Uint32List.fromList([0]),
+      polylineClosed: [true],
+      lineColors: Uint32List.fromList([1, 2]),
+      circleColors: Uint32List.fromList([3]),
+      arcColors: Uint32List.fromList([4]),
+      ellipseColors: Uint32List.fromList([5]),
+      polylineColors: Uint32List.fromList([6]),
+      textData: Float64List.fromList([5, 0, 0, 1.5, 0, 0, 0, 0]),
+      textValues: ['GLANCE'],
+      textColors: Uint32List.fromList([0]),
+      layerNames: ['0'],
+      boundsMin: Float64List.fromList([0, 0, 0]),
+      boundsMax: Float64List.fromList([10, 10, 0]),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CadView(geometry: geometry),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 
   test('SAF目录名解码: URL编码的tree uri取末段目录名', () {
