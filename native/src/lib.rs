@@ -319,6 +319,44 @@ fn extract_name(node: tree_sitter::Node, source: &[u8]) -> String {
                 return text_of(name, source);
             }
         }
+        "table" | "table_array_element" => {
+            if let Some(key) = find_child_of_kind(node, &["bare_key", "quoted_key"])
+                .or_else(|| find_child_of_kind(node, &["key"]))
+            {
+                return text_of(key, source);
+            }
+        }
+        "setting" => {
+            if let Some(name_node) = find_child_of_kind(node, &["setting_name"]) {
+                return text_of(name_node, source).trim().to_string();
+            }
+        }
+        "key_value" | "pair" | "block_mapping_pair" => {
+            let name = node
+                .child_by_field_name("key")
+                .or_else(|| find_child_of_kind(node, &["key", "bare_key", "quoted_key"]))
+                .map(|k| text_of(k, source))
+                .unwrap_or_default();
+            return name
+                .trim_matches(|c| c == '"' || c == '\'' || c == '\n' || c == ' ')
+                .to_string();
+        }
+        "section" => {
+            if let Some(name_node) = find_child_of_kind(node, &["section_name"]) {
+                let raw = text_of(name_node, source);
+                return raw
+                    .trim()
+                    .trim_start_matches('[')
+                    .trim_end_matches(']')
+                    .trim()
+                    .to_string();
+            }
+        }
+        "rule_set" => {
+            if let Some(selectors) = find_child_of_kind(node, &["selectors"]) {
+                return text_of(selectors, source);
+            }
+        }
         _ => {}
     }
 
@@ -371,6 +409,18 @@ pub const OUTLINE_STRUCTURAL_KINDS: &[&str] = &[
     "define_directive",
     // Dockerfile
     "from_instruction",
+    // JSON/YAML
+    "pair",
+    "block_mapping_pair",
+    // TOML
+    "table",
+    "table_array_element",
+    "key_value",
+    // INI
+    "section",
+    "setting",
+    // CSS
+    "rule_set",
 ];
 
 const MAX_OUTLINE_DEPTH: usize = 16;

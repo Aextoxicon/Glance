@@ -30,5 +30,14 @@ Snapshot {
         ],
         [],
     ],
-    outline: [],
+    outline: [
+        OutlineNode {
+            kind: "block_mapping_pair",
+            name: "key",
+            detail: "",
+            start_byte: 14,
+            end_byte: 24,
+            children: [],
+        },
+    ],
 }

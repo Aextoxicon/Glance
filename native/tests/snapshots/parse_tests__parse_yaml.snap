@@ -66,5 +66,22 @@ Snapshot {
         ],
         [],
     ],
-    outline: [],
+    outline: [
+        OutlineNode {
+            kind: "block_mapping_pair",
+            name: "key",
+            detail: "",
+            start_byte: 15,
+            end_byte: 25,
+            children: [],
+        },
+        OutlineNode {
+            kind: "block_mapping_pair",
+            name: "list",
+            detail: "",
+            start_byte: 26,
+            end_byte: 44,
+            children: [],
+        },
+    ],
 }

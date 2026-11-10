@@ -42,5 +42,23 @@ Snapshot {
         ],
         [],
     ],
-    outline: [],
+    outline: [
+        OutlineNode {
+            kind: "section",
+            name: "section",
+            detail: "",
+            start_byte: 14,
+            end_byte: 36,
+            children: [
+                OutlineNode {
+                    kind: "setting",
+                    name: "key",
+                    detail: "",
+                    start_byte: 24,
+                    end_byte: 36,
+                    children: [],
+                },
+            ],
+        },
+    ],
 }

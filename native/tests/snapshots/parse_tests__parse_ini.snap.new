@@ -1,0 +1,65 @@
+---
+source: tests/parse_tests.rs
+assertion_line: 84
+expression: snapshot_of(& result)
+---
+Snapshot {
+    highlights: [
+        [
+            (
+                0,
+                14,
+                "comment",
+            ),
+        ],
+        [
+            (
+                0,
+                1,
+                "punctuation.bracket",
+            ),
+            (
+                1,
+                8,
+                "type",
+            ),
+            (
+                8,
+                9,
+                "punctuation.bracket",
+            ),
+        ],
+        [
+            (
+                0,
+                3,
+                "property",
+            ),
+            (
+                4,
+                5,
+                "operator",
+            ),
+        ],
+        [],
+    ],
+    outline: [
+        OutlineNode {
+            kind: "section",
+            name: "section",
+            detail: "",
+            start_byte: 14,
+            end_byte: 36,
+            children: [
+                OutlineNode {
+                    kind: "setting",
+                    name: "key",
+                    detail: "",
+                    start_byte: 24,
+                    end_byte: 36,
+                    children: [],
+                },
+            ],
+        },
+    ],
+}

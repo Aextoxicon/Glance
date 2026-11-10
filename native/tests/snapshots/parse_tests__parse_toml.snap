@@ -84,5 +84,31 @@ Snapshot {
         ],
         [],
     ],
-    outline: [],
+    outline: [
+        OutlineNode {
+            kind: "table",
+            name: "package",
+            detail: "",
+            start_byte: 15,
+            end_byte: 57,
+            children: [
+                OutlineNode {
+                    kind: "pair",
+                    name: "name",
+                    detail: "",
+                    start_byte: 25,
+                    end_byte: 38,
+                    children: [],
+                },
+                OutlineNode {
+                    kind: "pair",
+                    name: "version",
+                    detail: "",
+                    start_byte: 39,
+                    end_byte: 56,
+                    children: [],
+                },
+            ],
+        },
+    ],
 }

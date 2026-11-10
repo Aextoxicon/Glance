@@ -1,0 +1,44 @@
+---
+source: tests/parse_tests.rs
+assertion_line: 83
+expression: snapshot_of(& result)
+---
+Snapshot {
+    highlights: [
+        [
+            (
+                0,
+                13,
+                "comment",
+            ),
+        ],
+        [
+            (
+                0,
+                3,
+                "property",
+            ),
+            (
+                3,
+                4,
+                "punctuation.delimiter",
+            ),
+            (
+                5,
+                10,
+                "string",
+            ),
+        ],
+        [],
+    ],
+    outline: [
+        OutlineNode {
+            kind: "block_mapping_pair",
+            name: "key",
+            detail: "",
+            start_byte: 14,
+            end_byte: 24,
+            children: [],
+        },
+    ],
+}

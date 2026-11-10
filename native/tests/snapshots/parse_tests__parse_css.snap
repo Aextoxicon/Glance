@@ -45,5 +45,14 @@ Snapshot {
         ],
         [],
     ],
-    outline: [],
+    outline: [
+        OutlineNode {
+            kind: "rule_set",
+            name: "body",
+            detail: "",
+            start_byte: 18,
+            end_byte: 38,
+            children: [],
+        },
+    ],
 }

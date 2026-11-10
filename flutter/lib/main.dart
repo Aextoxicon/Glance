@@ -15,6 +15,13 @@ const _cjkFontFallback = [
   'sans-serif',
 ];
 
+const _black = Color(0xFF000000);
+const _white = Color(0xFFFFFFFF);
+const _lightSurfaceVariant = Color(0xFFF2F2F2);
+const _lightOutline = Color(0xFFE0E0E0);
+const _darkSurfaceVariant = Color(0xFF1A1A1A);
+const _darkOutline = Color(0xFF2A2A2A);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
@@ -45,11 +52,32 @@ class GlanceApp extends StatelessWidget {
           theme: ThemeData(
             useMaterial3: true,
             fontFamilyFallback: _cjkFontFallback,
+            colorScheme: ColorScheme.fromSeed(seedColor: _black).copyWith(
+              primary: _black,
+              onPrimary: _white,
+              surface: _white,
+              onSurface: _black,
+              surfaceContainerHighest: _lightSurfaceVariant,
+              outlineVariant: _lightOutline,
+            ),
+            scaffoldBackgroundColor: _white,
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.dark,
             fontFamilyFallback: _cjkFontFallback,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: _white,
+              brightness: Brightness.dark,
+            ).copyWith(
+              primary: _white,
+              onPrimary: _black,
+              surface: _black,
+              onSurface: _white,
+              surfaceContainerHighest: _darkSurfaceVariant,
+              outlineVariant: _darkOutline,
+            ),
+            scaffoldBackgroundColor: _black,
           ),
           themeMode:
               brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
