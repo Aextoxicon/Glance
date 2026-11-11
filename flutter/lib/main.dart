@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'generated/frb_generated.dart';
 import 'view_model.dart';
@@ -30,7 +32,22 @@ Future<void> main() async {
     debugPrint('RustLib.init failed, fallback to mock content: $e');
   }
   await mainViewModel.loadSettings();
-  unawaited(mainViewModel.restoreWorkspace());
+  // 外部VIEW/分享intent: 冷启动经getInitialUri取, 热切换由MainActivity经openUri推送
+  const intentChannel = MethodChannel('glance/intent');
+  intentChannel.setMethodCallHandler((call) async {
+    if (call.method == 'openUri') {
+      final uri = call.arguments as String?;
+      if (uri != null) await mainViewModel.openSingleFileUri(uri);
+    }
+  });
+  final initialUri = Platform.isAndroid
+      ? await intentChannel.invokeMethod<String>('getInitialUri')
+      : null;
+  if (initialUri != null) {
+    await mainViewModel.openSingleFileUri(initialUri);
+  } else {
+    unawaited(mainViewModel.restoreWorkspace());
+  }
   runApp(const GlanceApp());
 }
 

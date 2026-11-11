@@ -428,6 +428,20 @@ void main() {
     expect(vm2.hasWorkspace, isFalse, reason: '关闭记住目录后不应恢复工作区');
   });
 
+  test('单文件打开: intent uri当根, 名称从末段解码剥前缀, 直接加载内容', () async {
+    final vm = MainViewModel(FakeSource({}, {
+      'content://x/document/primary%3Atest.rs': 'fn single() {}\n',
+    }));
+    await vm.openSingleFileUri('content://x/document/primary%3Atest.rs');
+    expect(vm.hasWorkspace, isTrue);
+    expect(vm.currentFolderName, 'test.rs');
+    expect(vm.treeItems, hasLength(1));
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(vm.selectedArtifact, isNotNull);
+    expect(vm.selectedArtifact!.name, 'test.rs');
+    expect(vm.selectedContent, 'fn single() {}\n');
+  });
+
   test('CAD文件判定: dwg/dxf命中, 其余不命中', () {
     expect(isCadFileName('part.dxf'), isTrue);
     expect(isCadFileName('PART.DWG'), isTrue);

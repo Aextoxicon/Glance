@@ -141,6 +141,28 @@ class MainViewModel extends ChangeNotifier {
     await _openRoot(rootId);
   }
 
+  // 单文件模式: 外部VIEW/分享intent传来的content uri直接当根打开, 授权是临时的不持久化
+  Future<void> openSingleFileUri(String uriStr) async {
+    final seg = Uri.decodeComponent(uriStr.split('/').last);
+    final name = seg.split(':').last;
+    final item = TreeItem(
+      artifact: Artifact(
+        id: uriStr,
+        name: name,
+        path: uriStr,
+        isDirectory: false,
+        size: 0,
+      ),
+    );
+    treeItems = [item];
+    currentFolderName = name;
+    hasWorkspace = true;
+    messageText = null;
+    totalSizeReadable = '';
+    notifyListeners();
+    selectItem(item);
+  }
+
   Future<void> _openRoot(String rootId) async {
     _rootId = rootId;
     currentFolderName = nameOfId(rootId);
