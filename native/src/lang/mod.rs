@@ -103,6 +103,7 @@ mod kotlin;
 mod swift;
 mod html;
 mod xml;
+mod sql;
 
 pub struct GrammarDef {
     pub language: tree_sitter::Language,
@@ -139,6 +140,7 @@ pub fn get_grammar(ext: &str) -> Option<&'static LazyLock<GrammarDef>> {
         ".swift" => Some(&swift::GRAMMAR),
         ".html" | ".htm" => Some(&html::GRAMMAR),
         ".xml" | ".xsl" | ".xsd" => Some(&xml::GRAMMAR),
+        ".sql" => Some(&sql::GRAMMAR),
         ".rb" => Some(&ruby::GRAMMAR),
         ".php" => Some(&php::GRAMMAR),
         _ => None,

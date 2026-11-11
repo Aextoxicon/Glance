@@ -31,6 +31,7 @@ tree-sitter-swift = "0.7.3"
 tree-sitter-html = "0.23.2"
 tree-sitter-ruby = "0.23.1"
 tree-sitter-php = "0.24.2"
+tree-sitter-sequel = "0.3.13"
 tree-sitter-xml = "0.7.0"
 acadrust = { version = "0.6.7", features = ["serde"] }
 flutter_rust_bridge = "=2.13.0"

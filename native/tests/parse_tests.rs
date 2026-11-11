@@ -362,3 +362,4 @@ fn packed_layout_handles_degenerate_inputs() {
     assert!(unsupported.outline.is_empty());
     assert!(unpack_lines(&unsupported).is_empty());
 }
+lang_snapshot_test!(test_parse_sql, ".sql", "-- sql comment\nCREATE TABLE users (\n  id INTEGER PRIMARY KEY,\n  name TEXT NOT NULL\n);\nSELECT * FROM users WHERE id = 1;\n");

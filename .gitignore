@@ -74,3 +74,4 @@ TODO.md
 **/tmp/
 **/test-output/
 /flutter/trace_out
+/flutter/android/app/src/main/jniLibs
