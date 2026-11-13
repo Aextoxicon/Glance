@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1071077454;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -4437142;
 
 // Section: executor
 
@@ -142,6 +142,40 @@ fn wire__crate__flutter_api__parse_code_frb_impl(
             transform_result_sse::<_, ()>((move || {
                 let output_ok =
                     Ok::<_, ()>(crate::flutter_api::parse_code_frb(api_source, api_filename))?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__flutter_api__parse_sql_schema_frb_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "parse_sql_schema_frb",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_source = <String>::sse_decode(&mut deserializer);
+            let api_filename = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Ok::<_, ()>(crate::flutter_api::parse_sql_schema_frb(
+                    api_source,
+                    api_filename,
+                ))?;
                 std::result::Result::Ok(output_ok)
             })())
         },
@@ -326,6 +360,42 @@ impl SseDecode for Vec<u8> {
     }
 }
 
+impl SseDecode for Vec<crate::SqlColumnSchema> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::SqlColumnSchema>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::SqlIndexSchema> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::SqlIndexSchema>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::SqlTableSchema> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::SqlTableSchema>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for crate::OutlineNode {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -342,6 +412,74 @@ impl SseDecode for crate::OutlineNode {
             start_byte: var_startByte,
             end_byte: var_endByte,
             children: var_children,
+        };
+    }
+}
+
+impl SseDecode for crate::SqlColumnSchema {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_typeName = <String>::sse_decode(deserializer);
+        let mut var_notNull = <bool>::sse_decode(deserializer);
+        let mut var_primaryKey = <bool>::sse_decode(deserializer);
+        let mut var_unique = <bool>::sse_decode(deserializer);
+        let mut var_autoIncrement = <bool>::sse_decode(deserializer);
+        let mut var_defaultText = <String>::sse_decode(deserializer);
+        let mut var_foreignKey = <String>::sse_decode(deserializer);
+        return crate::SqlColumnSchema {
+            name: var_name,
+            type_name: var_typeName,
+            not_null: var_notNull,
+            primary_key: var_primaryKey,
+            unique: var_unique,
+            auto_increment: var_autoIncrement,
+            default_text: var_defaultText,
+            foreign_key: var_foreignKey,
+        };
+    }
+}
+
+impl SseDecode for crate::SqlIndexSchema {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_table = <String>::sse_decode(deserializer);
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_columns = <Vec<String>>::sse_decode(deserializer);
+        let mut var_unique = <bool>::sse_decode(deserializer);
+        return crate::SqlIndexSchema {
+            table: var_table,
+            name: var_name,
+            columns: var_columns,
+            unique: var_unique,
+        };
+    }
+}
+
+impl SseDecode for crate::SqlSchemaResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_tables = <Vec<crate::SqlTableSchema>>::sse_decode(deserializer);
+        let mut var_indexes = <Vec<crate::SqlIndexSchema>>::sse_decode(deserializer);
+        return crate::SqlSchemaResult {
+            tables: var_tables,
+            indexes: var_indexes,
+        };
+    }
+}
+
+impl SseDecode for crate::SqlTableSchema {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_startByte = <u64>::sse_decode(deserializer);
+        let mut var_endByte = <u64>::sse_decode(deserializer);
+        let mut var_columns = <Vec<crate::SqlColumnSchema>>::sse_decode(deserializer);
+        return crate::SqlTableSchema {
+            name: var_name,
+            start_byte: var_startByte,
+            end_byte: var_endByte,
+            columns: var_columns,
         };
     }
 }
@@ -403,6 +541,7 @@ fn pde_ffi_dispatcher_sync_impl(
         1 => wire__crate__flutter_api__parse_cad_frb_impl(ptr, rust_vec_len, data_len),
         2 => wire__crate__flutter_api__parse_cad_geometry_frb_impl(ptr, rust_vec_len, data_len),
         3 => wire__crate__flutter_api__parse_code_frb_impl(ptr, rust_vec_len, data_len),
+        4 => wire__crate__flutter_api__parse_sql_schema_frb_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -497,6 +636,80 @@ impl flutter_rust_bridge::IntoDart for crate::OutlineNode {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::OutlineNode {}
 impl flutter_rust_bridge::IntoIntoDart<crate::OutlineNode> for crate::OutlineNode {
     fn into_into_dart(self) -> crate::OutlineNode {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::SqlColumnSchema {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.type_name.into_into_dart().into_dart(),
+            self.not_null.into_into_dart().into_dart(),
+            self.primary_key.into_into_dart().into_dart(),
+            self.unique.into_into_dart().into_dart(),
+            self.auto_increment.into_into_dart().into_dart(),
+            self.default_text.into_into_dart().into_dart(),
+            self.foreign_key.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::SqlColumnSchema {}
+impl flutter_rust_bridge::IntoIntoDart<crate::SqlColumnSchema> for crate::SqlColumnSchema {
+    fn into_into_dart(self) -> crate::SqlColumnSchema {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::SqlIndexSchema {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.table.into_into_dart().into_dart(),
+            self.name.into_into_dart().into_dart(),
+            self.columns.into_into_dart().into_dart(),
+            self.unique.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::SqlIndexSchema {}
+impl flutter_rust_bridge::IntoIntoDart<crate::SqlIndexSchema> for crate::SqlIndexSchema {
+    fn into_into_dart(self) -> crate::SqlIndexSchema {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::SqlSchemaResult {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.tables.into_into_dart().into_dart(),
+            self.indexes.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::SqlSchemaResult {}
+impl flutter_rust_bridge::IntoIntoDart<crate::SqlSchemaResult> for crate::SqlSchemaResult {
+    fn into_into_dart(self) -> crate::SqlSchemaResult {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::SqlTableSchema {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.start_byte.into_into_dart().into_dart(),
+            self.end_byte.into_into_dart().into_dart(),
+            self.columns.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::SqlTableSchema {}
+impl flutter_rust_bridge::IntoIntoDart<crate::SqlTableSchema> for crate::SqlTableSchema {
+    fn into_into_dart(self) -> crate::SqlTableSchema {
         self
     }
 }
@@ -629,6 +842,36 @@ impl SseEncode for Vec<u8> {
     }
 }
 
+impl SseEncode for Vec<crate::SqlColumnSchema> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::SqlColumnSchema>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::SqlIndexSchema> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::SqlIndexSchema>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::SqlTableSchema> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::SqlTableSchema>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for crate::OutlineNode {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -638,6 +881,48 @@ impl SseEncode for crate::OutlineNode {
         <u64>::sse_encode(self.start_byte, serializer);
         <u64>::sse_encode(self.end_byte, serializer);
         <Vec<crate::OutlineNode>>::sse_encode(self.children, serializer);
+    }
+}
+
+impl SseEncode for crate::SqlColumnSchema {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <String>::sse_encode(self.type_name, serializer);
+        <bool>::sse_encode(self.not_null, serializer);
+        <bool>::sse_encode(self.primary_key, serializer);
+        <bool>::sse_encode(self.unique, serializer);
+        <bool>::sse_encode(self.auto_increment, serializer);
+        <String>::sse_encode(self.default_text, serializer);
+        <String>::sse_encode(self.foreign_key, serializer);
+    }
+}
+
+impl SseEncode for crate::SqlIndexSchema {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.table, serializer);
+        <String>::sse_encode(self.name, serializer);
+        <Vec<String>>::sse_encode(self.columns, serializer);
+        <bool>::sse_encode(self.unique, serializer);
+    }
+}
+
+impl SseEncode for crate::SqlSchemaResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<crate::SqlTableSchema>>::sse_encode(self.tables, serializer);
+        <Vec<crate::SqlIndexSchema>>::sse_encode(self.indexes, serializer);
+    }
+}
+
+impl SseEncode for crate::SqlTableSchema {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <u64>::sse_encode(self.start_byte, serializer);
+        <u64>::sse_encode(self.end_byte, serializer);
+        <Vec<crate::SqlColumnSchema>>::sse_encode(self.columns, serializer);
     }
 }
 

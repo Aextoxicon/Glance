@@ -5,7 +5,7 @@ pub mod lang;
 pub mod flutter_api;
 mod bridge_generated;
 
-// 调试日志宏,未开trace时cfg!为常量false,分支被优化掉,release零输出
+// 调试日志宏，未开trace时cfg!为常量false，分支被优化掉，release零输出
 macro_rules! debug_log {
     ($($arg:tt)*) => {
         if cfg!(feature = "trace") {
@@ -431,8 +431,7 @@ fn is_structural_kind(kind: &str) -> bool {
     OUTLINE_STRUCTURAL_KINDS.contains(&kind)
 }
 
-/// 结构性节点：创建OutlineNode并递归收集子节点
-/// 非结构性节点：不创建节点，但继续深入子节点
+/// 创建OutlineNode并递归收集子节点；非结构性节点不创建但继续深入子节点
 fn collect_outline(
     node: tree_sitter::Node,
     source: &[u8],
@@ -491,7 +490,7 @@ struct RawCapture {
     score: u16,
 }
 
-// 结构具体度高256倍于capture名点分段数，两级同时生效
+// 结构具体度占高8位，权重是capture名点分段数的256倍，两级同时生效
 fn capture_score(specificity: u8, dotted: u8) -> u16 {
     (u16::from(specificity) << 8) | u16::from(dotted)
 }
@@ -725,34 +724,34 @@ use acadrust::document::CadDocument;
 use acadrust::io::dxf::{DxfReader, DxfReaderConfiguration};
 use acadrust::io::dwg::{DwgReader, DwgReadOptions};
 
-// 几何层,每类型一条连续buffer
+// 几何层，每类型一条连续buffer
 #[derive(Default, Debug, Clone)]
 pub struct CadGeometry {
     // sx,sy,sz,ex,ey,ez,layer_idx
     pub line_data: Vec<f64>,
-    // cx,cy,cz,r,nx,ny,nz,layer_idx(WCS中心/半径/法向)
+    // cx,cy,cz,r,nx,ny,nz,layer_idx（WCS中心/半径/法向）
     pub circle_data: Vec<f64>,
-    // sx,sy,sz,ex,ey,ez,cx,cy,cz,r,nx,ny,nz,layer_idx(起止点/圆心/半径/法向)
+    // sx,sy,sz,ex,ey,ez,cx,cy,cz,r,nx,ny,nz,layer_idx（起止点/圆心/半径/法向）
     pub arc_data: Vec<f64>,
     // cx,cy,cz,majx,majy,majz,ratio,start_param,end_param,nx,ny,nz,layer_idx
     pub ellipse_data: Vec<f64>,
-    // 每顶点x,y,z,bulge展平(bulge=tan(包含角/4),正为逆时针)
+    // 每顶点x,y,z,bulge展平（bulge=tan(包含角/4)），正为逆时针
     pub polyline_data: Vec<f64>,
-    // 每条多段线顶点数,与polyline_layers平行
+    // 每条多段线顶点数，与polyline_layers平行
     pub polyline_counts: Vec<u32>,
     // 每条多段线一个layer_idx
     pub polyline_layers: Vec<u32>,
-    // 每条多段线是否闭合,与polyline_counts平行
+    // 每条多段线是否闭合，与polyline_counts平行
     pub polyline_closed: Vec<bool>,
-    // 每条图元一个0xRRGGBB,0表示未定(按主题前景色)
+    // 每条图元一个0xRRGGBB,0表示未定（按主题前景色）
     pub line_colors: Vec<u32>,
     pub circle_colors: Vec<u32>,
     pub arc_colors: Vec<u32>,
     pub ellipse_colors: Vec<u32>,
     pub polyline_colors: Vec<u32>,
-    // 每条文字:x,y,z,height,rotation,halign(0左1中2右),valign(0基线1下2中3上),layer_idx
+    // 每条文字：x,y,z,height,rotation,halign（0左1中2右），valign（0基线1下2中3上），layer_idx
     pub text_data: Vec<f64>,
-    // 与text_data平行,每条一个内容
+    // 与text_data平行，每条一个内容
     pub text_values: Vec<String>,
     pub text_colors: Vec<u32>,
     pub layer_names: Vec<String>,
@@ -793,12 +792,12 @@ fn get_layer(map: &mut HashMap<String, u32>, names: &mut Vec<String>, layer: &st
     }
 }
 
-// ByLayer/ByBlock/None落到图层色,explode已把ByBlock继承成INSERT的颜色
+// ByLayer/ByBlock/None落到图层色，explode已把ByBlock继承成INSERT的颜色
 fn resolve_rgb(color: &Color, layer: Option<&Layer>) -> u32 {
     fn pack((r, g, b): (u8, u8, u8)) -> u32 {
         ((r as u32) << 16) | ((g as u32) << 8) | b as u32
     }
-    // ACI7是白/黑自适应色,返回0让UI按主题取前景色,否则浅色主题下画成白色看不见
+    // ACI7是白/黑自适应色，返回0让UI按主题取前景色，否则浅色主题下画成白色看不见
     if color.index() == Some(7) {
         return 0;
     }
@@ -866,7 +865,7 @@ fn mtext_align(a: AttachmentPoint) -> (f64, f64) {
     (h, v)
 }
 
-// 非左对齐时用对齐点当基准,零向量说明没设
+// 非左对齐时用对齐点当基准，零向量说明没设
 fn pick_anchor(alignment: Option<Vector3>, insertion: Vector3) -> Vector3 {
     match alignment {
         Some(p) if p.x != 0.0 || p.y != 0.0 => p,
@@ -882,7 +881,7 @@ fn pick_anchor_v(alignment: Vector3, insertion: Vector3) -> Vector3 {
     }
 }
 
-// MText的\P是硬回车,其余格式码暂不处理
+// MText的\P是硬回车，其余格式码暂不处理
 fn clean_mtext(value: &str) -> String {
     value.replace("\\P", "\n").replace("\\p", "\n")
 }
@@ -934,7 +933,7 @@ fn process_entity(
         return;
     }
     if let EntityType::Insert(insert) = e {
-        // explode()按array_transforms生成每个阵列单元,explode_from_document()按CAD的EXPLODE规则直接拒绝MINSERT
+        // explode()按array_transforms生成每个阵列单元，explode_from_document()按CAD的EXPLODE规则直接拒绝MINSERT
         let Some(parts) = insert.block_entities_from_document(doc) else {
             return;
         };
@@ -975,7 +974,7 @@ fn process_entity(
             b.expand(bb.max.x, bb.max.y, bb.max.z);
         }
         EntityType::Ellipse(el) => {
-            // acadrust的Ellipse存的就是WCS,再乘basis会二次变换
+            // acadrust的Ellipse存的就是WCS，再乘basis会二次变换
             g.ellipse_data.extend_from_slice(&[
                 el.center.x, el.center.y, el.center.z,
                 el.major_axis.x, el.major_axis.y, el.major_axis.z,
@@ -1011,7 +1010,7 @@ fn process_entity(
             push_text(g, b, m.insertion_point, m.height, m.rotation, halign, valign,
                 li, rgb, &value, m.bounding_box());
         }
-        // 块属性定义:没填默认值时用tag当可见文字
+        // 块属性定义：没填默认值时用tag当可见文字
         EntityType::AttributeDefinition(d) => {
             let value = if d.default_value.trim().is_empty() { d.tag.as_str() } else { d.default_value.as_str() };
             push_text(g, b, pick_anchor_v(d.alignment_point, d.insertion_point), d.height, d.rotation,
@@ -1025,6 +1024,208 @@ fn process_entity(
         }
         _ => {}
     }
+}
+
+// SQL DDL结构抽取
+#[derive(Debug, Default, Clone)]
+pub struct SqlColumnSchema {
+    pub name: String,
+    pub type_name: String,
+    pub not_null: bool,
+    pub primary_key: bool,
+    pub unique: bool,
+    pub auto_increment: bool,
+    pub default_text: String,
+    pub foreign_key: String,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct SqlTableSchema {
+    pub name: String,
+    pub start_byte: u64,
+    pub end_byte: u64,
+    pub columns: Vec<SqlColumnSchema>,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct SqlIndexSchema {
+    pub table: String,
+    pub name: String,
+    pub columns: Vec<String>,
+    pub unique: bool,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct SqlSchemaResult {
+    pub tables: Vec<SqlTableSchema>,
+    pub indexes: Vec<SqlIndexSchema>,
+}
+
+// 列定义子节点里的约束keyword判定
+fn sql_column_flags(col: tree_sitter::Node, source: &[u8], c: &mut SqlColumnSchema) {
+    let mut cursor = col.walk();
+    let children: Vec<tree_sitter::Node> = col.children(&mut cursor).collect();
+    let mut i = 0;
+    while i < children.len() {
+        let n = children[i];
+        match n.kind() {
+            "keyword_not" => {
+                if children.get(i + 1).map(|x| x.kind() == "keyword_null").unwrap_or(false) {
+                    c.not_null = true;
+                }
+            }
+            "keyword_primary" | "keyword_key" => {
+                c.primary_key = true;
+            }
+            "keyword_unique" => c.unique = true,
+            "keyword_auto_increment" => c.auto_increment = true,
+            "keyword_default" => {
+                if let Some(v) = children.get(i + 1) {
+                    let t = text_of(*v, source);
+                    if !t.is_empty() {
+                        c.default_text = t;
+                    }
+                }
+            }
+            "keyword_references" => {
+                if let Some(v) = children.get(i + 1) {
+                    if v.kind() == "object_reference" {
+                        c.foreign_key = text_of(*v, source);
+                    }
+                }
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+}
+
+// 类型节点kind转可读类型名，keyword_int→int, varchar带尺寸取全文本
+fn sql_type_text(col: tree_sitter::Node, type_node: tree_sitter::Node, source: &[u8]) -> String {
+    let kind = type_node.kind();
+    if kind == "object_reference" {
+        return text_of(type_node, source).to_ascii_lowercase();
+    }
+    let base = kind.strip_prefix("keyword_").unwrap_or(kind).to_ascii_lowercase();
+    let full = text_of(col, source);
+    let lower = full.to_ascii_lowercase();
+    if lower.contains(&format!("{}(", base)) {
+        // 从列文本里截取类型+括号段
+        if let Some(pos) = lower.find(&base) {
+            let rest = &full[pos..];
+            if let Some(open) = rest.find('(') {
+                if let Some(close) = rest[open..].find(')') {
+                    return rest[..open + close + 1].trim().to_ascii_lowercase();
+                }
+            }
+        }
+    }
+    base
+}
+
+pub fn parse_sql_schema(source: String, filename: String) -> SqlSchemaResult {
+    let mut result = SqlSchemaResult::default();
+    if !filename.to_ascii_lowercase().ends_with(".sql") {
+        return result;
+    }
+    let language = lang::sql::GRAMMAR.language.clone();
+    let mut parser = Parser::new();
+    if parser.set_language(&language).is_err() {
+        return result;
+    }
+    let source_bytes = source.as_bytes();
+    let tree = match parser.parse(source_bytes, None) {
+        Some(t) => t,
+        None => return result,
+    };
+    let root = tree.root_node();
+
+    let mut cursor = root.walk();
+    // 顶层结构是program→statement→语句节点，收集到depth_内的create语句
+    let mut stmts = Vec::new();
+    for n in root.children(&mut cursor) {
+        if n.kind() == "statement" {
+            let mut c2 = n.walk();
+            for s in n.children(&mut c2) {
+                stmts.push(s);
+            }
+        } else {
+            stmts.push(n);
+        }
+    }
+    for stmt in stmts {
+        match stmt.kind() {
+            "create_table" => {
+                let mut table = SqlTableSchema {
+                    start_byte: stmt.start_byte() as u64,
+                    end_byte: stmt.end_byte() as u64,
+                    ..Default::default()
+                };
+                let mut stmt_cursor = stmt.walk();
+                for child in stmt.children(&mut stmt_cursor) {
+                    match child.kind() {
+                        "object_reference" => {
+                            if table.name.is_empty() {
+                                table.name = text_of(child, source_bytes);
+                            }
+                        }
+                        "column_definitions" => {
+                            let mut defs_cursor = child.walk();
+                            for def in child.children(&mut defs_cursor) {
+                                if def.kind() != "column_definition" {
+                                    continue;
+                                }
+                                let mut col = SqlColumnSchema::default();
+                                if let Some(name) = def.child_by_field_name("name") {
+                                    col.name = text_of(name, source_bytes);
+                                }
+                                if let Some(t) = def.child_by_field_name("type") {
+                                    col.type_name = sql_type_text(def, t, source_bytes);
+                                }
+                                sql_column_flags(def, source_bytes, &mut col);
+                                table.columns.push(col);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                if !table.name.is_empty() {
+                    result.tables.push(table);
+                }
+            }
+            "create_index" => {
+                let mut idx = SqlIndexSchema::default();
+                let mut idx_cursor = stmt.walk();
+                for child in stmt.children(&mut idx_cursor) {
+                    match child.kind() {
+                        "object_reference" => {
+                            // 第一个object_reference是表名，index name落在keyword_index之后
+                            if idx.table.is_empty() {
+                                idx.table = text_of(child, source_bytes);
+                            }
+                        }
+                        "keyword_unique" => idx.unique = true,
+                        "index_fields" => {
+                            let mut f_cursor = child.walk();
+                            for f in child.children(&mut f_cursor) {
+                                let t = text_of(f, source_bytes);
+                                if !t.is_empty() {
+                                    idx.columns.push(t);
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                // create后index与on之间的identifier
+                if !idx.table.is_empty() {
+                    result.indexes.push(idx);
+                }
+            }
+            _ => {}
+        }
+    }
+    result
 }
 
 pub fn parse_cad_geometry(file_bytes: Vec<u8>, filename: String) -> CadGeometry {
@@ -1057,7 +1258,7 @@ pub fn parse_cad_geometry(file_bytes: Vec<u8>, filename: String) -> CadGeometry 
     let mut g = CadGeometry::default();
     let mut map: HashMap<String, u32> = HashMap::new();
     let mut b = Bounds::new();
-    // 块定义内的实体不是图纸内容,一起画会和INSERT展开出的副本重复错位
+    // 块定义内的实体不是图纸内容，一起画会和INSERT展开出的副本重复错位
     for e in doc.model_space_entities() {
         process_entity(e, &doc, &mut map, &mut g, &mut b);
     }
@@ -1076,7 +1277,7 @@ pub struct CadParseResult {
     pub version: String,
 }
 
-// Debug会序列化整个实体,大文件极慢,用match取变体名
+// Debug会序列化整个实体，大文件极慢，用match取变体名
 fn entity_type_name(e: &EntityType) -> &'static str {
     match e {
         EntityType::Point(_) => "Point",
@@ -1181,7 +1382,7 @@ pub fn parse_cad(file_bytes: Vec<u8>, filename: String) -> CadParseResult {
 
     let mut names: Vec<String> = Vec::new();
     let mut counts: Vec<u32> = Vec::new();
-    // 与几何层保持同一口径:只统计图纸内容,不含块定义
+    // 与几何层保持同一口径，只统计图纸内容，不含块定义
     for e in doc.model_space_entities() {
         let name = entity_type_name(e);
         if let Some(i) = names.iter().position(|n| n == name) {

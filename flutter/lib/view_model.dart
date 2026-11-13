@@ -324,7 +324,7 @@ class MainViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 展开过程中不逐目录notifyListeners，大目录树会触发数百次全量重建导致
+  // 展开过程不逐目录notifyListeners，大目录树会触发数百次全量重建
   Future<void> _expandDirs(List<TreeItem> items, Set<String> visited) async {
     for (final it in items) {
       if (!it.artifact.isDirectory) continue;

@@ -1,7 +1,6 @@
 use std::sync::LazyLock;
 
 // 消除每个语言文件中的模板代码（LazyLock + GrammarDef构造）
-// 用法：
 //   grammar!(tree_sitter_go::LANGUAGE, HIGHLIGHT_QUERY)
 // 多段query按顺序拼接（例如CPP = C + C++增量）
 macro_rules! grammar {
@@ -28,7 +27,7 @@ pub fn build_grammar(language: tree_sitter::Language, segments: &[&str]) -> Gram
     }
 }
 
-// 数出query文本里的节点模式个数：语法里(只开节点模式，开谓词时紧跟#
+// 数出query文本里的节点模式个数：数(的出现次数，跳过字符串字面量，#开头的谓词组不算
 fn count_pattern_nodes(text: &str) -> usize {
     let bytes = text.as_bytes();
     let mut nodes = 0usize;
@@ -103,7 +102,7 @@ mod kotlin;
 mod swift;
 mod html;
 mod xml;
-mod sql;
+pub mod sql;
 
 pub struct GrammarDef {
     pub language: tree_sitter::Language,

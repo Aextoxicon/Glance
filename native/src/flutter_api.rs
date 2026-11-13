@@ -1,9 +1,17 @@
-use crate::{parse_cad, parse_cad_geometry, parse_code, CadGeometry, CadParseResult, CodeParseResult};
+use crate::{
+    parse_cad, parse_cad_geometry, parse_code, parse_sql_schema, CadGeometry, CadParseResult,
+    CodeParseResult, SqlSchemaResult,
+};
 use flutter_rust_bridge::frb;
 
 #[frb(sync)]
 pub fn parse_code_frb(source: String, filename: String) -> CodeParseResult {
     parse_code(source, filename)
+}
+
+#[frb(sync)]
+pub fn parse_sql_schema_frb(source: String, filename: String) -> SqlSchemaResult {
+    parse_sql_schema(source, filename)
 }
 
 #[frb(sync)]

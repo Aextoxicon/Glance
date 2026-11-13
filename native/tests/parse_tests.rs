@@ -363,3 +363,37 @@ fn packed_layout_handles_degenerate_inputs() {
     assert!(unpack_lines(&unsupported).is_empty());
 }
 lang_snapshot_test!(test_parse_sql, ".sql", "-- sql comment\nCREATE TABLE users (\n  id INTEGER PRIMARY KEY,\n  name TEXT NOT NULL\n);\nSELECT * FROM users WHERE id = 1;\n");
+
+#[test]
+fn sql_schema_extracts_tables_columns_constraints() {
+    let ddl = "CREATE TABLE users (\n  id INTEGER PRIMARY KEY AUTO_INCREMENT,\n  name VARCHAR(255) NOT NULL,\n  email TEXT UNIQUE DEFAULT 'x',\n  org_id INTEGER REFERENCES orgs(id)\n);\nCREATE TABLE orgs (id int, title text);\nCREATE INDEX idx_name ON users (name);\nCREATE UNIQUE INDEX idx_mail ON users (email);\nSELECT 1;\n";
+    let r = uniffi_code_parser::parse_sql_schema(ddl.to_string(), "schema.sql".to_string());
+    assert_eq!(r.tables.len(), 2, "两张表都应抽出");
+    let users = &r.tables[0];
+    assert_eq!(users.name, "users");
+    assert_eq!(users.columns.len(), 4);
+    let id = &users.columns[0];
+    assert_eq!(id.name, "id");
+    assert_eq!(id.type_name, "int");
+    assert!(id.primary_key, "id应命中PK");
+    assert!(id.auto_increment);
+    let name = &users.columns[1];
+    assert_eq!(name.type_name, "varchar(255)", "带尺寸类型应取全文本");
+    assert!(name.not_null);
+    let email = &users.columns[2];
+    assert!(email.unique);
+    assert_eq!(email.default_text, "'x'");
+    let org_id = &users.columns[3];
+    assert!(org_id.foreign_key.starts_with("orgs"), "FK至少含目标表名");
+    let orgs = &r.tables[1];
+    assert_eq!(orgs.name, "orgs");
+    assert_eq!(r.indexes.len(), 2);
+    assert!(r.indexes[0].table == "users" && r.indexes[0].columns.contains(&"name".to_string()));
+    assert!(r.indexes[1].unique, "第二个索引应标记unique");
+    // 非sql扩展名直接空结果
+    let r2 = uniffi_code_parser::parse_sql_schema(ddl.to_string(), "schema.txt".to_string());
+    assert!(r2.tables.is_empty());
+    // 纯DML无DDL也应返回空不报错
+    let r3 = uniffi_code_parser::parse_sql_schema("SELECT * FROM t;".to_string(), "q.sql".to_string());
+    assert!(r3.tables.is_empty() && r3.indexes.is_empty());
+}
