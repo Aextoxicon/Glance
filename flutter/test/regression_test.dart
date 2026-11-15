@@ -847,6 +847,51 @@ void main() {
 
     await tmp.delete(recursive: true);
   });
+
+  test('基准序列: 读失败的文件记进trace后继续下一个', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final tmp = await Directory.systemTemp.createTemp('glance_bench_');
+    final vm = MainViewModel(_BrokenSource({
+      'root': [file('ok1'), file('blob'), file('weird'), file('ok2')],
+    }));
+    vm.traceDirOverride = tmp.path;
+    vm.diagnosticScrollTimeout = const Duration(milliseconds: 50);
+    await vm.restoreWorkspace();
+    vm.benchmarkMode = true;
+    await vm.runBenchmarkSequence();
+
+    final csv = tmp
+        .listSync()
+        .whereType<File>()
+        .firstWhere((f) => f.path.endsWith('.csv'))
+        .readAsStringSync();
+    expect(csv, contains('bench.skip,name=blob reason=no-preview'));
+    expect(csv, contains('bench.fail,name=weird'));
+    // 坏文件后面的正常文件仍然跑完
+    expect(csv, contains('bench.scroll.end,name=ok2'));
+    expect(csv, contains('bench.end'));
+    expect(csv, contains('skips=1'));
+    expect(csv, contains('fails=1'));
+
+    await tmp.delete(recursive: true);
+  });
+}
+
+// 读失败与嗅探失败的文件混在正常文件里, 用于验证基准序列的容错
+class _BrokenSource extends FakeSource {
+  _BrokenSource(super._tree);
+
+  @override
+  Future<bool> isBinary(String id) async {
+    if (id == 'weird') throw StateError('嗅探失败');
+    return false;
+  }
+
+  @override
+  Future<String> readFile(String id) async {
+    if (id == 'blob') throw StateError('读取失败');
+    return super.readFile(id);
+  }
 }
 
 void _checkStyle(TextStyle? style, String label) {

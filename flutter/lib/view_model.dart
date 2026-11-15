@@ -105,7 +105,10 @@ class MainViewModel extends ChangeNotifier {
   // 测试可注入导出目录, 避免path_provider在纯VM测试环境无平台实现
   String? traceDirOverride;
 
-  // 诊断滚动标志: benchmark序列要求代码区匀速滚到底部, 与大纲定位的瞬跳区分
+  // 基准序列等单个文件滚动完成的上限, 测试环境无UI可调小
+  Duration diagnosticScrollTimeout = const Duration(seconds: 5);
+
+  // benchmark序列要求代码区匀速滚到底部, 与大纲定位的瞬跳区分
   bool _diagnosticScrollToBottom = false;
   Completer<void>? _diagnosticScrollCompleter;
 
@@ -116,7 +119,11 @@ class MainViewModel extends ChangeNotifier {
   }
 
   // 置标志并通知UI, 滚动动画完成时complete对应future
+  // 读失败或二进制时预览区没有滚动视图, 直接返回避免一直等下去
   Future<void> requestDiagnosticScrollToBottom() {
+    if (selectedContent == null && selectedCad == null) {
+      return Future<void>.value();
+    }
     _diagnosticScrollToBottom = true;
     _diagnosticScrollCompleter = Completer<void>();
     notifyListeners();
@@ -514,53 +521,81 @@ class MainViewModel extends ChangeNotifier {
 
   // 诊断基准模式: 工作区加载完成后逐步展开目录并逐个打开可高亮文件
   // 逐步而非一次性铺开, 避免整树ExpandAll+全量打开把UI/IO一次性打满
+  // 单个文件读失败只记一条bench.skip/bench.fail继续跑
   Future<void> runBenchmarkSequence() async {
     if (!_benchmarkMode) return;
     _benchCancel = false;
     final dir = await _traceDir();
     Trace.start(dir);
+    var dirs = 0;
+    var files = 0;
+    var skips = 0;
+    var fails = 0;
     try {
       Trace.mark('bench.start');
-      var dirs = 0;
-      var files = 0;
-      final queue = <TreeItem>[];
-      for (final root in treeItems) {
-        queue.add(root);
-      }
-      Future<void> openAndScroll(TreeItem node) async {
-        selectItem(node);
-        await _pendingLoad;
-        // 等新内容那一帧真正绘制完再开始滚动, 保证打开与滚动逐个串行
-        // 测试环境无帧调度, 超时兜底直接继续
-        await WidgetsBinding.instance.endOfFrame
-            .timeout(const Duration(milliseconds: 100), onTimeout: () {});
-        Trace.mark('bench.scroll.start', 'name=${node.artifact.name}');
-        await requestDiagnosticScrollToBottom();
-        Trace.mark('bench.scroll.end', 'name=${node.artifact.name}');
-        files++;
+
+      Future<void> processFile(TreeItem node) async {
+        final name = node.artifact.name;
+        try {
+          if (await _source.isBinary(node.artifact.id)) {
+            skips++;
+            Trace.mark('bench.skip', 'name=$name reason=binary');
+            return;
+          }
+          selectItem(node);
+          await _pendingLoad;
+          if (_benchCancel) return;
+          // 读失败/嗅探出NUL时预览区只有提示文本, 没有可滚动内容
+          if (selectedContent == null && selectedCad == null) {
+            skips++;
+            Trace.mark('bench.skip', 'name=$name reason=no-preview');
+            return;
+          }
+          // 等新内容那一帧真正绘制完再开始滚动
+          // 测试环境无帧调度, 超时兜底直接继续
+          await WidgetsBinding.instance.endOfFrame
+              .timeout(const Duration(milliseconds: 100), onTimeout: () {});
+          Trace.mark('bench.scroll.start', 'name=$name');
+          await requestDiagnosticScrollToBottom().timeout(
+            diagnosticScrollTimeout,
+            onTimeout: () => Trace.mark('bench.scroll.timeout', 'name=$name'),
+          );
+          Trace.mark('bench.scroll.end', 'name=$name');
+          files++;
+        } catch (e) {
+          fails++;
+          Trace.mark('bench.fail', 'name=$name err=$e');
+        }
       }
 
+      final queue = <TreeItem>[...treeItems];
       while (queue.isNotEmpty) {
         if (_benchCancel) break;
         final item = queue.removeAt(0);
-        if (item.artifact.isDirectory) {
-          Trace.mark('bench.expand.start', 'name=${item.artifact.name}');
+        if (!item.artifact.isDirectory) {
+          await processFile(item);
+          continue;
+        }
+        Trace.mark('bench.expand.start', 'name=${item.artifact.name}');
+        try {
           await toggleExpand(item);
-          Trace.mark('bench.expand.end', 'name=${item.artifact.name}');
-          dirs++;
-          for (final child in item.children) {
-            if (_benchCancel) break;
-            if (child.artifact.isDirectory) {
-              queue.add(child);
-            } else if (!await _source.isBinary(child.artifact.id)) {
-              await openAndScroll(child);
-            }
+        } catch (e) {
+          fails++;
+          Trace.mark('bench.fail', 'name=${item.artifact.name} err=$e');
+        }
+        Trace.mark('bench.expand.end', 'name=${item.artifact.name}');
+        dirs++;
+        for (final child in item.children) {
+          if (_benchCancel) break;
+          if (child.artifact.isDirectory) {
+            queue.add(child);
+          } else {
+            await processFile(child);
           }
-        } else if (!await _source.isBinary(item.artifact.id)) {
-          await openAndScroll(item);
         }
       }
-      Trace.mark('bench.end', 'dirs=$dirs files=$files');
+      Trace.mark(
+          'bench.end', 'dirs=$dirs files=$files skips=$skips fails=$fails');
     } finally {
       await exportTraceLog();
     }
