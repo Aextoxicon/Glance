@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -161,6 +162,64 @@ void main() {
       return deco == TextDecoration.underline || deco == TextDecoration.lineThrough;
     });
     expect(underlined, isEmpty, reason: '代码区不应出现下划线装饰文字');
+  });
+
+  testWidgets('代码预览: 内容列铺满预览区, 桌面端不叠出多余滚动条', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    try {
+      tester.view.physicalSize = const Size(900, 500);
+      tester.view.devicePixelRatio = 1.0;
+      final vm = MainViewModel(FakeSource(fakeTree));
+      await vm.restoreWorkspace();
+      vm.selectItem(vm.treeItems[0]);
+
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(useMaterial3: true),
+        home: Scaffold(body: CodePreviewPanel(vm: vm)),
+      ));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      final content = tester.getSize(find.byType(ListView).last);
+      expect(content.width, greaterThan(820),
+          reason: '内容列应铺满预览区宽度, 而不是只到最长行宽');
+      expect(find.byWidgetPredicate((w) => w is RawScrollbar), findsNWidgets(2),
+          reason: '只有内容区显式挂的纵横两条, 桌面端默认的不会再叠一层');
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+      tester.view.reset();
+    }
+  });
+
+  testWidgets('大纲按钮: 只有结构性节点才出现', (tester) async {
+    final vm = MainViewModel(FakeSource(
+      {
+        'root': [file('schema.sql'), file('main.rs')],
+      },
+      {
+        'schema.sql': 'CREATE TABLE t (id int);\n',
+        'main.rs': 'fn main() {}\n',
+      },
+    ));
+    await vm.restoreWorkspace();
+    vm.selectItem(vm.treeItems[0]); // schema.sql: 有表结构但没有结构性节点
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true),
+      home: Scaffold(
+        body: ListenableBuilder(
+          listenable: vm,
+          builder: (context, _) => CodePreviewPanel(vm: vm),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(vm.currentOutline, isEmpty);
+    expect(find.text('大纲'), findsNothing, reason: '空大纲不该出按钮, 否则点开是个空抽屉');
+
+    vm.selectItem(vm.treeItems[1]); // main.rs
+    await tester.pumpAndSettle();
+    expect(find.text('大纲'), findsOneWidget);
   });
 
   testWidgets('高亮渲染: fn关键字与main函数出现非默认颜色span', (tester) async {

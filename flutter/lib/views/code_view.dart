@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -102,7 +103,7 @@ class CodePreviewToolbar extends StatelessWidget {
                   style: const TextStyle(fontSize: 12),
                 ),
               ),
-            if (vm.currentOutline != null)
+            if (vm.currentOutline?.isNotEmpty == true)
               Builder(
                 builder: (context) => TextButton(
                   style:
@@ -140,7 +141,24 @@ class _CodeContentViewState extends State<CodeContentView> {
   final ScrollController _hController = ScrollController();
   static const int _outlineScrollContextLines = 3;
 
+  bool _vBarVisible = false;
+  bool _hBarVisible = false;
+
   double get _lineExtent => widget.vm.codeFontSize * 1.5;
+
+  // 滚动条只在有可滚动余量时出现, 避免内容装得下时也画一条空条
+  void _syncScrollbars() {
+    if (!mounted) return;
+    final v = _controller.hasClients &&
+        _controller.position.maxScrollExtent > 0;
+    final h = _hController.hasClients &&
+        _hController.position.maxScrollExtent > 0;
+    if (v == _vBarVisible && h == _hBarVisible) return;
+    setState(() {
+      _vBarVisible = v;
+      _hBarVisible = h;
+    });
+  }
 
   @override
   void dispose() {
@@ -224,58 +242,74 @@ class _CodeContentViewState extends State<CodeContentView> {
     );
     return Material(
       color: cs.surface,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: gutterWidth,
-            child: ListView.builder(
-              controller: _gutterController,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(8, 8, 0, 16),
-              itemExtent: _lineExtent,
-              itemCount: lines.length,
-              itemBuilder: (context, i) => Container(
-                alignment: Alignment.topRight,
-                padding: const EdgeInsets.only(right: 8),
-                child: Text('${i + 1}', style: gutterStyle),
+      // 关掉桌面端默认给每个可滚动组件自动挂的滚动条, 否则内容列会多出一条
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: LayoutBuilder(builder: (context, constraints) {
+          final bodyWidth = math.max(
+            contentWidth + 24,
+            constraints.maxWidth - gutterWidth,
+          );
+          WidgetsBinding.instance
+              .addPostFrameCallback((_) => _syncScrollbars());
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: gutterWidth,
+                child: ListView.builder(
+                  controller: _gutterController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(8, 8, 0, 16),
+                  itemExtent: _lineExtent,
+                  itemCount: lines.length,
+                  itemBuilder: (context, i) => Container(
+                    alignment: Alignment.topRight,
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text('${i + 1}', style: gutterStyle),
+                  ),
+                ),
               ),
-            ),
-          ),
-          Expanded(
-            child: SelectionArea(
-              child: Scrollbar(
-                controller: _controller,
-                thumbVisibility: true,
-                radius: const Radius.circular(3),
-                child: Scrollbar(
-                  controller: _hController,
-                  scrollbarOrientation: ScrollbarOrientation.bottom,
-                  thumbVisibility: true,
-                  radius: const Radius.circular(3),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    controller: _hController,
-                    child: SizedBox(
-                      width: contentWidth + 24,
-                      child: NotificationListener<ScrollNotification>(
-                        onNotification: (n) {
-                          if (n.metrics.axis == Axis.vertical &&
-                              _gutterController.hasClients) {
-                            _gutterController.jumpTo(n.metrics.pixels);
-                          }
-                          return false;
-                        },
-                        child: ListView.builder(
-                          controller: _controller,
-                          padding: const EdgeInsets.fromLTRB(8, 8, 16, 16),
-                          itemExtent: _lineExtent,
-                          itemCount: lines.length,
-                          itemBuilder: (context, i) => Text.rich(
-                            _lineSpan(vm, i, lines[i], style, dark),
-                            style: style,
-                            softWrap: false,
-                            overflow: TextOverflow.clip,
+              Expanded(
+                child: SelectionArea(
+                  child: Scrollbar(
+                    controller: _controller,
+                    thumbVisibility: _vBarVisible,
+                    notificationPredicate: (n) =>
+                        n.metrics.axis == Axis.vertical,
+                    radius: const Radius.circular(3),
+                    child: Scrollbar(
+                      controller: _hController,
+                      scrollbarOrientation: ScrollbarOrientation.bottom,
+                      thumbVisibility: _hBarVisible,
+                      notificationPredicate: (n) =>
+                          n.metrics.axis == Axis.horizontal,
+                      radius: const Radius.circular(3),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        controller: _hController,
+                        child: SizedBox(
+                          width: bodyWidth,
+                          child: NotificationListener<ScrollNotification>(
+                            onNotification: (n) {
+                              if (n.metrics.axis == Axis.vertical &&
+                                  _gutterController.hasClients) {
+                                _gutterController.jumpTo(n.metrics.pixels);
+                              }
+                              return false;
+                            },
+                            child: ListView.builder(
+                              controller: _controller,
+                              padding: const EdgeInsets.fromLTRB(8, 8, 16, 16),
+                              itemExtent: _lineExtent,
+                              itemCount: lines.length,
+                              itemBuilder: (context, i) => Text.rich(
+                                _lineSpan(vm, i, lines[i], style, dark),
+                                style: style,
+                                softWrap: false,
+                                overflow: TextOverflow.clip,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -283,9 +317,9 @@ class _CodeContentViewState extends State<CodeContentView> {
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        }),
       ),
     );
   }

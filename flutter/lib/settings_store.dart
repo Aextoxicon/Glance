@@ -32,6 +32,7 @@ class SettingsStore {
   SettingsStore({String? directoryOverride}) : _directoryOverride = directoryOverride;
 
   final String? _directoryOverride;
+  Future<void> _queue = Future<void>.value();
 
   Future<String> _filePath() async {
     if (_directoryOverride != null) {
@@ -42,6 +43,7 @@ class SettingsStore {
   }
 
   Future<AppSettings> load() async {
+    await _queue;
     try {
       final file = File(await _filePath());
       if (await file.exists()) {
@@ -53,9 +55,14 @@ class SettingsStore {
     return AppSettings();
   }
 
-  Future<void> save(AppSettings settings) async {
-    final path = await _filePath();
-    await File(path).parent.create(recursive: true);
-    await File(path).writeAsString(jsonEncode(settings.toJson()));
+  Future<void> save(AppSettings settings) {
+    final payload = jsonEncode(settings.toJson());
+    final write = _queue.then((_) async {
+      final path = await _filePath();
+      await File(path).parent.create(recursive: true);
+      await File(path).writeAsString(payload);
+    });
+    _queue = write.catchError((_) {});
+    return write;
   }
 }
