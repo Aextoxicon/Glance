@@ -10,6 +10,7 @@ import 'package:glance/generated/frb_generated.dart';
 import 'package:glance/generated/lib.dart' as rust;
 import 'package:glance/models.dart';
 import 'package:glance/settings_store.dart';
+import 'package:glance/utils.dart';
 import 'package:glance/view_model.dart';
 import 'package:glance/views/cad_view.dart';
 import 'package:glance/views/code_view.dart';
@@ -194,15 +195,15 @@ void main() {
   testWidgets('大纲按钮: 只有结构性节点才出现', (tester) async {
     final vm = MainViewModel(FakeSource(
       {
-        'root': [file('schema.sql'), file('main.rs')],
+        'root': [file('query.sql'), file('main.rs')],
       },
       {
-        'schema.sql': 'CREATE TABLE t (id int);\n',
+        'query.sql': 'SELECT 1;\n',
         'main.rs': 'fn main() {}\n',
       },
     ));
     await vm.restoreWorkspace();
-    vm.selectItem(vm.treeItems[0]); // schema.sql: 有表结构但没有结构性节点
+    vm.selectItem(vm.treeItems[0]); // query.sql: 纯DML没有结构性节点
 
     await tester.pumpWidget(MaterialApp(
       theme: ThemeData(useMaterial3: true),
@@ -220,6 +221,31 @@ void main() {
     vm.selectItem(vm.treeItems[1]); // main.rs
     await tester.pumpAndSettle();
     expect(find.text('大纲'), findsOneWidget);
+  });
+
+  test('SQL大纲: CREATE TABLE/INDEX/VIEW 三级各自命名', () async {
+    final vm = MainViewModel(FakeSource(
+      {
+        'root': [file('schema.sql')],
+      },
+      {
+        'schema.sql': 'CREATE TABLE IF NOT EXISTS public.users (id int);\n'
+            'CREATE UNIQUE INDEX idx_mail ON users (id);\n'
+            'CREATE VIEW active_users AS SELECT 1;\n',
+      },
+    ));
+    await vm.restoreWorkspace();
+    vm.selectItem(vm.treeItems.first);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    final outline = vm.currentOutline;
+    expect(outline, isNotNull);
+    expect(outline!.map((n) => n.kind).toList(),
+        ['create_table', 'create_index', 'create_view']);
+    expect(outline.map((n) => n.name).toList(),
+        ['public.users', 'idx_mail', 'active_users']);
+    expect(outline.map((n) => outlineKindLabel(n.kind)).toList(),
+        ['表', '索引', '视图']);
   });
 
   testWidgets('高亮渲染: fn关键字与main函数出现非默认颜色span', (tester) async {
@@ -699,10 +725,23 @@ void main() {
     expect(tester.takeException(), isNull);
     final typeLeft = tester.getRect(find.text(longType)).left;
     expect(typeLeft, lessThan(400), reason: '类型列应紧接列名, 不能飘到卡片中间');
+    expect(find.text('列名'), findsOneWidget, reason: '表头行给出各栏含义');
+    expect(find.text('默认值 / 引用'), findsOneWidget);
+    final wideTailLeft =
+        tester.getRect(find.textContaining('= CURRENT_TIMESTAMP')).left;
+    expect(wideTailLeft, greaterThan(typeLeft + 100),
+        reason: '宽屏下默认值并排在类型与约束之后');
 
     tester.view.physicalSize = const Size(360, 600);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: '窄屏列宽须收缩, 不能溢出');
+    final narrowTailLeft =
+        tester.getRect(find.textContaining('= CURRENT_TIMESTAMP')).left;
+    expect(narrowTailLeft, lessThan(60),
+        reason: '窄屏下默认值换到列名下方, 不再挤在同一行');
+    expect(narrowTailLeft, lessThan(wideTailLeft));
+    expect(find.text('默认值 / 引用'), findsNothing,
+        reason: '窄屏表头只留三栏, 默认值标题随列一起撤掉');
   });
 
   test('SAF目录名解码: URL编码的tree uri取末段目录名', () {

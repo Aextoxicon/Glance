@@ -296,9 +296,35 @@ fn test_outline_dockerfile() {
     assert_debug_snapshot!(snapshot_of(&result));
 }
 
+#[test]
+fn test_outline_sql() {
+    let source = "CREATE TABLE IF NOT EXISTS public.users (\n  id int PRIMARY KEY,\n  name varchar(255) NOT NULL\n);\nCREATE UNIQUE INDEX idx_mail ON users (name);\nCREATE VIEW active_users AS SELECT * FROM users;\nSELECT 1;\n";
+    let result: CodeParseResult = parse_code(source.to_string(), ".sql".to_string());
+    let kinds: Vec<&str> = result.outline.iter().map(|n| n.kind.as_str()).collect();
+    assert_eq!(
+        kinds,
+        vec!["create_table", "create_index", "create_view"],
+        "DDL三种语句都应进入大纲"
+    );
+    let names: Vec<&str> = result.outline.iter().map(|n| n.name.as_str()).collect();
+    assert_eq!(
+        names,
+        vec!["public.users", "idx_mail", "active_users"],
+        "表取object_reference, 索引取索引名, 视图取object_reference"
+    );
+}
+
+#[test]
+fn test_outline_sql_dml_only() {
+    let result: CodeParseResult = parse_code(
+        "SELECT * FROM users WHERE id = 1;\n".to_string(),
+        ".sql".to_string(),
+    );
+    assert!(result.outline.is_empty(), "纯查询脚本没有结构性节点");
+}
+
 /// 含跨行字符串（一条token覆盖多行）与一个空行
 const SPANNING_SRC: &str = "fn main() {\n    let x = \"a\nb\";\n\n    println!(\"{}\", x);\n}\n";
-
 #[test]
 fn packed_layout_is_self_consistent() {
     let result: CodeParseResult = parse_code(SPANNING_SRC.to_string(), ".rs".to_string());

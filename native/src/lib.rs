@@ -357,6 +357,22 @@ fn extract_name(node: tree_sitter::Node, source: &[u8]) -> String {
                 return text_of(selectors, source);
             }
         }
+        "create_table" | "create_view" | "alter_table" => {
+            // 表名和视图名都落在object_reference上，可能带schema前缀
+            if let Some(target) = find_child_of_kind(node, &["object_reference"]) {
+                return text_of(target, source);
+            }
+        }
+        "create_index" => {
+            // 索引名是紧跟keyword_index的identifier，后面的object_reference是目标表
+            let mut cursor = node.walk();
+            let name = node
+                .children(&mut cursor)
+                .find(|child| child.kind() == "identifier");
+            if let Some(name) = name {
+                return text_of(name, source);
+            }
+        }
         _ => {}
     }
 
@@ -421,6 +437,10 @@ pub const OUTLINE_STRUCTURAL_KINDS: &[&str] = &[
     "setting",
     // CSS
     "rule_set",
+    // SQL
+    "create_table",
+    "create_view",
+    "create_index",
 ];
 
 const MAX_OUTLINE_DEPTH: usize = 16;

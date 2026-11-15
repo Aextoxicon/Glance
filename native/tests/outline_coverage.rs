@@ -5,7 +5,7 @@ use uniffi_code_parser::OUTLINE_STRUCTURAL_KINDS;
 const EXTS: &[&str] = &[
     ".c", ".cpp", ".go", ".py", ".js", ".ts", ".tsx", ".sh", ".cs", ".java", ".json", ".css",
     ".rs", ".toml", ".yaml", ".ini", ".mk", ".kt", ".dockerfile", ".swift", ".html", ".xml",
-    ".rb", ".php",
+    ".rb", ".php", ".sql",
 ];
 
 const KNOWN_RED: &[&str] = &[];
@@ -37,6 +37,7 @@ fn node_types_of(ext: &str) -> &'static str {
         ".xml" => tree_sitter_xml::XML_NODE_TYPES,
         ".rb" => tree_sitter_ruby::NODE_TYPES,
         ".php" => tree_sitter_php::PHP_NODE_TYPES,
+    ".sql" => tree_sitter_sequel::NODE_TYPES,
         _ => panic!("{} 未登记node-types", ext),
     }
 }

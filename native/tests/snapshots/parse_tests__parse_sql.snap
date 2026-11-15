@@ -133,5 +133,14 @@ Snapshot {
         ],
         [],
     ],
-    outline: [],
+    outline: [
+        OutlineNode {
+            kind: "create_table",
+            name: "users",
+            detail: "",
+            start_byte: 15,
+            end_byte: 84,
+            children: [],
+        },
+    ],
 }

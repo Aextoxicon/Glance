@@ -82,6 +82,9 @@ String outlineKindLabel(String kind) {
       kind == 'type_declaration') return '类型';
   if (kind.startsWith('static') || kind.startsWith('const')) return '常量';
   if (kind == 'package_clause') return '包';
+  if (kind == 'create_table') return '表';
+  if (kind == 'create_view') return '视图';
+  if (kind == 'create_index') return '索引';
   final idx = kind.indexOf('_');
   return idx < 0 ? kind : kind.substring(0, idx);
 }
