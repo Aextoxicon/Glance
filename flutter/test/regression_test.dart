@@ -267,6 +267,37 @@ void main() {
         ['表', '索引', '视图']);
   });
 
+  test('大纲类型标签全中文: 各语法结构化节点都不回落成英文kind', () {
+    const kinds = [
+      'pair',
+      'block_mapping_pair',
+      'key_value',
+      'table',
+      'table_array_element',
+      'section',
+      'setting',
+      'rule',
+      'rule_set',
+      'define_directive',
+      'from_instruction',
+      'module',
+      'mod_item',
+      'singleton_method',
+      'trait_item',
+      'impl_item',
+      'function_item',
+      'class_declaration',
+      'enum_item',
+      'const_item',
+      'namespace_definition',
+    ];
+    for (final kind in kinds) {
+      final label = outlineKindLabel(kind);
+      expect(RegExp('[A-Za-z]').hasMatch(label), isFalse,
+          reason: '$kind 落回英文: $label');
+    }
+  });
+
   testWidgets('高亮渲染: fn关键字与main函数出现非默认颜色span', (tester) async {
     final vm = MainViewModel(FakeSource(fakeTree));
     await vm.restoreWorkspace();

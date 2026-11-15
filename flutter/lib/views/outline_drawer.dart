@@ -43,9 +43,11 @@ class OutlineDrawer extends StatelessWidget {
           const Divider(height: 1),
           Expanded(
             child: flat.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text('该文件没有大纲',
-                        style: TextStyle(color: Colors.grey)))
+                        style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant)))
                 : ListView.builder(
                     padding: EdgeInsets.zero,
                     itemCount: flat.length,

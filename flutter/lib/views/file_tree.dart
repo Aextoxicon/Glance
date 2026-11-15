@@ -11,8 +11,9 @@ class FileTreePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final flat = flattenTree(vm.treeItems);
     if (vm.treeItems.isEmpty) {
-      return const Center(
-        child: Text('空目录', style: TextStyle(color: Colors.grey)),
+      final cs = Theme.of(context).colorScheme;
+      return Center(
+        child: Text('空目录', style: TextStyle(color: cs.onSurfaceVariant)),
       );
     }
     return ListView.builder(
@@ -111,21 +112,22 @@ class _LoadingRowWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final indent = 8.0 + depth * 20.0;
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: EdgeInsets.only(left: indent, right: 8, top: 2, bottom: 2),
       constraints: const BoxConstraints(minHeight: 28),
-      child: const Row(
+      child: Row(
         children: [
-          SizedBox(width: 16),
-          SizedBox(width: 4),
-          SizedBox(
+          const SizedBox(width: 16),
+          const SizedBox(width: 4),
+          const SizedBox(
             width: 14,
             height: 14,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Text('加载中…',
-              style: TextStyle(color: Colors.grey, fontSize: 12)),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
         ],
       ),
     );

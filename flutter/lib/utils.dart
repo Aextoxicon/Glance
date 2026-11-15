@@ -72,11 +72,12 @@ String outlineKindLabel(String kind) {
   if (kind.startsWith('interface')) return '接口';
   if (kind.startsWith('struct')) return '结构体';
   if (kind.startsWith('enum')) return '枚举';
-  if (kind.startsWith('trait')) return 'trait';
-  if (kind.startsWith('impl')) return 'impl';
-  if (kind.startsWith('method')) return '方法';
+  if (kind == 'trait_item') return '特征';
+  if (kind == 'impl_item') return '实现';
+  if (kind.startsWith('method') || kind == 'singleton_method') return '方法';
   if (kind.startsWith('function') || kind.startsWith('generator_function')) return '函数';
-  if (kind.startsWith('namespace') || kind.startsWith('mod')) return '命名空间';
+  if (kind.startsWith('namespace')) return '命名空间';
+  if (kind == 'module' || kind == 'mod_item') return '模块';
   if (kind.startsWith('type_alias') ||
       kind.startsWith('type_item') ||
       kind == 'type_declaration') return '类型';
@@ -85,6 +86,13 @@ String outlineKindLabel(String kind) {
   if (kind == 'create_table') return '表';
   if (kind == 'create_view') return '视图';
   if (kind == 'create_index') return '索引';
-  final idx = kind.indexOf('_');
-  return idx < 0 ? kind : kind.substring(0, idx);
+  if (kind == 'pair' || kind == 'block_mapping_pair' || kind == 'key_value') return '键值';
+  if (kind == 'table') return '表';
+  if (kind == 'table_array_element') return '表数组';
+  if (kind == 'section') return '段';
+  if (kind == 'setting') return '项';
+  if (kind == 'rule' || kind == 'rule_set') return '规则';
+  if (kind == 'define_directive') return '定义';
+  if (kind == 'from_instruction') return '镜像';
+  return '节点';
 }

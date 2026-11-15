@@ -19,15 +19,82 @@ const _cjkFontFallback = [
 
 const _black = Color(0xFF000000);
 const _white = Color(0xFFFFFFFF);
-const _lightSurfaceVariant = Color(0xFFF2F2F2);
-const _lightOutline = Color(0xFFE0E0E0);
-const _darkSurfaceVariant = Color(0xFF1A1A1A);
-const _darkOutline = Color(0xFF2A2A2A);
+
+// fromSeed(黑/白)会把未覆写的色染成青绿或粉白, 所以把用到的色一次铺满
+const _lightSurfaceContainerLowest = _white;
+const _lightSurfaceContainerLow = Color(0xFFFAFAFA);
+const _lightSurfaceContainer = Color(0xFFF5F5F5);
+const _lightSurfaceContainerHigh = Color(0xFFEFEFEF);
+const _lightSurfaceContainerHighest = Color(0xFFE9E9E9);
+const _lightPrimaryContainer = Color(0xFFD8D8D8);
+const _lightOnPrimaryContainer = Color(0xFF111111);
+const _lightSecondaryContainer = Color(0xFFE4E4E4);
+const _lightOnSurfaceVariant = Color(0xFF4A4A4A);
+const _lightOutline = Color(0xFF8C8C8C);
+const _lightOutlineVariant = Color(0xFFE0E0E0);
+
+const _darkSurfaceContainerLowest = Color(0xFF050505);
+const _darkSurfaceContainerLow = Color(0xFF0F0F0F);
+const _darkSurfaceContainer = Color(0xFF161616);
+const _darkSurfaceContainerHigh = Color(0xFF1E1E1E);
+const _darkSurfaceContainerHighest = Color(0xFF262626);
+const _darkPrimaryContainer = Color(0xFF3A3A3A);
+const _darkOnPrimaryContainer = Color(0xFFF0F0F0);
+const _darkSecondaryContainer = Color(0xFF2E2E2E);
+const _darkOnSurfaceVariant = Color(0xFFAFAFAF);
+const _darkOutline = Color(0xFF6E6E6E);
+const _darkOutlineVariant = Color(0xFF2A2A2A);
+
+ColorScheme _lightScheme() => ColorScheme.fromSeed(seedColor: _black).copyWith(
+      primary: _black,
+      onPrimary: _white,
+      primaryContainer: _lightPrimaryContainer,
+      onPrimaryContainer: _lightOnPrimaryContainer,
+      secondary: _lightOnSurfaceVariant,
+      onSecondary: _white,
+      secondaryContainer: _lightSecondaryContainer,
+      onSecondaryContainer: _lightOnPrimaryContainer,
+      surface: _white,
+      onSurface: _black,
+      onSurfaceVariant: _lightOnSurfaceVariant,
+      surfaceContainerLowest: _lightSurfaceContainerLowest,
+      surfaceContainerLow: _lightSurfaceContainerLow,
+      surfaceContainer: _lightSurfaceContainer,
+      surfaceContainerHigh: _lightSurfaceContainerHigh,
+      surfaceContainerHighest: _lightSurfaceContainerHighest,
+      outline: _lightOutline,
+      outlineVariant: _lightOutlineVariant,
+      surfaceTint: _white,
+    );
+
+ColorScheme _darkScheme() =>
+    ColorScheme.fromSeed(seedColor: _white, brightness: Brightness.dark)
+        .copyWith(
+      primary: _white,
+      onPrimary: _black,
+      primaryContainer: _darkPrimaryContainer,
+      onPrimaryContainer: _darkOnPrimaryContainer,
+      secondary: _darkOnSurfaceVariant,
+      onSecondary: _black,
+      secondaryContainer: _darkSecondaryContainer,
+      onSecondaryContainer: _darkOnPrimaryContainer,
+      surface: _black,
+      onSurface: _white,
+      onSurfaceVariant: _darkOnSurfaceVariant,
+      surfaceContainerLowest: _darkSurfaceContainerLowest,
+      surfaceContainerLow: _darkSurfaceContainerLow,
+      surfaceContainer: _darkSurfaceContainer,
+      surfaceContainerHigh: _darkSurfaceContainerHigh,
+      surfaceContainerHighest: _darkSurfaceContainerHighest,
+      outline: _darkOutline,
+      outlineVariant: _darkOutlineVariant,
+      surfaceTint: _black,
+    );
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 首帧只等设置: 它决定主题, 不等会先闪默认主题再跳变
+  // 不等会先闪默认主题再跳变
   await mainViewModel.loadSettings();
 
   // 加载Rust库不改变首帧外观, 挪到首帧后, 解析前由VM自等
@@ -86,31 +153,14 @@ class GlanceApp extends StatelessWidget {
           theme: ThemeData(
             useMaterial3: true,
             fontFamilyFallback: _cjkFontFallback,
-            colorScheme: ColorScheme.fromSeed(seedColor: _black).copyWith(
-              primary: _black,
-              onPrimary: _white,
-              surface: _white,
-              onSurface: _black,
-              surfaceContainerHighest: _lightSurfaceVariant,
-              outlineVariant: _lightOutline,
-            ),
+            colorScheme: _lightScheme(),
             scaffoldBackgroundColor: _white,
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.dark,
             fontFamilyFallback: _cjkFontFallback,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: _white,
-              brightness: Brightness.dark,
-            ).copyWith(
-              primary: _white,
-              onPrimary: _black,
-              surface: _black,
-              onSurface: _white,
-              surfaceContainerHighest: _darkSurfaceVariant,
-              outlineVariant: _darkOutline,
-            ),
+            colorScheme: _darkScheme(),
             scaffoldBackgroundColor: _black,
           ),
           themeMode:

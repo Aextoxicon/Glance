@@ -17,14 +17,15 @@ class CodePreviewPanel extends StatelessWidget {
     if (vm.messageText != null) {
       return MessageView(message: vm.messageText!);
     }
+    final cs = Theme.of(context).colorScheme;
     if (!vm.hasSelection) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.insert_drive_file, size: 48, color: Colors.grey),
-            SizedBox(height: 8),
-            Text('选择文件以预览', style: TextStyle(color: Colors.grey)),
+            Icon(Icons.insert_drive_file, size: 48, color: cs.onSurfaceVariant),
+            const SizedBox(height: 8),
+            Text('选择文件以预览', style: TextStyle(color: cs.onSurfaceVariant)),
           ],
         ),
       );
@@ -51,7 +52,7 @@ class CodePreviewPanel extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Text(
                   vm.previewNotice!,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
