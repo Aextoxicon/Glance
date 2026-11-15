@@ -162,6 +162,14 @@ class WorkspaceHeader extends StatelessWidget {
                   iconSize: 14,
                   constraints:
                       const BoxConstraints(minWidth: 28, minHeight: 28),
+                  tooltip: '定位当前文件',
+                  onPressed: vm.hasSelection ? vm.requestRevealSelection : null,
+                  icon: const Icon(Icons.my_location, size: 14),
+                ),
+                IconButton(
+                  iconSize: 14,
+                  constraints:
+                      const BoxConstraints(minWidth: 28, minHeight: 28),
                   tooltip: '关闭工作区',
                   onPressed: vm.closeWorkspace,
                   icon: const Icon(Icons.close, size: 14),

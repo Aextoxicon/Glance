@@ -343,6 +343,72 @@ void main() {
     expect(find.text('fileC'), findsOneWidget);
   });
 
+  test('revealSelection折叠后重新展开选中文件所在路径', () async {
+    final vm = MainViewModel(FakeSource(fakeTree));
+    await vm.restoreWorkspace();
+    await vm.expandAll();
+    final fileC = vm.treeItems[1].children[1].children.single;
+    expect(fileC.artifact.name, 'fileC');
+    vm.selectItem(fileC);
+    vm.collapseAll();
+
+    bool visible() => flattenTree(vm.treeItems)
+        .whereType<ItemTreeRow>()
+        .any((r) => r.item.artifact.name == 'fileC');
+    expect(visible(), isFalse, reason: '折叠后选中项不可见');
+
+    expect(await vm.revealSelection(), isTrue);
+    expect(visible(), isTrue, reason: '定位后祖先链应全部展开');
+  });
+
+  testWidgets('文件树挂载后自动滚到当前文件', (tester) async {
+    final many = <String, List<Artifact>>{
+      'root': [for (var i = 0; i < 60; i++) file('f$i.rs')],
+    };
+    final vm = MainViewModel(FakeSource(many));
+    await vm.restoreWorkspace();
+    vm.selectItem(vm.treeItems.last);
+    await tester.pump();
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true),
+      home: Scaffold(body: FileTreePanel(vm: vm)),
+    ));
+    await tester.pumpAndSettle();
+
+    // 视口只放得下二十来行, 未滚动时ListView不会构建第60项
+    expect(find.text('f59.rs'), findsOneWidget);
+  });
+
+  testWidgets('窄屏抽屉打开后自动定位到当前文件', (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    final many = <String, List<Artifact>>{
+      'root': [for (var i = 0; i < 60; i++) file('f$i.rs')],
+    };
+    final vm = MainViewModel(FakeSource(many));
+    await vm.restoreWorkspace();
+    vm.selectItem(vm.treeItems.last);
+    await tester.pump();
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true),
+      home: NarrowLayout(vm: vm),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.menu));
+    await tester.pumpAndSettle();
+
+    // AppBar标题也是文件名, 只认树里的那一行
+    expect(
+        find.descendant(
+            of: find.byType(FileTreePanel), matching: find.text('f59.rs')),
+        findsOneWidget);
+  });
+
   testWidgets('WideLayout选中文件后无黄色下划线装饰文字', (tester) async {
     final vm = MainViewModel(FakeSource(fakeTree));
     await vm.restoreWorkspace();

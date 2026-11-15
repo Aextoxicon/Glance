@@ -364,6 +364,52 @@ class MainViewModel extends ChangeNotifier {
         children: n.children.map(_toModelNode).toList(),
       );
 
+  // 文件树监听token变化后把自己滚到当前文件
+  int revealToken = 0;
+
+  void requestRevealSelection() {
+    revealToken++;
+    notifyListeners();
+  }
+
+  // 展开选中文件所在路径, 折叠状态下也能定位
+  Future<bool> revealSelection() async {
+    final target = selectedItem;
+    if (target == null) return false;
+    final path = _pathToItem(treeItems, target.artifact.id);
+    if (path == null) return false;
+    var dirty = false;
+    for (var i = 0; i < path.length - 1; i++) {
+      final dir = path[i];
+      if (dir.artifact.isDirectory && !dir.loaded) {
+        try {
+          dir.children = await _childrenToItems(dir.artifact.id);
+          dir.loaded = true;
+          dirty = true;
+        } catch (e) {
+          messageText = '读取目录失败：$e';
+          notifyListeners();
+          return false;
+        }
+      }
+      if (!dir.isExpanded) {
+        dir.isExpanded = true;
+        dirty = true;
+      }
+    }
+    if (dirty) notifyListeners();
+    return true;
+  }
+
+  List<TreeItem>? _pathToItem(List<TreeItem> items, String id) {
+    for (final it in items) {
+      if (it.artifact.id == id) return [it];
+      final sub = _pathToItem(it.children, id);
+      if (sub != null) return [it, ...sub];
+    }
+    return null;
+  }
+
   Future<void> expandAll() async {
     await _expandDirs(treeItems, <String>{});
     notifyListeners();
