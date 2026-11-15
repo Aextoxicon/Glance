@@ -14,6 +14,7 @@ import 'package:glance/views/cad_view.dart';
 import 'package:glance/views/code_view.dart';
 import 'package:glance/views/file_tree.dart';
 import 'package:glance/views/main_view.dart';
+import 'package:glance/views/sql_schema_view.dart';
 
 /// 固定结构的假源: root -> [fileA(文件), dirA]; dirA -> [fileB, dirB];
 /// dirB -> [fileC]
@@ -491,6 +492,158 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  });
+
+  test('SQL文件判定: sql命中, 其余不命中', () {
+    expect(isSqlFileName('schema.sql'), isTrue);
+    expect(isSqlFileName('SCHEMA.SQL'), isTrue);
+    expect(isSqlFileName('main.rs'), isFalse);
+    expect(isSqlFileName('sql'), isFalse);
+    expect(isSqlFileName('a.sql.bak'), isFalse);
+  });
+
+  test('SQL分流: DDL文件进表结构视图并可切回原文, 纯DML留在文本视图', () async {
+    final ddl = MainViewModel(FakeSource(
+      {
+        'root': [file('schema.sql')],
+      },
+      {
+        'schema.sql':
+            'CREATE TABLE users (id int primary key, name text not null);\n'
+      },
+    ));
+    await ddl.restoreWorkspace();
+    ddl.selectItem(ddl.treeItems.first);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    expect(ddl.selectedSqlSchema, isNotNull);
+    expect(ddl.selectedSqlSchema!.tables.single.name, 'users');
+    expect(ddl.isSqlSchemaPreview, isTrue);
+    expect(ddl.canToggleSqlView, isTrue);
+
+    ddl.toggleSqlView();
+    expect(ddl.isSqlSchemaPreview, isFalse, reason: '切到原文后应显示高亮文本');
+    expect(ddl.selectedContent, isNotNull);
+    ddl.toggleSqlView();
+    expect(ddl.isSqlSchemaPreview, isTrue);
+
+    final dml = MainViewModel(FakeSource(
+      {
+        'root': [file('q.sql')],
+      },
+      {'q.sql': 'SELECT 1;\n'},
+    ));
+    await dml.restoreWorkspace();
+    dml.selectItem(dml.treeItems.first);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    expect(dml.selectedSqlSchema, isNull, reason: '无CREATE TABLE应回退文本视图');
+    expect(dml.isSqlSchemaPreview, isFalse);
+    expect(dml.canToggleSqlView, isFalse);
+    expect(dml.selectedContent, contains('SELECT 1'));
+  });
+
+  testWidgets('SQL表结构卡片: 合成schema绘制不抛异常', (tester) async {
+    final schema = rust.SqlSchemaResult(
+      tables: [
+        rust.SqlTableSchema(
+          name: 'users',
+          startByte: BigInt.zero,
+          endByte: BigInt.from(120),
+          columns: [
+            const rust.SqlColumnSchema(
+              name: 'id',
+              typeName: 'int',
+              notNull: false,
+              primaryKey: true,
+              unique: false,
+              autoIncrement: true,
+              defaultText: '',
+              foreignKey: '',
+            ),
+            const rust.SqlColumnSchema(
+              name: 'org_id',
+              typeName: 'int',
+              notNull: true,
+              primaryKey: false,
+              unique: false,
+              autoIncrement: false,
+              defaultText: '0',
+              foreignKey: 'orgs',
+            ),
+          ],
+        ),
+      ],
+      indexes: [
+        const rust.SqlIndexSchema(
+          table: 'users',
+          name: 'idx_org',
+          columns: ['org_id'],
+          unique: true,
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: SqlSchemaView(schema: schema)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('users'), findsOneWidget);
+    expect(find.text('NN'), findsOneWidget);
+    expect(find.text('UNIQUE'), findsOneWidget);
+  });
+
+  testWidgets('SQL表结构卡片: 宽屏下列区间距紧凑, 窄屏不溢出', (tester) async {
+    const longType = 'geometry(Point,4326)';
+    final schema = rust.SqlSchemaResult(
+      tables: [
+        rust.SqlTableSchema(
+          name: 'places',
+          startByte: BigInt.zero,
+          endByte: BigInt.from(60),
+          columns: [
+            const rust.SqlColumnSchema(
+              name: 'place_id',
+              typeName: 'bigint',
+              notNull: true,
+              primaryKey: true,
+              unique: false,
+              autoIncrement: true,
+              defaultText: '',
+              foreignKey: '',
+            ),
+            const rust.SqlColumnSchema(
+              name: 'center',
+              typeName: longType,
+              notNull: false,
+              primaryKey: false,
+              unique: false,
+              autoIncrement: false,
+              defaultText: 'CURRENT_TIMESTAMP',
+              foreignKey: 'regions.region_id',
+            ),
+          ],
+        ),
+      ],
+      indexes: const [],
+    );
+
+    tester.view.physicalSize = const Size(1100, 600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: SqlSchemaView(schema: schema))),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    final typeLeft = tester.getRect(find.text(longType)).left;
+    expect(typeLeft, lessThan(400), reason: '类型列应紧接列名, 不能飘到卡片中间');
+
+    tester.view.physicalSize = const Size(360, 600);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: '窄屏列宽须收缩, 不能溢出');
   });
 
   test('SAF目录名解码: URL编码的tree uri取末段目录名', () {

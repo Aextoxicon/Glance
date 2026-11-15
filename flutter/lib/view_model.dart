@@ -13,6 +13,7 @@ import 'trace.dart';
 import 'trace_destination.dart';
 import 'utils.dart';
 import 'views/cad_view.dart';
+import 'views/sql_schema_view.dart';
 
 enum AppThemeMode { light, dark, system }
 
@@ -67,6 +68,10 @@ class MainViewModel extends ChangeNotifier {
   rust.CodeParseResult? codeParseResult;
   rust.CadGeometry? selectedCad;
   bool get isCadPreview => selectedCad != null;
+  rust.SqlSchemaResult? selectedSqlSchema;
+  bool sqlShowSource = false;
+  bool get canToggleSqlView => selectedSqlSchema != null;
+  bool get isSqlSchemaPreview => selectedSqlSchema != null && !sqlShowSource;
   String? messageText;
   String? previewNotice;
 
@@ -236,9 +241,11 @@ class MainViewModel extends ChangeNotifier {
       currentOutline = null;
       codeParseResult = null;
       selectedCad = null;
+      _clearSqlSchema();
       messageText = '已选择目录：${item.artifact.name}';
     } else {
       selectedCad = null;
+      _clearSqlSchema();
       selectedArtifact = item.artifact;
       currentOutline = null;
       messageText = null;
@@ -250,7 +257,7 @@ class MainViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 按扩展名分流: CAD文件(dwg/dxf)读字节走Rust几何解析不做二进制嗅探, 其余读文本走代码解析
+  // CAD文件(dwg/dxf)读字节走Rust几何解析不做二进制嗅探, 其余读文本走代码解析
   Future<void> _loadFile(Artifact a, int token) async {
     try {
       if (isCadFileName(a.name)) {
@@ -265,6 +272,7 @@ class MainViewModel extends ChangeNotifier {
         codeParseResult = null;
         selectedContent = null;
         currentOutline = null;
+        _clearSqlSchema();
         messageText = null;
         Trace.mark('select.painted', 'name=${a.name} cad=true');
         notifyListeners();
@@ -276,6 +284,7 @@ class MainViewModel extends ChangeNotifier {
         selectedContent = null;
         currentOutline = null;
         selectedCad = null;
+        _clearSqlSchema();
         messageText = '二进制文件，无法预览';
         notifyListeners();
         return;
@@ -288,6 +297,7 @@ class MainViewModel extends ChangeNotifier {
         selectedContent = null;
         currentOutline = null;
         selectedCad = null;
+        _clearSqlSchema();
         messageText = '二进制文件，无法预览';
         notifyListeners();
         return;
@@ -297,6 +307,8 @@ class MainViewModel extends ChangeNotifier {
       codeParseResult = result;
       selectedContent = content;
       currentOutline = result.outline.map(_toModelNode).toList();
+      selectedSqlSchema = _parseSqlSchema(content, a.name);
+      sqlShowSource = false;
       messageText = null;
       Trace.mark('select.painted', 'name=${a.name}');
     } catch (e) {
@@ -305,8 +317,27 @@ class MainViewModel extends ChangeNotifier {
       selectedContent = null;
       currentOutline = null;
       selectedCad = null;
+      _clearSqlSchema();
       messageText = '读取/解析失败：$e';
     }
+    notifyListeners();
+  }
+
+  // DDL含CREATE TABLE时给出表结构数据, 纯DML/查询脚本返回null留在文本高亮视图
+  rust.SqlSchemaResult? _parseSqlSchema(String content, String name) {
+    if (!isSqlFileName(name)) return null;
+    final schema = parseSqlSchemaFrb(source: content, filename: name);
+    return schema.tables.isEmpty ? null : schema;
+  }
+
+  void _clearSqlSchema() {
+    selectedSqlSchema = null;
+    sqlShowSource = false;
+  }
+
+  void toggleSqlView() {
+    if (selectedSqlSchema == null) return;
+    sqlShowSource = !sqlShowSource;
     notifyListeners();
   }
 
@@ -456,6 +487,7 @@ class MainViewModel extends ChangeNotifier {
     selectedContent = null;
     currentOutline = null;
     selectedCad = null;
+    _clearSqlSchema();
     messageText = null;
     notifyListeners();
   }

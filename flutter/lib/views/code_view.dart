@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../view_model.dart';
 import '../utils.dart';
 import 'cad_view.dart';
+import 'sql_schema_view.dart';
 
 class CodePreviewPanel extends StatelessWidget {
   final MainViewModel vm;
@@ -34,9 +35,11 @@ class CodePreviewPanel extends StatelessWidget {
         Expanded(
           child: vm.isCadPreview
               ? CadView(geometry: vm.selectedCad!)
-              : vm.selectedContent != null
-                  ? CodeContentView(vm: vm)
-                  : const Center(child: CircularProgressIndicator()),
+              : vm.isSqlSchemaPreview
+                  ? SqlSchemaView(schema: vm.selectedSqlSchema!)
+                  : vm.selectedContent != null
+                      ? CodeContentView(vm: vm)
+                      : const Center(child: CircularProgressIndicator()),
         ),
         if (vm.previewNotice != null)
           Column(
@@ -90,6 +93,15 @@ class CodePreviewToolbar extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(width: 8),
+            if (vm.canToggleSqlView)
+              TextButton(
+                style: TextButton.styleFrom(minimumSize: const Size(28, 28)),
+                onPressed: vm.toggleSqlView,
+                child: Text(
+                  vm.sqlShowSource ? '结构' : '原文',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
             if (vm.currentOutline != null)
               Builder(
                 builder: (context) => TextButton(
