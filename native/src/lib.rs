@@ -1120,6 +1120,112 @@ fn sql_column_flags(col: tree_sitter::Node, source: &[u8], c: &mut SqlColumnSche
     }
 }
 
+// 去掉引号才是名字
+fn sql_ident(text: &str) -> String {
+    text.chars()
+        .filter(|c| !matches!(c, '`' | '"' | '[' | ']'))
+        .collect::<String>()
+        .trim()
+        .to_string()
+}
+
+// ordered_columns里的列名，逐个去掉引号；裸identifier是约束自己的名字或外键目标列，不算本地列
+fn sql_ordered_columns(node: tree_sitter::Node, source: &[u8]) -> Vec<String> {
+    let mut names = Vec::new();
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        if child.kind() != "ordered_columns" {
+            continue;
+        }
+        let mut inner = child.walk();
+        for c in child.children(&mut inner) {
+            if c.kind() == "column" {
+                let t = sql_ident(&text_of(c, source));
+                if !t.is_empty() {
+                    names.push(t);
+                }
+            }
+        }
+    }
+    names
+}
+
+// 表级约束：主键补到列上，外键补到列上，唯一键与普通键同时作为索引
+fn sql_table_constraint(
+    node: tree_sitter::Node,
+    source: &[u8],
+    table: &mut SqlTableSchema,
+    indexes: &mut Vec<SqlIndexSchema>,
+) {
+    let mut cursor = node.walk();
+    let children: Vec<tree_sitter::Node> = node.children(&mut cursor).collect();
+    let has = |kind: &str| children.iter().any(|c| c.kind() == kind);
+    let columns = sql_ordered_columns(node, source);
+    if columns.is_empty() {
+        return;
+    }
+
+    if has("keyword_primary") {
+        for c in &mut table.columns {
+            if columns.contains(&c.name) {
+                c.primary_key = true;
+            }
+        }
+        return;
+    }
+
+    // 节点从KEY开始，靠keyword_references识别
+    if has("keyword_references") {
+        let target = children
+            .iter()
+            .find(|c| c.kind() == "object_reference")
+            .map(|c| sql_ident(&text_of(*c, source)))
+            .unwrap_or_default();
+        let mut ref_col = String::new();
+        if let Some(pos) = children.iter().position(|c| c.kind() == "keyword_references") {
+            if let Some(t) = children[pos..].iter().find(|c| c.kind() == "identifier") {
+                ref_col = sql_ident(&text_of(*t, source));
+            }
+        }
+        if target.is_empty() {
+            return;
+        }
+        let fk = if ref_col.is_empty() {
+            target
+        } else {
+            format!("{target}.{ref_col}")
+        };
+        for c in &mut table.columns {
+            if columns.contains(&c.name) {
+                c.foreign_key = fk.clone();
+            }
+        }
+        return;
+    }
+
+    let unique = has("keyword_unique");
+    if unique && columns.len() == 1 {
+        for c in &mut table.columns {
+            if c.name == columns[0] {
+                c.unique = true;
+            }
+        }
+    }
+    if unique || has("keyword_key") {
+        let name = children
+            .iter()
+            .find(|c| c.kind() == "identifier")
+            .map(|c| sql_ident(&text_of(*c, source)))
+            .unwrap_or_default();
+        indexes.push(SqlIndexSchema {
+            table: table.name.clone(),
+            name,
+            columns,
+            unique,
+        });
+    }
+}
+
 // 类型节点kind转可读类型名，keyword_int→int, varchar带尺寸取全文本
 fn sql_type_text(col: tree_sitter::Node, type_node: tree_sitter::Node, source: &[u8]) -> String {
     let kind = type_node.kind();
@@ -1186,24 +1292,39 @@ pub fn parse_sql_schema(source: String, filename: String) -> SqlSchemaResult {
                     match child.kind() {
                         "object_reference" => {
                             if table.name.is_empty() {
-                                table.name = text_of(child, source_bytes);
+                                table.name = sql_ident(&text_of(child, source_bytes));
                             }
                         }
                         "column_definitions" => {
                             let mut defs_cursor = child.walk();
                             for def in child.children(&mut defs_cursor) {
-                                if def.kind() != "column_definition" {
-                                    continue;
+                                match def.kind() {
+                                    "column_definition" => {
+                                        let mut col = SqlColumnSchema::default();
+                                        if let Some(name) = def.child_by_field_name("name") {
+                                            col.name = sql_ident(&text_of(name, source_bytes));
+                                        }
+                                        if let Some(t) = def.child_by_field_name("type") {
+                                            col.type_name = sql_type_text(def, t, source_bytes);
+                                        }
+                                        sql_column_flags(def, source_bytes, &mut col);
+                                        table.columns.push(col);
+                                    }
+                                    "constraints" => {
+                                        let mut cons_cursor = def.walk();
+                                        for cons in def.children(&mut cons_cursor) {
+                                            if cons.kind() == "constraint" {
+                                                sql_table_constraint(
+                                                    cons,
+                                                    source_bytes,
+                                                    &mut table,
+                                                    &mut result.indexes,
+                                                );
+                                            }
+                                        }
+                                    }
+                                    _ => {}
                                 }
-                                let mut col = SqlColumnSchema::default();
-                                if let Some(name) = def.child_by_field_name("name") {
-                                    col.name = text_of(name, source_bytes);
-                                }
-                                if let Some(t) = def.child_by_field_name("type") {
-                                    col.type_name = sql_type_text(def, t, source_bytes);
-                                }
-                                sql_column_flags(def, source_bytes, &mut col);
-                                table.columns.push(col);
                             }
                         }
                         _ => {}
@@ -1219,16 +1340,21 @@ pub fn parse_sql_schema(source: String, filename: String) -> SqlSchemaResult {
                 for child in stmt.children(&mut idx_cursor) {
                     match child.kind() {
                         "object_reference" => {
-                            // 第一个object_reference是表名，index name落在keyword_index之后
+                            // 第一个object_reference是表名，索引名是它前面的裸identifier
                             if idx.table.is_empty() {
-                                idx.table = text_of(child, source_bytes);
+                                idx.table = sql_ident(&text_of(child, source_bytes));
+                            }
+                        }
+                        "identifier" => {
+                            if idx.name.is_empty() {
+                                idx.name = sql_ident(&text_of(child, source_bytes));
                             }
                         }
                         "keyword_unique" => idx.unique = true,
                         "index_fields" => {
                             let mut f_cursor = child.walk();
                             for f in child.children(&mut f_cursor) {
-                                let t = text_of(f, source_bytes);
+                                let t = sql_ident(&text_of(f, source_bytes));
                                 if !t.is_empty() {
                                     idx.columns.push(t);
                                 }
@@ -1237,7 +1363,6 @@ pub fn parse_sql_schema(source: String, filename: String) -> SqlSchemaResult {
                         _ => {}
                     }
                 }
-                // create后index与on之间的identifier
                 if !idx.table.is_empty() {
                     result.indexes.push(idx);
                 }

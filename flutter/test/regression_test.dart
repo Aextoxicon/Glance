@@ -711,11 +711,28 @@ void main() {
             ),
           ],
         ),
+        rust.SqlTableSchema(
+          name: 'regions',
+          startByte: BigInt.from(60),
+          endByte: BigInt.from(90),
+          columns: [
+            const rust.SqlColumnSchema(
+              name: 'id',
+              typeName: 'int',
+              notNull: true,
+              primaryKey: true,
+              unique: false,
+              autoIncrement: false,
+              defaultText: '',
+              foreignKey: '',
+            ),
+          ],
+        ),
       ],
       indexes: const [],
     );
 
-    tester.view.physicalSize = const Size(1100, 600);
+    tester.view.physicalSize = const Size(1100, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
@@ -725,12 +742,14 @@ void main() {
     expect(tester.takeException(), isNull);
     final typeLeft = tester.getRect(find.text(longType)).left;
     expect(typeLeft, lessThan(400), reason: '类型列应紧接列名, 不能飘到卡片中间');
-    expect(find.text('列名'), findsOneWidget, reason: '表头行给出各栏含义');
-    expect(find.text('默认值 / 引用'), findsOneWidget);
+    expect(find.text('列名'), findsNWidgets(2), reason: '每张表卡片都有自己的表头行');
+    expect(find.text('默认值 / 引用'), findsNWidgets(2));
     final wideTailLeft =
         tester.getRect(find.textContaining('= CURRENT_TIMESTAMP')).left;
     expect(wideTailLeft, greaterThan(typeLeft + 100),
         reason: '宽屏下默认值并排在类型与约束之后');
+    expect(tester.getRect(find.text('int')).left, closeTo(typeLeft, 0.5),
+        reason: '栏宽按整个文件量, 换一张表卡片不该左右错位');
 
     tester.view.physicalSize = const Size(360, 600);
     await tester.pumpAndSettle();

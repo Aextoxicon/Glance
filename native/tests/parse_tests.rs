@@ -423,3 +423,24 @@ fn sql_schema_extracts_tables_columns_constraints() {
     let r3 = uniffi_code_parser::parse_sql_schema("SELECT * FROM t;".to_string(), "q.sql".to_string());
     assert!(r3.tables.is_empty() && r3.indexes.is_empty());
 }
+
+#[test]
+fn sql_schema_strips_quoting_and_reads_table_constraints() {
+    let ddl = "CREATE TABLE `shop`.`users` (\n  `user_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,\n  `username` VARCHAR(50) NOT NULL,\n  `org_id` BIGINT NOT NULL,\n  PRIMARY KEY (`user_id`),\n  UNIQUE KEY `uk_username` (`username`),\n  KEY `idx_org` (`org_id`),\n  CONSTRAINT `fk_org` FOREIGN KEY (`org_id`) REFERENCES `orgs` (`id`) ON DELETE CASCADE\n);\n";
+    let r = uniffi_code_parser::parse_sql_schema(ddl.to_string(), "schema.sql".to_string());
+    let t = &r.tables[0];
+    assert_eq!(t.name, "shop.users", "反引号与schema前缀都要处理掉引号");
+    assert!(t.columns.iter().all(|c| !c.name.contains('`')), "列名不该带反引号");
+    let pk = t.columns.iter().find(|c| c.name == "user_id").unwrap();
+    assert!(pk.primary_key, "表级PRIMARY KEY要落到列上");
+    let org = t.columns.iter().find(|c| c.name == "org_id").unwrap();
+    assert_eq!(org.foreign_key, "orgs.id", "外键要带目标表的列名");
+    let uk = t.columns.iter().find(|c| c.name == "username").unwrap();
+    assert!(uk.unique, "单列唯一键等价于列上的UNIQUE");
+
+    let names: Vec<&str> = r.indexes.iter().map(|i| i.name.as_str()).collect();
+    assert_eq!(names, vec!["uk_username", "idx_org"], "表内KEY与UNIQUE KEY都算索引");
+    assert_eq!(r.indexes[0].columns, vec!["username".to_string()], "索引列不该混进索引名");
+    assert!(r.indexes[0].unique && !r.indexes[1].unique);
+    assert!(r.indexes.iter().all(|i| i.table == "shop.users"));
+}

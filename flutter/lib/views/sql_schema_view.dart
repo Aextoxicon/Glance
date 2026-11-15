@@ -72,29 +72,31 @@ double _badgesWidth(List<String> badges) {
   return sum + _badgeSpacing * (badges.length - 1);
 }
 
-// 按表头文字与表内最长内容取大值定栏宽，空间不够时按各栏可压空间等比收缩
 _Slots _measureSlots(
   TextStyle? mono,
   TextStyle? head,
-  rust.SqlTableSchema table,
+  List<rust.SqlTableSchema> tables,
   double maxWidth,
 ) {
   var name = _textWidth(head, '列名');
   var type = _textWidth(head, '类型');
   var constraint = _textWidth(head, '约束');
   var badges = 0.0;
-  for (final column in table.columns) {
-    name = math.max(name, _textWidth(mono, column.name));
-    type = math.max(type, _textWidth(mono, column.typeName));
-    badges = math.max(badges, _badgesWidth(_badgesOf(column)));
+  for (final table in tables) {
+    for (final column in table.columns) {
+      name = math.max(name, _textWidth(mono, column.name));
+      type = math.max(type, _textWidth(mono, column.typeName));
+      badges = math.max(badges, _badgesWidth(_badgesOf(column)));
+    }
   }
-  final wantName = name + _cellGap;
-  final wantType = type + _cellGap;
-  final wantConstraint = math.max(constraint, badges) + _cellGap;
-
   // 预算要扣掉卡片边框与左右内边距
   final room = math.max(maxWidth - _cardInset - _iconSlot, 120.0);
   final inlineTail = room >= _inlineTailMinWidth;
+  // 类型名可能是很长的enum清单，窄屏更容易把列名挤扁，上限按可用宽度分档
+  final wantName = math.min(name, inlineTail ? 200.0 : 140.0) + _cellGap;
+  final wantType = math.min(type, inlineTail ? 180.0 : 110.0) + _cellGap;
+  final wantConstraint = math.max(constraint, badges) + _cellGap;
+
   final budget = inlineTail ? room * 0.9 : room;
   final total = wantName + wantType + wantConstraint;
   if (total <= budget) {
@@ -106,9 +108,15 @@ _Slots _measureSlots(
     );
   }
 
-  final minName = math.min(wantName, 56.0);
-  final minType = math.min(wantType, 48.0);
-  final minConstraint = math.min(wantConstraint, 36.0);
+  // 列名要留住本身的宽度，宁可让类型省略号；两者都塞不下时再退回按比例压缩
+  var minName = math.min(wantName, name + 6);
+  var minType = math.min(wantType, 56.0);
+  var minConstraint = math.min(wantConstraint, 40.0);
+  if (minName + minType + minConstraint > budget) {
+    minName = math.min(wantName, 56.0);
+    minType = math.min(wantType, 48.0);
+    minConstraint = math.min(wantConstraint, 36.0);
+  }
   final shrinkable = (wantName - minName) +
       (wantType - minType) +
       (wantConstraint - minConstraint);
@@ -129,86 +137,104 @@ class SqlSchemaView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final mono = theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace');
+    final head = theme.textTheme.labelSmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
     final indexesByTable = <String, List<rust.SqlIndexSchema>>{};
     for (final idx in schema.indexes) {
       indexesByTable
           .putIfAbsent(idx.table, () => <rust.SqlIndexSchema>[])
           .add(idx);
     }
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      itemCount: schema.tables.length,
-      itemBuilder: (context, i) {
-        final table = schema.tables[i];
-        return _TableCard(
-          table: table,
-          indexes: indexesByTable[table.name] ?? const <rust.SqlIndexSchema>[],
-        );
-      },
-    );
+    return LayoutBuilder(builder: (context, constraints) {
+      final slots = _measureSlots(
+        mono,
+        head,
+        schema.tables,
+        constraints.maxWidth - 24,
+      );
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        itemCount: schema.tables.length,
+        itemBuilder: (context, i) {
+          final table = schema.tables[i];
+          return _TableCard(
+            table: table,
+            indexes: indexesByTable[table.name] ?? const <rust.SqlIndexSchema>[],
+            slots: slots,
+            mono: mono,
+            head: head,
+          );
+        },
+      );
+    });
   }
 }
 
 class _TableCard extends StatelessWidget {
-  const _TableCard({required this.table, required this.indexes});
+  const _TableCard({
+    required this.table,
+    required this.indexes,
+    required this.slots,
+    this.mono,
+    this.head,
+  });
 
   final rust.SqlTableSchema table;
   final List<rust.SqlIndexSchema> indexes;
+  final _Slots slots;
+  final TextStyle? mono;
+  final TextStyle? head;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final mono = theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace');
-    final head = theme.textTheme.labelSmall?.copyWith(
-      color: colors.onSurfaceVariant,
-    );
-    return LayoutBuilder(builder: (context, constraints) {
-      final slots = _measureSlots(mono, head, table, constraints.maxWidth);
-      return Card(
-        margin: const EdgeInsets.only(bottom: 10),
-        elevation: 0,
-        color: colors.surfaceContainerHighest,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: colors.outlineVariant),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _TitleBar(table: table, theme: theme),
-            ColoredBox(
-              color: colors.onSurface.withValues(alpha: 0.05),
-              child: _HeaderRow(slots: slots, style: head),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      color: colors.surfaceContainerHighest,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: colors.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _TitleBar(table: table, theme: theme),
+          ColoredBox(
+            color: colors.onSurface.withValues(alpha: 0.05),
+            child: _HeaderRow(slots: slots, style: head),
+          ),
+          for (var i = 0; i < table.columns.length; i++) ...[
+            if (i > 0)
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: colors.outlineVariant.withValues(alpha: 0.45),
+              ),
+            _ColumnRow(
+              column: table.columns[i],
+              slots: slots,
+              mono: mono,
             ),
-            for (var i = 0; i < table.columns.length; i++) ...[
-              if (i > 0)
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: colors.outlineVariant.withValues(alpha: 0.45),
-                ),
-              _ColumnRow(
-                column: table.columns[i],
-                slots: slots,
-                mono: mono,
-              ),
-            ],
-            if (indexes.isNotEmpty) ...[
-              Divider(height: 1, thickness: 1, color: colors.outlineVariant),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-                child: Text('索引', style: head),
-              ),
-              for (final idx in indexes) _IndexRow(index: idx, mono: mono),
-              const SizedBox(height: 6),
-            ] else
-              const SizedBox(height: 6),
           ],
-        ),
-      );
-    });
+          if (indexes.isNotEmpty) ...[
+            Divider(height: 1, thickness: 1, color: colors.outlineVariant),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+              child: Text('索引', style: head),
+            ),
+            for (final idx in indexes) _IndexRow(index: idx, mono: mono),
+            const SizedBox(height: 6),
+          ] else
+            const SizedBox(height: 6),
+        ],
+      ),
+    );
   }
 }
 
