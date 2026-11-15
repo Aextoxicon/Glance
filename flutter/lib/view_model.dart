@@ -36,6 +36,11 @@ class MainViewModel extends ChangeNotifier {
   bool rememberLastDir = true;
   final SettingsStore settingsStore;
 
+  // main提前挂上, 解析前再等
+  Future<void> _rustReady = Future<void>.value();
+
+  void attachRustInit(Future<void> ready) => _rustReady = ready;
+
   // 启动时在runApp前调用, 避免首帧闪默认主题
   Future<void> loadSettings() async {
     final s = await settingsStore.load();
@@ -260,6 +265,8 @@ class MainViewModel extends ChangeNotifier {
   // CAD文件(dwg/dxf)读字节走Rust几何解析不做二进制嗅探, 其余读文本走代码解析
   Future<void> _loadFile(Artifact a, int token) async {
     try {
+      await _rustReady;
+      if (token != _loadToken) return;
       if (isCadFileName(a.name)) {
         final bytes = await _source.readFileBytes(a.id);
         if (token != _loadToken) return;

@@ -30,14 +30,35 @@ FileTreeSource createSource() {
 }
 
 class DesktopIoSource implements FileTreeSource {
-  @override
-  Future<String?> pickRoot() => FilePicker.platform.getDirectoryPath();
+  static const _rootKey = 'desktop_root_path';
 
   @override
-  Future<String?> restoreRoot() async => null;
+  Future<String?> pickRoot() async {
+    final dir = await FilePicker.platform.getDirectoryPath();
+    if (dir == null) return null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_rootKey, dir);
+    return dir;
+  }
 
   @override
-  Future<void> forgetRoot() async {}
+  Future<String?> restoreRoot() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_rootKey);
+    if (saved == null) return null;
+    // 目录被删除或改名后清掉记录
+    if (!await Directory(saved).exists()) {
+      await prefs.remove(_rootKey);
+      return null;
+    }
+    return saved;
+  }
+
+  @override
+  Future<void> forgetRoot() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_rootKey);
+  }
 
   @override
   Future<int> folderSize(String rootId) => Isolate.run(() async {

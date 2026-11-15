@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:glance/file_tree.dart';
 import 'package:glance/generated/frb_generated.dart';
@@ -68,6 +70,23 @@ void main() {
     'dirA': [file('fileB'), dir('dirB')],
     'dirB': [file('fileC')],
   };
+
+  test('Rust库未就绪时解析等待, 就绪后才出内容', () async {
+    final gate = Completer<void>();
+    final vm = MainViewModel(FakeSource(fakeTree));
+    vm.attachRustInit(gate.future);
+    await vm.restoreWorkspace();
+
+    vm.selectItem(vm.treeItems.first);
+    await pumpEventQueue();
+    expect(vm.selectedContent, isNull, reason: '库没就绪就该等着, 不能抢先解析');
+    expect(vm.codeParseResult, isNull);
+
+    gate.complete();
+    await pumpEventQueue();
+    expect(vm.selectedContent, isNotNull);
+    expect(vm.codeParseResult, isNotNull);
+  });
 
   test('expandAll展开从未手动展开过的目录', () async {
     final vm = MainViewModel(FakeSource(fakeTree));
@@ -772,6 +791,30 @@ void main() {
         nameOfId(
             'content://com.android.externalstorage.documents/tree/primary%3A%E5%86%99%E5%AD%98'),
         '写存');
+  });
+
+  test('桌面端恢复上次目录: 路径存在则返回, 目录消失则清掉记录', () async {
+    final tmp = await Directory.systemTemp.createTemp('glance_root_');
+    SharedPreferences.setMockInitialValues({'desktop_root_path': tmp.path});
+    final source = DesktopIoSource();
+
+    expect(await source.restoreRoot(), tmp.path);
+
+    await tmp.delete(recursive: true);
+    expect(await source.restoreRoot(), isNull);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('desktop_root_path'), isNull);
+  });
+
+  test('桌面端忘记目录: forgetRoot后不再恢复', () async {
+    final tmp = await Directory.systemTemp.createTemp('glance_root_');
+    SharedPreferences.setMockInitialValues({'desktop_root_path': tmp.path});
+    final source = DesktopIoSource();
+
+    await source.forgetRoot();
+    expect(await source.restoreRoot(), isNull);
+
+    await tmp.delete(recursive: true);
   });
 }
 

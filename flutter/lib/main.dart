@@ -26,13 +26,14 @@ const _darkOutline = Color(0xFF2A2A2A);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await RustLib.init();
-  } catch (e) {
-    debugPrint('RustLib.init failed, fallback to mock content: $e');
-  }
+
+  // 首帧只等设置: 它决定主题, 不等会先闪默认主题再跳变
   await mainViewModel.loadSettings();
-  // 外部VIEW/分享intent: 冷启动经getInitialUri取, 热切换由MainActivity经openUri推送
+
+  // 加载Rust库不改变首帧外观, 挪到首帧后, 解析前由VM自等
+  mainViewModel.attachRustInit(_initRust());
+
+  // 热切换的openUri推送要尽早接上, 否则启动期丢事件
   const intentChannel = MethodChannel('glance/intent');
   intentChannel.setMethodCallHandler((call) async {
     if (call.method == 'openUri') {
@@ -40,15 +41,31 @@ Future<void> main() async {
       if (uri != null) await mainViewModel.openSingleFileUri(uri);
     }
   });
-  final initialUri = Platform.isAndroid
-      ? await intentChannel.invokeMethod<String>('getInitialUri')
-      : null;
-  if (initialUri != null) {
-    await mainViewModel.openSingleFileUri(initialUri);
-  } else {
-    unawaited(mainViewModel.restoreWorkspace());
-  }
+
+  // 外部intent决定首帧该显示什么, 先取到再runApp
+  final initialUri = await _initialIntentUri(intentChannel);
+  if (initialUri != null) await mainViewModel.openSingleFileUri(initialUri);
+
   runApp(const GlanceApp());
+  if (initialUri == null) unawaited(mainViewModel.restoreWorkspace());
+}
+
+Future<void> _initRust() async {
+  try {
+    await RustLib.init();
+  } catch (e) {
+    debugPrint('RustLib.init failed, fallback to mock content: $e');
+  }
+}
+
+// 外部VIEW/分享uri
+Future<String?> _initialIntentUri(MethodChannel intentChannel) async {
+  if (!Platform.isAndroid) return null;
+  try {
+    return await intentChannel.invokeMethod<String>('getInitialUri');
+  } catch (_) {
+    return null;
+  }
 }
 
 class GlanceApp extends StatelessWidget {
