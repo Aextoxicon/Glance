@@ -193,10 +193,6 @@ class WorkspaceHeader extends StatelessWidget {
               ),
               const Spacer(),
               TextButton(
-                onPressed: vm.expandAll,
-                child: Text('展开', style: Theme.of(context).textTheme.bodySmall),
-              ),
-              TextButton(
                 onPressed: vm.collapseAll,
                 child: Text('折叠', style: Theme.of(context).textTheme.bodySmall),
               ),

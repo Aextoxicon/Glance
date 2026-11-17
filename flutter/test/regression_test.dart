@@ -11,6 +11,7 @@ import 'package:glance/file_tree.dart';
 import 'package:glance/generated/frb_generated.dart';
 import 'package:glance/generated/lib.dart' as rust;
 import 'package:glance/models.dart';
+import 'package:glance/search.dart';
 import 'package:glance/settings_store.dart';
 import 'package:glance/utils.dart';
 import 'package:glance/view_model.dart';
@@ -88,7 +89,7 @@ void main() {
     expect(vm.codeParseResult, isNotNull);
   });
 
-  test('expandAll展开从未手动展开过的目录', () async {
+  test('toggleExpand展开从未手动展开过的目录', () async {
     final vm = MainViewModel(FakeSource(fakeTree));
     await vm.restoreWorkspace();
 
@@ -98,7 +99,7 @@ void main() {
     expect(vm.treeItems[1].isExpanded, isFalse);
     expect(vm.treeItems[1].loaded, isFalse);
 
-    await vm.expandAll();
+    await vm.toggleExpand(vm.treeItems[1]);
 
     final dirA = vm.treeItems[1];
     expect(dirA.isExpanded, isTrue);
@@ -106,9 +107,8 @@ void main() {
     expect(dirA.children, hasLength(2));
     final dirB = dirA.children[1];
     expect(dirB.artifact.name, 'dirB');
-    expect(dirB.isExpanded, isTrue);
-    expect(dirB.loaded, isTrue);
-    expect(dirB.children, hasLength(1));
+    expect(dirB.isExpanded, isFalse);
+    expect(dirB.loaded, isFalse);
   });
 
   test('refreshTree保留已展开目录态并反映子目录文件变化', () async {
@@ -119,7 +119,8 @@ void main() {
     };
     final vm = MainViewModel(FakeSource(tree));
     await vm.restoreWorkspace();
-    await vm.expandAll();
+    await vm.toggleExpand(vm.treeItems[1]);
+    await vm.toggleExpand(vm.treeItems[1].children[1]);
 
     final dirA = vm.treeItems[1];
     expect(dirA.isExpanded, isTrue);
@@ -151,6 +152,105 @@ void main() {
     expect(mainRs.isSelected, isTrue, reason: '选中态应按id保留');
     expect(vm.selectedItem, same(mainRs), reason: 'selectedItem应挂回新树对象');
     expect(vm.selectedItem?.artifact.id, 'main.rs');
+  });
+
+  test('findMatchingLines按行去重返回命中, 默认忽略大小写', () {
+    const text = 'alpha\nBeta gamma\nbeta delta\nBETA';
+    expect(findMatchingLines(text, 'beta'), [1, 2, 3]);
+    expect(findMatchingLines(text, 'beta', caseSensitive: true), [2]);
+    expect(findMatchingLines(text, ''), isEmpty);
+    expect(findMatchingLines(text, 'zzz'), isEmpty);
+    expect(findMatchingLines('', 'beta'), isEmpty);
+  });
+
+  test('文件内搜索跳到首个命中并可前后循环', () async {
+    final vm = MainViewModel(FakeSource(fakeTree, const {
+      'main.rs': 'aaa\nbbb\nccc\nbbb',
+    }));
+    await vm.restoreWorkspace();
+    vm.selectItem(vm.treeItems[0]);
+    await pumpEventQueue();
+    expect(vm.selectedContent, isNotNull);
+
+    vm.openSearch();
+    expect(vm.searchVisible, isTrue);
+
+    vm.updateSearchQuery('bbb');
+    expect(vm.searchMatchCount, 2);
+    expect(vm.searchOrdinal, 1);
+    expect(vm.outlineScrollTargetLine, 1);
+
+    vm.nextSearchMatch();
+    expect(vm.searchOrdinal, 2);
+    expect(vm.outlineScrollTargetLine, 3);
+
+    vm.nextSearchMatch();
+    expect(vm.searchOrdinal, 1, reason: '末个之后应回到首个');
+    expect(vm.outlineScrollTargetLine, 1);
+
+    vm.prevSearchMatch();
+    expect(vm.searchOrdinal, 2, reason: '首个之前应绕到末个');
+    expect(vm.outlineScrollTargetLine, 3);
+  });
+
+  test('搜索无命中时不跳转', () async {
+    final vm = MainViewModel(FakeSource(fakeTree, const {
+      'main.rs': 'aaa\nbbb',
+    }));
+    await vm.restoreWorkspace();
+    vm.selectItem(vm.treeItems[0]);
+    await pumpEventQueue();
+
+    vm.updateSearchQuery('zzz');
+    expect(vm.searchMatchCount, 0);
+    expect(vm.searchOrdinal, 0);
+    expect(vm.outlineScrollTargetLine, isNull);
+  });
+
+  test('切文件后搜索状态清空', () async {
+    final vm = MainViewModel(FakeSource(fakeTree, const {
+      'main.rs': 'aaa\nbbb',
+    }));
+    await vm.restoreWorkspace();
+    vm.selectItem(vm.treeItems[0]);
+    await pumpEventQueue();
+    vm.openSearch();
+    vm.updateSearchQuery('bbb');
+    expect(vm.searchMatchCount, 1);
+
+    vm.selectItem(vm.treeItems[1]);
+    expect(vm.searchVisible, isFalse);
+    expect(vm.searchQuery, isEmpty);
+    expect(vm.searchMatchCount, 0);
+    expect(vm.searchMatchIndex, -1);
+  });
+
+  testWidgets('点搜索按钮出现查找条, 输入后显示命中计数', (tester) async {
+    final vm = MainViewModel(FakeSource(fakeTree, const {
+      'main.rs': 'aaa\nbbb\nccc',
+    }));
+    await vm.restoreWorkspace();
+    vm.selectItem(vm.treeItems[0]);
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true),
+      home: ListenableBuilder(
+        listenable: vm,
+        builder: (_, __) => Scaffold(body: CodePreviewPanel(vm: vm)),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.search), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.text('0/0'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'bbb');
+    await tester.pumpAndSettle();
+    expect(find.text('1/1'), findsOneWidget);
+    expect(vm.searchOrdinal, 1);
   });
 
   testWidgets('点开文件后CodeContentView无主题色块/下划线装饰', (tester) async {
@@ -324,10 +424,11 @@ void main() {
     expect(colored, isTrue, reason: '应出现高亮颜色span');
   });
 
-  testWidgets('expandAll后文件树UI显示出从未展开过的目录内容', (tester) async {
+  testWidgets('逐级展开后文件树UI显示出深层目录内容', (tester) async {
     final vm = MainViewModel(FakeSource(fakeTree));
     await vm.restoreWorkspace();
-    await vm.expandAll();
+    await vm.toggleExpand(vm.treeItems[1]);
+    await vm.toggleExpand(vm.treeItems[1].children[1]);
 
     await tester.pumpWidget(MaterialApp(
       theme: ThemeData(useMaterial3: true),
@@ -346,7 +447,8 @@ void main() {
   test('revealSelection折叠后重新展开选中文件所在路径', () async {
     final vm = MainViewModel(FakeSource(fakeTree));
     await vm.restoreWorkspace();
-    await vm.expandAll();
+    await vm.toggleExpand(vm.treeItems[1]);
+    await vm.toggleExpand(vm.treeItems[1].children[1]);
     final fileC = vm.treeItems[1].children[1].children.single;
     expect(fileC.artifact.name, 'fileC');
     vm.selectItem(fileC);

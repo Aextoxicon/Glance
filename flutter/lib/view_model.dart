@@ -8,6 +8,7 @@ import 'file_tree.dart';
 import 'generated/flutter_api.dart';
 import 'generated/lib.dart' as rust;
 import 'models.dart';
+import 'search.dart';
 import 'settings_store.dart';
 import 'trace.dart';
 import 'trace_destination.dart';
@@ -137,6 +138,66 @@ class MainViewModel extends ChangeNotifier {
 
   int? outlineScrollTargetLine;
 
+  String searchQuery = '';
+  List<int> searchLineMatches = const [];
+  int searchMatchIndex = -1;
+  bool searchVisible = false;
+
+  bool get canSearch => selectedContent != null;
+
+  int get searchMatchCount => searchLineMatches.length;
+
+  // 展示用序号, 从1起, 无命中时为0
+  int get searchOrdinal => searchMatchIndex < 0 ? 0 : searchMatchIndex + 1;
+
+  void openSearch() {
+    searchVisible = true;
+    notifyListeners();
+  }
+
+  void closeSearch() {
+    _resetSearch();
+    notifyListeners();
+  }
+
+  void updateSearchQuery(String query) {
+    searchQuery = query;
+    final content = selectedContent;
+    searchLineMatches =
+        content == null ? const [] : findMatchingLines(content, query);
+    searchMatchIndex = searchLineMatches.isEmpty ? -1 : 0;
+    _syncSearchScrollTarget();
+    notifyListeners();
+  }
+
+  void nextSearchMatch() {
+    if (searchLineMatches.isEmpty) return;
+    searchMatchIndex = (searchMatchIndex + 1) % searchLineMatches.length;
+    _syncSearchScrollTarget();
+    notifyListeners();
+  }
+
+  void prevSearchMatch() {
+    if (searchLineMatches.isEmpty) return;
+    final n = searchLineMatches.length;
+    searchMatchIndex = (searchMatchIndex - 1 + n) % n;
+    _syncSearchScrollTarget();
+    notifyListeners();
+  }
+
+  void _syncSearchScrollTarget() {
+    if (searchMatchIndex < 0) return;
+    outlineScrollTargetLine = searchLineMatches[searchMatchIndex];
+  }
+
+  // 切文件后旧命中行没有意义
+  void _resetSearch() {
+    searchVisible = false;
+    searchQuery = '';
+    searchLineMatches = const [];
+    searchMatchIndex = -1;
+  }
+
   bool get hasSelection => selectedArtifact != null;
 
     String? _rootId;
@@ -242,6 +303,7 @@ class MainViewModel extends ChangeNotifier {
   }
 
   void selectItem(TreeItem item) {
+    _resetSearch();
     for (final it in _flatten(treeItems)) {
       it.isSelected = false;
     }
@@ -410,29 +472,6 @@ class MainViewModel extends ChangeNotifier {
     return null;
   }
 
-  Future<void> expandAll() async {
-    await _expandDirs(treeItems, <String>{});
-    notifyListeners();
-  }
-
-  // 展开过程不逐目录notifyListeners，大目录树会触发数百次全量重建
-  Future<void> _expandDirs(List<TreeItem> items, Set<String> visited) async {
-    for (final it in items) {
-      if (!it.artifact.isDirectory) continue;
-      if (!visited.add(it.artifact.id)) continue;
-      try {
-        if (!it.loaded) {
-          it.children = await _childrenToItems(it.artifact.id);
-          it.loaded = true;
-        }
-        it.isExpanded = true;
-      } catch (_) {
-        continue;
-      }
-      await _expandDirs(it.children, visited);
-    }
-  }
-
   void collapseAll() {
     for (final it in _flatten(treeItems)) {
       it.isExpanded = false;
@@ -539,6 +578,7 @@ class MainViewModel extends ChangeNotifier {
   }
 
   void clearSelection() {
+    _resetSearch();
     for (final it in _flatten(treeItems)) {
       it.isSelected = false;
     }

@@ -34,6 +34,10 @@ class CodePreviewPanel extends StatelessWidget {
       children: [
         CodePreviewToolbar(vm: vm),
         const Divider(height: 1),
+        if (vm.searchVisible && vm.canSearch) ...[
+          FileSearchBar(vm: vm),
+          const Divider(height: 1),
+        ],
         Expanded(
           child: vm.isCadPreview
               ? CadView(geometry: vm.selectedCad!)
@@ -114,11 +118,108 @@ class CodePreviewToolbar extends StatelessWidget {
                 ),
               ),
             const SizedBox(width: 4),
+            if (vm.canSearch)
+              IconButton(
+                iconSize: 14,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                tooltip: vm.searchVisible ? '关闭查找' : '在文件中查找',
+                onPressed: vm.searchVisible ? vm.closeSearch : vm.openSearch,
+                icon: const Icon(Icons.search, size: 14),
+              ),
             IconButton(
               iconSize: 14,
               constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
               tooltip: '清除选择',
               onPressed: vm.clearSelection,
+              icon: const Icon(Icons.close, size: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class FileSearchBar extends StatefulWidget {
+  final MainViewModel vm;
+  const FileSearchBar({required this.vm, super.key});
+
+  @override
+  State<FileSearchBar> createState() => _FileSearchBarState();
+}
+
+class _FileSearchBarState extends State<FileSearchBar> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.text = widget.vm.searchQuery;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focus.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = widget.vm;
+    final cs = Theme.of(context).colorScheme;
+    final noHit = vm.searchQuery.isNotEmpty && vm.searchMatchCount == 0;
+    return SizedBox(
+      height: 40,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                focusNode: _focus,
+                style: const TextStyle(fontSize: 13),
+                decoration: const InputDecoration(
+                  isDense: true,
+                  border: InputBorder.none,
+                  hintText: '在文件中查找',
+                ),
+                onChanged: vm.updateSearchQuery,
+                onSubmitted: (_) => vm.nextSearchMatch(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              noHit ? '无匹配' : '${vm.searchOrdinal}/${vm.searchMatchCount}',
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall
+                  ?.copyWith(color: noHit ? cs.error : cs.onSurfaceVariant),
+            ),
+            IconButton(
+              iconSize: 16,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              tooltip: '上一个',
+              onPressed: vm.searchMatchCount == 0 ? null : vm.prevSearchMatch,
+              icon: const Icon(Icons.keyboard_arrow_up, size: 16),
+            ),
+            IconButton(
+              iconSize: 16,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              tooltip: '下一个',
+              onPressed: vm.searchMatchCount == 0 ? null : vm.nextSearchMatch,
+              icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+            ),
+            IconButton(
+              iconSize: 14,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              tooltip: '关闭查找',
+              onPressed: vm.closeSearch,
               icon: const Icon(Icons.close, size: 14),
             ),
           ],
