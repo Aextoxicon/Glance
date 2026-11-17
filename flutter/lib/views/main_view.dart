@@ -17,7 +17,7 @@ class MainView extends StatelessWidget {
         if (!vm.hasWorkspace) {
           return WelcomeScreen(onOpenFolder: vm.pickFolder);
         }
-        final isWide = MediaQuery.sizeOf(context).width > 600;
+        final isWide = MediaQuery.sizeOf(context).width > 840;
         return isWide ? WideLayout(vm: vm) : NarrowLayout(vm: vm);
       },
     );
