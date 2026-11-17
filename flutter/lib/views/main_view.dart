@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../utils.dart';
 import '../view_model.dart';
 import 'code_view.dart';
 import 'file_tree.dart';
@@ -67,7 +68,7 @@ class WideLayout extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SizedBox(
-              width: 300,
+              width: fileTreePanelWidth,
               child: Material(
                 color: cs.surfaceContainerHighest,
                 child: Column(
@@ -113,7 +114,7 @@ class NarrowLayout extends StatelessWidget {
         ],
       ),
       drawer: Drawer(
-        width: 300,
+        width: fileTreePanelWidth,
         child: Column(
           children: [
             WorkspaceHeader(vm: vm),

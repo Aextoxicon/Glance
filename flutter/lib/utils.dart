@@ -64,11 +64,14 @@ IconData iconForFile(String name) {
 }
 
 const double outlineDrawerWidth = 300;
+const double fileTreePanelWidth = 300;
 
 String outlineKindLabel(String kind) {
   if (kind.startsWith('class') ||
       kind.startsWith('record') ||
-      kind.startsWith('annotation_type')) return '类';
+      kind.startsWith('annotation_type')) {
+    return '类';
+  }
   if (kind.startsWith('interface')) return '接口';
   if (kind.startsWith('struct')) return '结构体';
   if (kind.startsWith('enum')) return '枚举';
@@ -80,7 +83,9 @@ String outlineKindLabel(String kind) {
   if (kind == 'module' || kind == 'mod_item') return '模块';
   if (kind.startsWith('type_alias') ||
       kind.startsWith('type_item') ||
-      kind == 'type_declaration') return '类型';
+      kind == 'type_declaration') {
+    return '类型';
+  }
   if (kind.startsWith('static') || kind.startsWith('const')) return '常量';
   if (kind == 'package_clause') return '包';
   if (kind == 'create_table') return '表';

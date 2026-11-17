@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../view_model.dart';
 import '../models.dart';
+import '../view_model.dart';
+
+// 行高，滚动定位按此估算，与TreeItemRow的minHeight一致
+const double _treeRowHeight = 28;
 
 class FileTreePanel extends StatefulWidget {
   final MainViewModel vm;
@@ -12,9 +15,6 @@ class FileTreePanel extends StatefulWidget {
 }
 
 class _FileTreePanelState extends State<FileTreePanel> {
-  // 与TreeItemRow的minHeight对齐
-  static const double _rowHeight = 28;
-
   final ScrollController _scroll = ScrollController();
   String? _lastSelectedId;
   int _lastRevealToken = 0;
@@ -88,10 +88,10 @@ class _FileTreePanelState extends State<FileTreePanel> {
     if (index < 0) return;
     final pos = _scroll.position;
     if (!pos.hasContentDimensions) return;
-    final top = index * _rowHeight;
+    final top = index * _treeRowHeight;
     final viewTop = pos.pixels;
     final viewBottom = viewTop + pos.viewportDimension;
-    if (top >= viewTop && top + _rowHeight <= viewBottom) return;
+    if (top >= viewTop && top + _treeRowHeight <= viewBottom) return;
     // 停在视口上三分之一处, 保留上下文
     final target =
         (top - pos.viewportDimension / 3).clamp(0.0, pos.maxScrollExtent);
@@ -156,7 +156,7 @@ class TreeItemRow extends StatelessWidget {
       child: Container(
         color: item.isSelected ? cs.primaryContainer : null,
         padding: EdgeInsets.only(left: indent, right: 8, top: 2, bottom: 2),
-        constraints: const BoxConstraints(minHeight: 28),
+        constraints: const BoxConstraints(minHeight: _treeRowHeight),
         child: Row(
           children: [
             if (item.artifact.isDirectory)
@@ -211,7 +211,7 @@ class _LoadingRowWidget extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: EdgeInsets.only(left: indent, right: 8, top: 2, bottom: 2),
-      constraints: const BoxConstraints(minHeight: 28),
+      constraints: const BoxConstraints(minHeight: _treeRowHeight),
       child: Row(
         children: [
           const SizedBox(width: 16),

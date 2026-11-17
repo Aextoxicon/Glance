@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-import 'package:glance/generated/lib.dart' as rust;
+import '../generated/lib.dart' as rust;
 
 // 各字段是扁平double[], stride见native/src/lib.rs
 // 几何算法逐段对齐Avalonia版CadCanvas.cs(叉积定弧向/bulge转弧/参数采样椭圆)

@@ -29,7 +29,7 @@ class AppSettings {
 }
 
 class SettingsStore {
-  SettingsStore({String? directoryOverride}) : _directoryOverride = directoryOverride;
+  SettingsStore({this._directoryOverride});
 
   final String? _directoryOverride;
   Future<void> _queue = Future<void>.value();

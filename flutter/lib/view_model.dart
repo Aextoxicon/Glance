@@ -5,10 +5,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'file_tree.dart';
-import 'settings_store.dart';
 import 'generated/flutter_api.dart';
 import 'generated/lib.dart' as rust;
 import 'models.dart';
+import 'settings_store.dart';
 import 'trace.dart';
 import 'trace_destination.dart';
 import 'utils.dart';

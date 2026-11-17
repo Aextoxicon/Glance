@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import 'package:glance/generated/lib.dart' as rust;
+import '../generated/lib.dart' as rust;
 
 // 每张表渲染成一张卡，卡内为列名、类型、约束、默认值四栏表格，索引附在表尾
 
